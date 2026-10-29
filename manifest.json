@@ -1,12 +1,12 @@
 {
-  "name": "Mi Aplicación Web",
-  "short_name": "MiApp",
-  "description": "Aplicación web ligera con soporte offline",
+  "name": "Partidos La Paz - Reserva de Canchas",
+  "short_name": "Partidos",
+  "description": "App para unirse a partidos y reservar canchas",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#121214",
-  "theme_color": "#00875f",
+  "background_color": "#121316",
+  "theme_color": "#121316",
   "orientation": "portrait-primary",
   "icons": [
     {

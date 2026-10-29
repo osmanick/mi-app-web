@@ -1,6 +1,6 @@
-const CACHE_NAME = "miapp-v2";
+const CACHE_NAME = "partidos-app-v1";
 
-const ASSETS_TO_CACHE = [
+const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
@@ -10,42 +10,26 @@ const ASSETS_TO_CACHE = [
   "./icons/icon-512.png"
 ];
 
-// Instalación: almacena los recursos estáticos
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+self.addEventListener("install", (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
-// Activación: limpia cachés antiguas
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Intercepción de solicitudes: Cache-first con fallback a red
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).catch(() => {
-        if (event.request.headers.get("accept")?.includes("text/html")) {
-          return caches.match("./index.html");
-        }
-      });
+self.addEventListener("fetch", (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => {
+      return res || fetch(e.request).catch(() => caches.match("./index.html"));
     })
   );
 });

@@ -2,16 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Aplicación Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Partidos - Reserva de Canchas</title>
 
-  <!-- Enlace al Manifest PWA -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- Color de barra y tema -->
-  <meta name="theme-color" content="#00875f">
-
-  <!-- Compatibilidad PWA móvil -->
+  <meta name="theme-color" content="#121316">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,44 +16,180 @@
 </head>
 <body>
 
-  <!-- Barra superior -->
-  <header class="app-header">
-    <div class="header-container">
-      <h1 class="logo">MiApp</h1>
-      <nav class="nav-links">
-        <a href="#registro">Registros</a>
-        <!-- Botón de instalación PWA (oculto por defecto) -->
-        <button id="btn-install" class="btn-install" hidden>
-          📥 Instalar App
+  <!-- Contenedor con ancho de móvil centrado en PC -->
+  <div class="app-viewport">
+
+    <!-- ================= VISTA 1: LISTA DE PARTIDOS ================= -->
+    <main id="view-list" class="view-screen active">
+      <!-- Barra superior con ciudad y título -->
+      <header class="top-nav">
+        <div class="location-selector">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          <span class="city-name">La Paz</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#a0a4ab"><path d="M7 10l5 5 5-5z"/></svg>
+        </div>
+        <h1 class="screen-title">Partidos</h1>
+        <button id="btn-install" class="icon-btn" title="Instalar App" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
         </button>
-      </nav>
-    </div>
-  </header>
+      </header>
 
-  <!-- Contenedor principal -->
-  <main class="main-container">
-    <section class="card">
-      <h2>Registro de Datos</h2>
-      <form id="form-data">
-        <div class="form-group">
-          <label for="item-input">Concepto o descripción:</label>
-          <input type="text" id="item-input" placeholder="Ej. Material o movimiento..." required>
+      <!-- Barra de búsqueda -->
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <input type="text" id="search-input" placeholder="Buscar una cancha">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="#717680"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         </div>
-        <div class="form-group">
-          <label for="amount-input">Monto o cantidad:</label>
-          <input type="number" id="amount-input" placeholder="0.00" step="0.01" required>
+        <button class="filter-icon-btn" title="Filtros">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+        </button>
+      </div>
+
+      <!-- Filtros de categoría -->
+      <section class="chips-container">
+        <button class="chip-item active" data-sport="Todos">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-5.5 9h11zM17.5 13H6.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h11c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zm-5.5 5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          Todos
+        </button>
+        <button class="chip-item" data-sport="Fútbol">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 6l3 2v4l-3 2-3-2V8z"/></svg>
+          Fútbol
+        </button>
+        <button class="chip-item" data-sport="Wally">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M2.5 12c4 0 7.5-2 9.5-5.5M12 21.5c0-4 2-7.5 5.5-9.5"/></svg>
+          Wally
+        </button>
+      </section>
+
+      <!-- Lista de partidos agrupados por fecha -->
+      <section id="matches-list-container" class="matches-content">
+        <!-- Generado dinámicamente -->
+      </section>
+    </main>
+
+    <!-- ================= VISTA 2: DETALLE DEL PARTIDO ================= -->
+    <section id="view-detail" class="view-screen">
+      <!-- Cabecera de detalle -->
+      <div class="detail-header-bar">
+        <button id="btn-back" class="icon-nav-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <span class="detail-header-title">Partidos</span>
+        <button id="btn-share" class="icon-nav-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+        </button>
+      </div>
+
+      <!-- Imagen hero del estadio/cancha -->
+      <div class="detail-hero">
+        <img id="detail-img" src="" alt="Cancha">
+        <div class="quota-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff5a1f"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <span id="detail-badge-quota">18/22 jugadores</span>
         </div>
-        <button type="submit" class="btn-primary">Guardar</button>
-      </form>
+      </div>
+
+      <!-- Datos específicos del partido -->
+      <div class="detail-body">
+        <h2 id="detail-venue-name" class="detail-title">Cañada Strongest</h2>
+
+        <div class="info-row">
+          <div class="info-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
+          </div>
+          <div>
+            <span class="info-label" id="detail-sport-tag">FÚTBOL</span>
+            <div class="info-value" id="detail-date-long">jueves 29 de octubre, 2026</div>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><circle cx="12" cy="12" r="10" stroke="#ff5a1f" stroke-width="2" fill="none"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div>
+            <span class="info-label">HORARIO</span>
+            <div class="info-value" id="detail-time">21:00 - 22:00</div>
+          </div>
+        </div>
+
+        <div class="info-row address-row">
+          <div class="info-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          </div>
+          <div class="address-text">
+            <span class="info-label" id="detail-venue-sub">CAÑADA STRONGEST</span>
+            <div class="info-value address-highlight" id="detail-address">Calle Francisco Monroy, entre avenida illimani y calle yungas</div>
+          </div>
+          <a id="btn-map" href="#" target="_blank" class="map-icon-btn" title="Abrir Mapa">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+          </a>
+        </div>
+
+        <!-- Botón invitar amigos -->
+        <button id="btn-invite" class="btn-outline-invite">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+          Invitar amigos
+        </button>
+
+        <!-- Bloque de reglas y recordatorios -->
+        <div class="rules-box">
+          <span class="rules-title">Recuerda:</span>
+          <div class="rule-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#9da3af"><path d="M21.6 18.2L13 11.8V4h-2v7.8L2.4 18.2c-.5.4-.5 1.2 0 1.6.4.4 1.1.4 1.6 0L12 13.8l8 6c.4.4 1.1.4 1.6 0 .5-.4.5-1.2 0-1.6z"/></svg>
+            <span>Por favor viste una camiseta negra u oscura.</span>
+          </div>
+          <div class="rule-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#9da3af"><circle cx="12" cy="12" r="10" stroke="#9da3af" stroke-width="2" fill="none"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="#9da3af" stroke-width="2"/></svg>
+            <span>No tendrás un reembolso si abandonas un partido casual dentro de las 4 horas previas.</span>
+          </div>
+          <a href="#" class="more-link">Ver más</a>
+        </div>
+
+        <!-- Tarjeta del organizador -->
+        <div class="organizer-card">
+          <img class="organizer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Organizador">
+          <div class="organizer-info">
+            <h4 id="detail-organizer-name">BenjaminVidal</h4>
+            <span>Organizador</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </div>
+      </div>
+
+      <!-- Barra fija inferior con botón de inscripción -->
+      <footer class="bottom-action-bar">
+        <button id="btn-subscribe" class="btn-primary-action">
+          Inscribirme Bs. 29
+        </button>
+      </footer>
     </section>
 
-    <section class="card">
-      <h2>Listado</h2>
-      <ul id="items-list" class="item-list">
-        <!-- Renderizado dinámico desde app.js -->
-      </ul>
-    </section>
-  </main>
+    <!-- Barra de pestañas inferior (Navegación tipo App móvil) -->
+    <nav class="bottom-nav-tabs">
+      <button class="nav-tab active">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6l3 2v4l-3 2-3-2V8z" fill="#121316"/></svg>
+        <span>Partidos</span>
+      </button>
+      <button class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4zM2 4v16h20V4H2z"/></svg>
+        <span>Clubes</span>
+      </button>
+      <button class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        <span>Mensajes</span>
+      </button>
+      <button class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span>Alertas</span>
+      </button>
+      <button class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+  </div>
 
   <script src="app.js"></script>
 </body>
