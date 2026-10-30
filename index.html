@@ -19,6 +19,45 @@
   <!-- Contenedor con ancho de móvil centrado en PC -->
   <div class="app-viewport">
 
+<!-- Modal Pago QR Simple Bolivia -->
+<div id="modal-qr" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title-box">
+        <span class="qr-tag">PAGO RÁPIDO</span>
+        <h3>QR Simple Bolivia</h3>
+      </div>
+      <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-desc">Escanea desde tu banca móvil (BCP, BNB, Banco Unión, GanaMóvil, etc.)</p>
+      
+      <!-- Contenedor del QR e imagen generada -->
+      <div class="qr-wrapper">
+        <img id="qr-image" src="" alt="Código QR Simple">
+        <div class="qr-logo-badge">QR</div>
+      </div>
+
+      <div class="payment-details">
+        <div class="payment-row">
+          <span>Concepto:</span>
+          <strong id="modal-concept">Cancha</strong>
+        </div>
+        <div class="payment-row">
+          <span>Total a pagar:</span>
+          <strong class="highlight-price" id="modal-price">Bs. 0.00</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btn-confirm-payment" class="btn-primary-action">Ya realicé el pago</button>
+      <button id="btn-cancel-payment" class="btn-text-action">Cancelar</button>
+    </div>
+  </div>
+</div>
+
     <!-- ================= VISTA 1: LISTA DE PARTIDOS ================= -->
     <main id="view-list" class="view-screen active">
       <!-- Barra superior con ciudad y título -->

@@ -5,12 +5,12 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("SW Activo:", reg.scope))
-      .catch((err) => console.error("Error SW:", err));
+      .then((reg) => console.log("SW Activo en alcance:", reg.scope))
+      .catch((err) => console.error("Error al registrar SW:", err));
   });
 }
 
-// Botón de instalación
+// Control del evento de instalación nativo
 let deferredPrompt = null;
 const btnInstall = document.getElementById("btn-install");
 
@@ -24,14 +24,21 @@ if (btnInstall) {
   btnInstall.addEventListener("click", async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Elección de instalación: ${outcome}`);
     deferredPrompt = null;
     btnInstall.setAttribute("hidden", "");
   });
 }
 
+window.addEventListener("appinstalled", () => {
+  console.log("Aplicación instalada en el dispositivo.");
+  if (btnInstall) btnInstall.setAttribute("hidden", "");
+  deferredPrompt = null;
+});
+
 // ==========================================
-// 2. BASE DE DATOS INICIAL DE PARTIDOS
+// 2. BASE DE DATOS Y PERSISTENCIA (LOCALSTORAGE)
 // ==========================================
 const DEFAULT_MATCHES = [
   {
@@ -81,7 +88,6 @@ const DEFAULT_MATCHES = [
   }
 ];
 
-// Obtener de localStorage o guardar los predeterminados
 let matches = JSON.parse(localStorage.getItem("app_matches")) || DEFAULT_MATCHES;
 
 function saveMatches() {
@@ -89,7 +95,7 @@ function saveMatches() {
 }
 
 // ==========================================
-// 3. ESTADOS Y REFERENCIAS DEL DOM
+// 3. REFERENCIAS DEL DOM Y VARIABLES DE ESTADO
 // ==========================================
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
@@ -117,17 +123,29 @@ const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
 const detailOrganizer = document.getElementById("detail-organizer-name");
 
+// Elementos del Modal QR Simple
+const modalQr = document.getElementById("modal-qr");
+const qrImage = document.getElementById("qr-image");
+const modalConcept = document.getElementById("modal-concept");
+const modalPrice = document.getElementById("modal-price");
+const btnCloseModal = document.getElementById("btn-close-modal");
+const btnCancelPayment = document.getElementById("btn-cancel-payment");
+const btnConfirmPayment = document.getElementById("btn-confirm-payment");
+
 // ==========================================
-// 4. RENDERIZADO DE PARTIDOS AGRUPADOS
+// 4. RENDERIZADO DE PARTIDOS EN LA VISTA LISTA
 // ==========================================
 function renderMatches() {
+  if (!matchesContainer) return;
   matchesContainer.innerHTML = "";
 
-  // Filtrado
   const filtered = matches.filter((item) => {
-    const matchesSport = currentSportFilter === "Todos" || item.sport.toLowerCase() === currentSportFilter.toLowerCase();
-    const matchesSearch = item.title.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
-                          item.address.toLowerCase().includes(currentSearchQuery.toLowerCase());
+    const matchesSport =
+      currentSportFilter === "Todos" ||
+      item.sport.toLowerCase() === currentSportFilter.toLowerCase();
+    const matchesSearch =
+      item.title.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+      item.address.toLowerCase().includes(currentSearchQuery.toLowerCase());
     return matchesSport && matchesSearch;
   });
 
@@ -139,14 +157,13 @@ function renderMatches() {
     return;
   }
 
-  // Agrupar por dateGroup
+  // Agrupar por fecha/sección
   const groups = {};
   filtered.forEach((m) => {
     if (!groups[m.dateGroup]) groups[m.dateGroup] = [];
     groups[m.dateGroup].push(m);
   });
 
-  // Renderizar secciones
   for (const groupName in groups) {
     const section = document.createElement("div");
     section.innerHTML = `<h3 class="date-section-title">${groupName}</h3>`;
@@ -158,7 +175,7 @@ function renderMatches() {
       const percentage = (match.currentPlayers / match.maxPlayers) * 100;
       const card = document.createElement("article");
       card.className = "match-card";
-      card.onclick = () => showDetail(match.id);
+      card.addEventListener("click", () => showDetail(match.id));
 
       card.innerHTML = `
         <img class="match-thumb" src="${match.image}" alt="${match.title}">
@@ -197,7 +214,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// 5. GESTIÓN DE VISTAS Y NAVEGACIÓN
+// 5. NAVEGACIÓN Y DETALLE DE PARTIDO
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -241,21 +258,55 @@ btnBack.addEventListener("click", () => {
 });
 
 // ==========================================
-// 6. ACCIONES (INSCRIBIRSE, INVITAR Y COMPARTIR)
+// 6. GESTIÓN DEL MODAL QR SIMPLE
 // ==========================================
+function openQrModal() {
+  if (!selectedMatch || !modalQr) return;
+
+  modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
+  modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
+
+  // Generación dinámica de QR con los datos del partido
+  const qrPayload = encodeURIComponent(
+    `PAGO-QR-SIMPLE|PARTIDO:${selectedMatch.id}|MONTO:${selectedMatch.price}|CANCHA:${selectedMatch.title}`
+  );
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrPayload}`;
+
+  modalQr.removeAttribute("hidden");
+}
+
+function closeQrModal() {
+  if (modalQr) modalQr.setAttribute("hidden", "");
+}
+
 btnSubscribe.addEventListener("click", () => {
   if (!selectedMatch || selectedMatch.currentPlayers >= selectedMatch.maxPlayers) return;
-
-  const confirmMsg = confirm(`¿Confirmas tu reserva para "${selectedMatch.title}" por Bs. ${selectedMatch.price}?`);
-  if (confirmMsg) {
-    selectedMatch.currentPlayers += 1;
-    saveMatches();
-    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
-    updateSubscribeButton();
-    alert("¡Inscripción confirmada con éxito!");
-  }
+  openQrModal();
 });
 
+if (btnCloseModal) btnCloseModal.addEventListener("click", closeQrModal);
+if (btnCancelPayment) btnCancelPayment.addEventListener("click", closeQrModal);
+
+if (btnConfirmPayment) {
+  btnConfirmPayment.addEventListener("click", () => {
+    if (!selectedMatch) return;
+
+    selectedMatch.currentPlayers += 1;
+    saveMatches();
+
+    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
+    updateSubscribeButton();
+    closeQrModal();
+
+    alert(
+      `¡Pago verificado exitosamente!\nHas asegurado tu lugar en "${selectedMatch.title}" por Bs. ${selectedMatch.price.toFixed(2)}.`
+    );
+  });
+}
+
+// ==========================================
+// 7. COMPARTIR E INVITAR AMIGOS
+// ==========================================
 async function shareMatch() {
   if (!selectedMatch) return;
   const shareData = {
@@ -268,7 +319,7 @@ async function shareMatch() {
     try {
       await navigator.share(shareData);
     } catch (err) {
-      console.log("Compartir cancelado");
+      console.log("Compartir descartado");
     }
   } else {
     navigator.clipboard.writeText(`${shareData.text} Entra aquí: ${shareData.url}`);
@@ -280,7 +331,7 @@ btnShare.addEventListener("click", shareMatch);
 btnInvite.addEventListener("click", shareMatch);
 
 // ==========================================
-// 7. FILTROS Y BÚSQUEDA
+// 8. EVENTOS DE FILTROS Y BÚSQUEDA
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -291,12 +342,14 @@ chipButtons.forEach((btn) => {
   });
 });
 
-searchInput.addEventListener("input", (e) => {
-  currentSearchQuery = e.target.value.trim();
-  renderMatches();
-});
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    currentSearchQuery = e.target.value.trim();
+    renderMatches();
+  });
+}
 
-// Inicializar lista
+// Carga inicial
 document.addEventListener("DOMContentLoaded", () => {
   renderMatches();
 });
