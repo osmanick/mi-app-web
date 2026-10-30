@@ -269,7 +269,9 @@
       <div class="profile-hero-section">
         <div class="profile-avatar-wrapper">
           <img id="profile-avatar-img" class="profile-main-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80" alt="Avatar">
-          <button class="avatar-add-badge">+</button>
+          <button id="btn-change-avatar" class="avatar-add-badge" title="Cambiar foto de perfil">+</button>
+          <!-- Input oculto para seleccionar foto desde galería o cámara -->
+          <input type="file" id="input-avatar-file" accept="image/*" style="display: none;">
         </div>
         <div class="profile-name-stats">
           <h2 id="profile-name-display" class="profile-name-text">Cargando...</h2>

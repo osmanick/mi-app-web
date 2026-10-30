@@ -1119,6 +1119,134 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
+// FUNCIÓN AUXILIAR: REDIMENSIONAR Y COMPRIMIR IMAGEN (CANVAS)
+// ==========================================
+function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = maxSize;
+        canvas.height = maxSize;
+
+        // Calcular recorte central cuadrado (Center Crop)
+        const minDimension = Math.min(img.width, img.height);
+        const startX = (img.width - minDimension) / 2;
+        const startY = (img.height - minDimension) / 2;
+
+        // Dibujar solo la porción central ajustada a 300x300 px
+        ctx.drawImage(
+          img,
+          startX,
+          startY,
+          minDimension,
+          minDimension,
+          0,
+          0,
+          maxSize,
+          maxSize
+        );
+
+        // Exportar como Blob comprimido (WebP si el navegador lo soporta, o JPEG)
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Error al procesar la compresión de la imagen."));
+            }
+          },
+          "image/webp",
+          quality
+        );
+      };
+
+      img.onerror = (err) => reject(err);
+    };
+
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+// ==========================================
+// SUBIDA OPTIMIZADA DE AVATAR A SUPABASE STORAGE
+// ==========================================
+const btnChangeAvatar = document.getElementById("btn-change-avatar");
+const inputAvatarFile = document.getElementById("input-avatar-file");
+const profileAvatarImg = document.getElementById("profile-avatar-img");
+
+if (btnChangeAvatar && inputAvatarFile) {
+  btnChangeAvatar.addEventListener("click", () => {
+    inputAvatarFile.click();
+  });
+
+  inputAvatarFile.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentProfile) return;
+
+    btnChangeAvatar.textContent = "⏳";
+    btnChangeAvatar.disabled = true;
+
+    try {
+      // 1. Redimensionar localmente a 300x300 px y comprimir (reduce de MBs a ~40 KB)
+      const compressedBlob = await resizeAndCompressImage(file, 300, 0.82);
+
+      // 2. Nombre único con extensión webp
+      const fileName = `${currentProfile.id}_${Date.now()}.webp`;
+      const filePath = `profiles/${fileName}`;
+
+      // 3. Subir el archivo optimizado a Supabase
+      const { error: uploadError } = await db.storage
+        .from("avatars")
+        .upload(filePath, compressedBlob, {
+          contentType: "image/webp",
+          cacheControl: "31536000", // Cache de 1 año en CDN para carga instantánea
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 4. Obtener URL pública
+      const { data: urlData } = db.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicAvatarUrl = urlData.publicUrl;
+
+      // 5. Actualizar en la base de datos profiles
+      const { error: dbError } = await db
+        .from("profiles")
+        .update({ avatar_url: publicAvatarUrl })
+        .eq("id", currentProfile.id);
+
+      if (dbError) throw dbError;
+
+      // 6. Actualizar interfaz local
+      currentProfile.avatar_url = publicAvatarUrl;
+      if (profileAvatarImg) profileAvatarImg.src = publicAvatarUrl;
+
+      alert("¡Foto de perfil actualizada y optimizada con éxito!");
+    } catch (err) {
+      console.error("Error al subir avatar:", err);
+      alert("Hubo un error al actualizar la foto: " + err.message);
+    } finally {
+      btnChangeAvatar.textContent = "+";
+      btnChangeAvatar.disabled = false;
+      inputAvatarFile.value = "";
+    }
+  });
+}
+
+
+// ==========================================
 // 14. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
