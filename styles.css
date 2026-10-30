@@ -31,7 +31,6 @@ body {
   min-height: 100vh;
 }
 
-/* Contenedor responsivo principal */
 .app-viewport {
   width: 100%;
   max-width: 440px;
@@ -51,7 +50,6 @@ body {
   }
 }
 
-/* Control de pantallas */
 .view-screen {
   display: none;
   flex: 1;
@@ -142,7 +140,6 @@ body {
   cursor: pointer;
 }
 
-/* Filtros por deporte */
 .chips-container {
   display: flex;
   gap: 0.7rem;
@@ -168,6 +165,75 @@ body {
   background-color: var(--accent);
   color: var(--text-white);
   border-color: var(--accent);
+}
+
+/* ================= MIS PASES DIGITALES ================= */
+.my-tickets-container {
+  padding: 0.2rem 1.2rem 0.8rem;
+}
+
+.my-tickets-container[hidden] {
+  display: none !important;
+}
+
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ticket-card {
+  background: linear-gradient(135deg, #1f2129 0%, #15161b 100%);
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ticket-tag {
+  font-size: 0.65rem;
+  color: #00c853;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticket-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.ticket-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.btn-download-pdf {
+  background-color: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-download-pdf:hover {
+  background-color: var(--accent-hover);
 }
 
 /* Lista de tarjetas */
@@ -520,7 +586,137 @@ body {
   background-color: var(--accent-hover);
 }
 
-/* ================= MODAL QR SIMPLE & COMPROBANTE ================= */
+/* ================= VISTA ADMIN ORGANIZADOR ================= */
+.admin-content {
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.admin-stats-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-count {
+  font-size: 1.8rem;
+  color: var(--accent);
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.btn-clean-data {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.receipts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.receipt-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.receipt-match-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.receipt-status-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.status-pending { background-color: rgba(255, 170, 0, 0.15); color: #ffaa00; }
+.status-approved { background-color: rgba(0, 200, 83, 0.15); color: #00c853; }
+.status-rejected { background-color: rgba(255, 59, 48, 0.15); color: #ff3b30; }
+
+.receipt-body-layout {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.receipt-thumb-admin {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  background-color: #000;
+}
+
+.receipt-info-text {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.btn-approve {
+  flex: 1;
+  background-color: #00875f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-reject {
+  flex: 1;
+  background-color: transparent;
+  border: 1px solid #ff3b30;
+  color: #ff3b30;
+  border-radius: 8px;
+  padding: 0.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* ================= MODAL QR & COMPROBANTE ================= */
 .modal-overlay {
   position: absolute;
   inset: 0;
@@ -533,7 +729,6 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Regla indispensable para que el ocultamiento tenga prioridad absoluta */
 .modal-overlay[hidden],
 .modal-overlay.is-hidden {
   display: none !important;
@@ -655,7 +850,6 @@ body {
   font-size: 1rem;
 }
 
-/* Área de adjuntar comprobante */
 .upload-section {
   display: flex;
   flex-direction: column;
@@ -740,7 +934,36 @@ body {
   padding: 0.4rem;
 }
 
-/* Navegación inferior */
+/* Modal Visor de Imagen */
+.image-viewer-card {
+  position: relative;
+  max-width: 90%;
+  max-height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-viewer-card img {
+  width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.viewer-close-btn {
+  position: absolute;
+  top: -38px;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+/* ================= NAVEGACIÓN Y BADGE ================= */
 .bottom-nav-tabs {
   position: absolute;
   bottom: 0;
@@ -769,4 +992,39 @@ body {
 
 .nav-tab.active {
   color: var(--accent);
+}
+
+.nav-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background-color: #ff3b30;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  animation: pulseBadge 0.3s ease-out;
+}
+
+.notification-badge[hidden] {
+  display: none !important;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }

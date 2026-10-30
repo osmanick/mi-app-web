@@ -31,12 +31,6 @@ if (btnInstall) {
   });
 }
 
-window.addEventListener("appinstalled", () => {
-  console.log("Aplicación instalada en el sistema.");
-  if (btnInstall) btnInstall.setAttribute("hidden", "");
-  deferredPrompt = null;
-});
-
 // ==========================================
 // 2. BASE DE DATOS Y PERSISTENCIA (LOCALSTORAGE)
 // ==========================================
@@ -89,9 +83,14 @@ const DEFAULT_MATCHES = [
 ];
 
 let matches = JSON.parse(localStorage.getItem("app_matches")) || DEFAULT_MATCHES;
+let receipts = JSON.parse(localStorage.getItem("app_receipts")) || [];
 
 function saveMatches() {
   localStorage.setItem("app_matches", JSON.stringify(matches));
+}
+
+function saveReceipts() {
+  localStorage.setItem("app_receipts", JSON.stringify(receipts));
 }
 
 // ==========================================
@@ -104,15 +103,26 @@ let currentReceiptBase64 = null;
 
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
+const viewAdmin = document.getElementById("view-admin");
 const matchesContainer = document.getElementById("matches-list-container");
 const searchInput = document.getElementById("search-input");
 const chipButtons = document.querySelectorAll(".chip-item");
 const btnBack = document.getElementById("btn-back");
+const btnAdminBack = document.getElementById("btn-admin-back");
 const btnShare = document.getElementById("btn-share");
 const btnInvite = document.getElementById("btn-invite");
 const btnSubscribe = document.getElementById("btn-subscribe");
 
-// Elementos detalle
+// Pestañas inferiores
+const tabMatches = document.getElementById("tab-matches");
+const tabProfile = document.getElementById("tab-profile");
+const badgePending = document.getElementById("badge-pending");
+
+// Pases Digitales
+const myTicketsSection = document.getElementById("my-tickets-section");
+const myTicketsList = document.getElementById("my-tickets-list");
+
+// Detalle del partido
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -124,7 +134,7 @@ const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
 const detailOrganizer = document.getElementById("detail-organizer-name");
 
-// Elementos Modal QR & Comprobante
+// Modal QR y Comprobante
 const modalQr = document.getElementById("modal-qr");
 const qrImage = document.getElementById("qr-image");
 const modalConcept = document.getElementById("modal-concept");
@@ -138,8 +148,58 @@ const receiptPreview = document.getElementById("receipt-preview");
 const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
 const uploadLabelText = document.getElementById("upload-label-text");
 
+// Panel Administrador
+const adminReceiptsList = document.getElementById("admin-receipts-list");
+const adminPendingCount = document.getElementById("admin-pending-count");
+const btnClearReceipts = document.getElementById("btn-clear-receipts");
+const modalImageViewer = document.getElementById("modal-image-viewer");
+const viewerFullImage = document.getElementById("viewer-full-image");
+const btnCloseViewer = document.getElementById("btn-close-viewer");
+
 // ==========================================
-// 4. RENDERIZADO DE PARTIDOS
+// 4. SONIDO Y NOTIFICACIÓN
+// ==========================================
+function playNotificationSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.35);
+  } catch (err) {
+    console.log("Audio contextual no permitido aún.");
+  }
+}
+
+function updatePendingBadge() {
+  if (!badgePending) return;
+  const pendingCount = receipts.filter((r) => r.status === "Pendiente").length;
+
+  if (pendingCount > 0) {
+    badgePending.textContent = pendingCount > 99 ? "99+" : pendingCount;
+    badgePending.removeAttribute("hidden");
+  } else {
+    badgePending.setAttribute("hidden", "");
+  }
+
+  if (adminPendingCount) {
+    adminPendingCount.textContent = pendingCount;
+  }
+}
+
+// ==========================================
+// 5. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -219,27 +279,32 @@ function renderMatches() {
 }
 
 // ==========================================
-// 5. NAVEGACIÓN Y DETALLES
+// 6. NAVEGACIÓN Y DETALLES
 // ==========================================
+function switchScreen(targetScreen) {
+  [viewList, viewDetail, viewAdmin].forEach((screen) => {
+    if (screen) screen.classList.remove("active");
+  });
+  if (targetScreen) targetScreen.classList.add("active");
+}
+
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
 
   detailImg.src = selectedMatch.image;
-  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
-  detailVenueName.textContent = selectedMatch.title;
-  detailSportTag.textContent = selectedMatch.sport.toUpperCase();
-  detailDateLong.textContent = selectedMatch.dateLong;
-  detailTime.textContent = selectedMatch.timeFull;
-  detailVenueSub.textContent = selectedMatch.title.toUpperCase();
-  detailAddress.textContent = selectedMatch.address;
-  detailOrganizer.textContent = selectedMatch.organizer;
-  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
+  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
+  detailVenueName.textContent = selectedMatch.title[cite: 1, 2];
+  detailSportTag.textContent = selectedMatch.sport.toUpperCase()[cite: 1];
+  detailDateLong.textContent = selectedMatch.dateLong[cite: 1];
+  detailTime.textContent = selectedMatch.timeFull[cite: 1];
+  detailVenueSub.textContent = selectedMatch.title.toUpperCase()[cite: 1];
+  detailAddress.textContent = selectedMatch.address[cite: 1, 2];
+  detailOrganizer.textContent = selectedMatch.organizer[cite: 1];
+  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`[cite: 1, 2];
 
   updateSubscribeButton();
-
-  viewList.classList.remove("active");
-  viewDetail.classList.add("active");
+  switchScreen(viewDetail);
 }
 
 function updateSubscribeButton() {
@@ -250,20 +315,40 @@ function updateSubscribeButton() {
     btnSubscribe.style.backgroundColor = "#43454d";
     btnSubscribe.disabled = true;
   } else {
-    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`;
+    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`[cite: 1];
     btnSubscribe.style.backgroundColor = "var(--accent)";
     btnSubscribe.disabled = false;
   }
 }
 
 btnBack.addEventListener("click", () => {
-  viewDetail.classList.remove("active");
-  viewList.classList.add("active");
+  switchScreen(viewList);
   renderMatches();
 });
 
+btnAdminBack.addEventListener("click", () => {
+  switchScreen(viewList);
+  tabProfile.classList.remove("active");
+  tabMatches.classList.add("active");
+  renderMatches();
+});
+
+tabMatches.addEventListener("click", () => {
+  tabProfile.classList.remove("active");
+  tabMatches.classList.add("active");
+  switchScreen(viewList);
+  renderMatches();
+});
+
+tabProfile.addEventListener("click", () => {
+  tabMatches.classList.remove("active");
+  tabProfile.classList.add("active");
+  renderAdminPanel();
+  switchScreen(viewAdmin);
+});
+
 // ==========================================
-// 6. GESTIÓN DEL MODAL, QR Y COMPROBANTE
+// 7. GESTIÓN DEL MODAL, QR Y COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -274,17 +359,12 @@ function resetReceiptInput() {
 }
 
 function openQrModal() {
-  if (!selectedMatch || !modalQr) {
-    console.error("No se encontró el partido o el modal en el DOM");
-    return;
-  }
-
+  if (!selectedMatch || !modalQr) return;
   resetReceiptInput();
 
   modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
   modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
 
-  // Generar código QR dinámico
   const qrPayload = encodeURIComponent(
     `PAGO-QR-SIMPLE|PARTIDO:${selectedMatch.id}|MONTO:${selectedMatch.price}|CANCHA:${selectedMatch.title}`
   );
@@ -302,7 +382,6 @@ function closeQrModal() {
   resetReceiptInput();
 }
 
-// Cargar imagen de comprobante
 if (receiptInput) {
   receiptInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -327,17 +406,14 @@ if (receiptInput) {
 
 if (btnRemoveReceipt) btnRemoveReceipt.addEventListener("click", resetReceiptInput);
 
-// Abrir modal con el botón de inscripción
 if (btnSubscribe) {
   btnSubscribe.onclick = (e) => {
     e.preventDefault();
     if (!selectedMatch) return;
-
     if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
       alert("Lo sentimos, este partido ya no tiene cupos disponibles.");
       return;
     }
-
     openQrModal();
   };
 }
@@ -350,34 +426,270 @@ if (btnConfirmPayment) {
     if (!selectedMatch) return;
 
     if (!currentReceiptBase64) {
-      alert("Por favor adjunta la captura de tu transferencia antes de confirmar la reserva.");
+      alert("Por favor adjunta la captura de tu transferencia.");
       return;
     }
 
-    selectedMatch.currentPlayers += 1;
-
-    let receiptsHistory = JSON.parse(localStorage.getItem("app_receipts")) || [];
-    receiptsHistory.push({
+    const newReceipt = {
+      id: Date.now(),
       matchId: selectedMatch.id,
       matchTitle: selectedMatch.title,
+      sport: selectedMatch.sport,
       amount: selectedMatch.price,
-      date: new Date().toISOString(),
+      date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: "Pendiente",
       receiptImage: currentReceiptBase64
-    });
-    localStorage.setItem("app_receipts", JSON.stringify(receiptsHistory));
+    };
 
-    saveMatches();
+    receipts.unshift(newReceipt);
+    saveReceipts();
 
-    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
-    updateSubscribeButton();
+    updatePendingBadge();
+    playNotificationSound();
+
     closeQrModal();
-
-    alert(`¡Comprobante recibido con éxito!\nHas asegurado tu lugar en "${selectedMatch.title}" por Bs. ${selectedMatch.price.toFixed(2)}.`);
+    alert(`¡Comprobante enviado!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)} para aprobar tu cupo.`);
   });
 }
 
 // ==========================================
-// 7. COMPARTIR E INVITAR
+// 8. PANEL DE ADMINISTRADOR
+// ==========================================
+function renderAdminPanel() {
+  if (!adminReceiptsList) return;
+  adminReceiptsList.innerHTML = "";
+
+  const pendingCount = receipts.filter((r) => r.status === "Pendiente").length;
+  adminPendingCount.textContent = pendingCount;
+
+  if (receipts.length === 0) {
+    adminReceiptsList.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+        No hay comprobantes registrados aún.
+      </div>`;
+    return;
+  }
+
+  receipts.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "receipt-card";
+
+    let statusClass = "status-pending";
+    if (item.status === "Aprobado") statusClass = "status-approved";
+    if (item.status === "Rechazado") statusClass = "status-rejected";
+
+    card.innerHTML = `
+      <div class="receipt-header">
+        <span class="receipt-match-title">${item.matchTitle}</span>
+        <span class="receipt-status-tag ${statusClass}">${item.status}</span>
+      </div>
+
+      <div class="receipt-body-layout">
+        <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
+        <div class="receipt-info-text">
+          <span><strong>Deporte:</strong> ${item.sport}</span>
+          <span><strong>Monto:</strong> Bs. ${Number(item.amount).toFixed(2)}</span>
+          <span><strong>Hora:</strong> ${item.date}</span>
+        </div>
+      </div>
+
+      ${item.status === "Pendiente" ? `
+        <div class="receipt-actions">
+          <button class="btn-approve" onclick="approveReceipt(${item.id})">✓ Aprobar</button>
+          <button class="btn-reject" onclick="rejectReceipt(${item.id})">✕ Rechazar</button>
+        </div>
+      ` : ""}
+    `;
+
+    const thumb = card.querySelector(".receipt-thumb-admin");
+    thumb.addEventListener("click", () => openImageViewer(item.receiptImage));
+
+    adminReceiptsList.appendChild(card);
+  });
+}
+
+window.approveReceipt = function(receiptId) {
+  const receipt = receipts.find((r) => r.id === receiptId);
+  if (!receipt) return;
+
+  const match = matches.find((m) => m.id === receipt.matchId);
+  if (match) {
+    if (match.currentPlayers >= match.maxPlayers) {
+      alert("No se puede aprobar: la cancha ya llenó todos sus cupos.");
+      return;
+    }
+    match.currentPlayers += 1;
+    saveMatches();
+  }
+
+  receipt.status = "Aprobado";
+  saveReceipts();
+  updatePendingBadge();
+  renderAdminPanel();
+  renderMyTickets();
+  alert("Inscripción aprobada. Se ha generado el pase digital de entrada.");
+};
+
+window.rejectReceipt = function(receiptId) {
+  const receipt = receipts.find((r) => r.id === receiptId);
+  if (!receipt) return;
+
+  const confirmReject = confirm("¿Estás seguro de rechazar este comprobante?");
+  if (confirmReject) {
+    receipt.status = "Rechazado";
+    saveReceipts();
+    updatePendingBadge();
+    renderAdminPanel();
+  }
+};
+
+function openImageViewer(imageSrc) {
+  viewerFullImage.src = imageSrc;
+  modalImageViewer.removeAttribute("hidden");
+  modalImageViewer.style.display = "flex";
+}
+
+if (btnCloseViewer) {
+  btnCloseViewer.addEventListener("click", () => {
+    modalImageViewer.setAttribute("hidden", "");
+    modalImageViewer.style.display = "none";
+  });
+}
+
+if (btnClearReceipts) {
+  btnClearReceipts.addEventListener("click", () => {
+    if (confirm("¿Deseas vaciar todo el historial de comprobantes?")) {
+      receipts = [];
+      saveReceipts();
+      renderAdminPanel();
+      updatePendingBadge();
+      renderMyTickets();
+    }
+  });
+}
+
+// ==========================================
+// 9. PASES DIGITALES & DESCARGA PDF
+// ==========================================
+function renderMyTickets() {
+  if (!myTicketsSection || !myTicketsList) return;
+
+  const approvedList = receipts.filter((r) => r.status === "Aprobado");
+
+  if (approvedList.length === 0) {
+    myTicketsSection.setAttribute("hidden", "");
+    myTicketsList.innerHTML = "";
+    return;
+  }
+
+  myTicketsSection.removeAttribute("hidden");
+  myTicketsList.innerHTML = "";
+
+  approvedList.forEach((ticket) => {
+    const card = document.createElement("div");
+    card.className = "ticket-card";
+    card.innerHTML = `
+      <div class="ticket-info">
+        <span class="ticket-tag">✓ Pase Confirmado</span>
+        <h4 class="ticket-title">${ticket.matchTitle}</h4>
+        <span class="ticket-meta">Monto: Bs. ${Number(ticket.amount).toFixed(2)} | Hora: ${ticket.date}</span>
+      </div>
+      <button class="btn-download-pdf" onclick="downloadPassPDF(${ticket.id})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        PDF
+      </button>
+    `;
+    myTicketsList.appendChild(card);
+  });
+}
+
+window.downloadPassPDF = function (ticketId) {
+  const ticket = receipts.find((r) => r.id === ticketId);
+  if (!ticket) return;
+
+  const match = matches.find((m) => m.id === ticket.matchId) || {};
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [100, 150]
+  });
+
+  doc.setFillColor(18, 19, 22);
+  doc.rect(0, 0, 100, 150, "F");
+
+  doc.setFillColor(255, 90, 31);
+  doc.rect(0, 0, 100, 18, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(255, 255, 255);
+  doc.text("PASE DIGITAL DE ENTRADA", 50, 12, { align: "center" });
+
+  doc.setDrawColor(39, 41, 48);
+  doc.setFillColor(27, 28, 33);
+  doc.roundedRect(6, 24, 88, 118, 3, 3, "FD");
+
+  doc.setFontSize(9);
+  doc.setTextColor(0, 200, 83);
+  doc.text("● PAGO APROBADO & CONFIRMADO", 12, 34);
+
+  doc.setFontSize(13);
+  doc.setTextColor(255, 255, 255);
+  doc.text(ticket.matchTitle, 12, 43);
+
+  doc.setFontSize(9);
+  doc.setTextColor(255, 90, 31);
+  doc.text(`DEPORTE: ${(ticket.sport || "Fútbol").toUpperCase()}`, 12, 51);
+
+  doc.setDrawColor(50, 52, 60);
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(12, 56, 88, 56);
+  doc.setLineDashPattern([], 0);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(139, 144, 154);
+  doc.text("HORARIO:", 12, 63);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(240, 241, 243);
+  doc.text(match.timeFull || "21:00 - 22:00", 12, 68);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(139, 144, 154);
+  doc.text("FECHA:", 12, 75);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(240, 241, 243);
+  doc.text(match.dateLong || "Fecha confirmada", 12, 80);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(139, 144, 154);
+  doc.text("DIRECCIÓN:", 12, 87);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(240, 241, 243);
+  const splitAddress = doc.splitTextToSize(match.address || "La Paz, Bolivia", 76);
+  doc.text(splitAddress, 12, 92);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(139, 144, 154);
+  doc.text("MONTO PAGADO:", 12, 106);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 90, 31);
+  doc.setFontSize(11);
+  doc.text(`Bs. ${Number(ticket.amount).toFixed(2)}`, 12, 112);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(101, 105, 115);
+  doc.text(`CÓDIGO PASE: #${ticket.id}`, 50, 128, { align: "center" });
+  doc.text("Muestra este PDF o captura al ingresar a la cancha.", 50, 133, { align: "center" });
+
+  doc.save(`Pase-${ticket.matchTitle.replace(/\s+/g, "_")}-${ticket.id}.pdf`);
+};
+
+// ==========================================
+// 10. COMPARTIR E INVITAR
 // ==========================================
 async function shareMatch() {
   if (!selectedMatch) return;
@@ -403,7 +715,7 @@ btnShare.addEventListener("click", shareMatch);
 btnInvite.addEventListener("click", shareMatch);
 
 // ==========================================
-// 8. FILTROS Y BÚSQUEDA
+// 11. FILTROS Y BÚSQUEDA
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -424,4 +736,6 @@ if (searchInput) {
 // Arranque inicial
 document.addEventListener("DOMContentLoaded", () => {
   renderMatches();
+  updatePendingBadge();
+  renderMyTickets();
 });
