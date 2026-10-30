@@ -260,7 +260,6 @@ if (selectVenue) {
   });
 }
 
-// Modal Registrar Cancha: Abrir / Cerrar
 if (btnOpenRegisterVenue) {
   btnOpenRegisterVenue.addEventListener("click", () => {
     modalRegisterVenue.removeAttribute("hidden");
@@ -275,7 +274,6 @@ if (btnCloseVenueModal) {
   });
 }
 
-// Selección y compresión de foto de cancha (800 px)
 if (venueInputFile) {
   venueInputFile.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -307,7 +305,6 @@ if (venueInputFile) {
   });
 }
 
-// Subir nueva cancha a Storage y base de datos
 if (formNewVenue) {
   formNewVenue.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -382,10 +379,9 @@ if (formNewVenue) {
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
-  // Carga previa en paralelo de datos para que la app nunca arranque en blanco
+  // Carga previa en paralelo de canchas, partidos y comprobantes
   await Promise.allSettled([fetchVenues(), fetchMatches(), fetchReceipts()]);
 
-  // Si no hay sesión previa guardada, mostrar Login
   if (!activeUserId) {
     if (bottomBar) bottomBar.style.display = "none";
     switchScreen(viewRegister);
@@ -399,7 +395,6 @@ async function checkUserSession() {
       .eq("id", activeUserId)
       .maybeSingle();
 
-    // Respaldo de búsqueda por username
     if (!user) {
       const { data: userByUsername } = await db
         .from("profiles")
@@ -610,10 +605,11 @@ function applyRolePermissions() {
 
 async function fetchMatches() {
   try {
+    // Permite que se muestren los partidos cuando is_finished sea false o null
     const { data, error } = await db
       .from("matches")
       .select("*")
-      .eq("is_finished", false)
+      .or("is_finished.eq.false,is_finished.is.null")
       .order("id", { ascending: true });
 
     if (error) throw error;
@@ -841,7 +837,6 @@ function showDetail(id) {
   detailVenueSub.textContent = selectedMatch.title.toUpperCase();
   detailAddress.textContent = selectedMatch.address;
 
-  // Enlace directo de Google Maps
   if (detailMap) {
     if (selectedMatch.mapsUrl && selectedMatch.mapsUrl.trim() !== "") {
       detailMap.href = selectedMatch.mapsUrl;
@@ -852,7 +847,6 @@ function showDetail(id) {
 
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
-  // Control estricto del Switch
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -866,7 +860,6 @@ function showDetail(id) {
     }
   }
 
-  // Control estricto del Botón Finalizar
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
@@ -882,7 +875,6 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// Toggle switch confirmado
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
@@ -910,7 +902,6 @@ if (toggleMatchConfirmed) {
   });
 }
 
-// Finalizar partido y quitar de la lista activa
 if (btnFinishMatch) {
   btnFinishMatch.addEventListener("click", async () => {
     if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
@@ -936,7 +927,6 @@ if (btnFinishMatch) {
   });
 }
 
-// Renderizado de jugadores con avatar real
 async function renderConfirmedPlayers(matchId) {
   if (!detailPlayersList || !selectedMatch) return;
   detailPlayersList.innerHTML = "";
@@ -1140,22 +1130,50 @@ if (btnSaveSecurity) {
 function renderProfileView() {
   if (!currentProfile) return;
 
-  document.getElementById("profile-name-display").textContent = `${currentProfile.first_name} ${currentProfile.last_name}`;
-  document.getElementById("profile-matches-count").textContent = currentProfile.matches_played || 0;
-  document.getElementById("profile-balance").textContent = Number(currentProfile.balance || 0).toFixed(2);
-  document.getElementById("profile-promo").textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
-  document.getElementById("profile-avatar-img").src = currentProfile.avatar_url;
+  const nameElem = document.getElementById("profile-name-display");
+  if (nameElem) nameElem.textContent = `${currentProfile.first_name || ""} ${currentProfile.last_name || ""}`.trim() || currentProfile.username;
 
-  document.getElementById("field-firstname").textContent = currentProfile.first_name;
-  document.getElementById("field-lastname").textContent = currentProfile.last_name;
-  document.getElementById("field-phone").textContent = currentProfile.phone;
-  document.getElementById("field-birth").textContent = currentProfile.birth_date;
-  document.getElementById("field-skill").textContent = currentProfile.skill_level;
-  document.getElementById("field-nationality").textContent = currentProfile.nationality;
-  document.getElementById("field-city").textContent = currentProfile.city;
-  document.getElementById("field-email").textContent = currentProfile.email;
-  document.getElementById("field-plan").textContent = currentProfile.plan;
-  document.getElementById("field-username").textContent = currentProfile.username;
+  const countElem = document.getElementById("profile-matches-count");
+  if (countElem) countElem.textContent = currentProfile.matches_played || 0;
+
+  const balanceElem = document.getElementById("profile-balance");
+  if (balanceElem) balanceElem.textContent = Number(currentProfile.balance || 0).toFixed(2);
+
+  const promoElem = document.getElementById("profile-promo");
+  if (promoElem) promoElem.textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
+
+  const avatarElem = document.getElementById("profile-avatar-img");
+  if (avatarElem && currentProfile.avatar_url) avatarElem.src = currentProfile.avatar_url;
+
+  const fName = document.getElementById("field-firstname");
+  if (fName) fName.textContent = currentProfile.first_name || "-";
+
+  const fLast = document.getElementById("field-lastname");
+  if (fLast) fLast.textContent = currentProfile.last_name || "-";
+
+  const fPhone = document.getElementById("field-phone");
+  if (fPhone) fPhone.textContent = currentProfile.phone || "-";
+
+  const fBirth = document.getElementById("field-birth");
+  if (fBirth) fBirth.textContent = currentProfile.birth_date || "-";
+
+  const fSkill = document.getElementById("field-skill");
+  if (fSkill) fSkill.textContent = currentProfile.skill_level || "-";
+
+  const fNat = document.getElementById("field-nationality");
+  if (fNat) fNat.textContent = currentProfile.nationality || "-";
+
+  const fCity = document.getElementById("field-city");
+  if (fCity) fCity.textContent = currentProfile.city || "-";
+
+  const fEmail = document.getElementById("field-email");
+  if (fEmail) fEmail.textContent = currentProfile.email || "-";
+
+  const fPlan = document.getElementById("field-plan");
+  if (fPlan) fPlan.textContent = currentProfile.plan || "FREE";
+
+  const fUser = document.getElementById("field-username");
+  if (fUser) fUser.textContent = currentProfile.username || "-";
 }
 
 // ==========================================
