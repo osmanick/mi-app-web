@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Partidos - Reserva de Canchas</title>
+  <title>Partidos</title>
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121316">
@@ -27,6 +27,7 @@
         <h1 class="screen-title" id="auth-title">Iniciar Sesión</h1>
       </header>
 
+      <!-- Selector de pestañas: Iniciar Sesión / Registrarse -->
       <div class="auth-tabs-container">
         <button id="tab-auth-login" class="auth-tab-btn active">Iniciar Sesión</button>
         <button id="tab-auth-register" class="auth-tab-btn">Registrarse</button>
@@ -162,7 +163,7 @@
 
       <section id="matches-list-container" class="matches-content"></section>
 
-      <!-- Botón flotante exclusivo para ORGANIZADOR -->
+      <!-- Botón flotante exclusivo del ORGANIZADOR -->
       <button id="btn-create-match-fab" class="fab-organizer" hidden title="Publicar Partido">
         <span>+</span> Publicar Cancha
       </button>
@@ -201,13 +202,6 @@
             <input type="checkbox" id="toggle-match-confirmed">
             <span class="slider-round"></span>
           </label>
-        </div>
-
-        <!-- Botón Finalizar Partido: visible solo para ORGANIZADOR -->
-        <div id="organizer-finish-box" style="margin-top: 0.5rem;" hidden>
-          <button id="btn-finish-match" class="btn-logout-action" style="margin: 0; padding: 0.75rem;">
-            🏁 Finalizar y Quitar de la Lista
-          </button>
         </div>
 
         <div class="info-row" style="margin-top: 0.6rem;">
@@ -454,18 +448,13 @@
         <button id="btn-admin-back" class="icon-nav-btn" title="Volver">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
-        <h2 class="screen-title">Panel Organizador</h2>
+        <h2 class="screen-title">Revisión de Pagos</h2>
         <button id="btn-admin-logout-top" class="icon-nav-btn" title="Cerrar Sesión">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff3b30"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
         </button>
       </header>
 
       <div class="admin-content">
-        <!-- Botón para Registrar Nuevas Canchas -->
-        <button id="btn-open-register-venue" class="btn-primary-action" style="padding: 0.85rem; font-size: 0.95rem; margin-bottom: 0.4rem;">
-          🏟️ Registrar Nueva Cancha / Complejo
-        </button>
-
         <div class="admin-stats-card">
           <div>
             <span class="info-label">PENDIENTES POR REVISAR</span>
@@ -505,62 +494,7 @@
       </div>
     </div>
 
-    <!-- Modal Registrar Cancha en la Base de Datos -->
-    <div id="modal-register-venue" class="modal-overlay" hidden>
-      <div class="modal-card modal-form-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <span class="qr-tag">CATÁLOGO DE SEDES</span>
-            <h3>Registrar Nueva Cancha</h3>
-          </div>
-          <button id="btn-close-venue-modal" class="modal-close-btn">&times;</button>
-        </div>
-
-        <form id="form-new-venue" class="create-match-form">
-          <div class="form-input-group">
-            <label>Nombre del Complejo / Cancha</label>
-            <input type="text" id="venue-input-name" placeholder="Ej. Pontenforma - Cancha techada" required>
-          </div>
-
-          <div class="form-input-group">
-            <label>Deporte</label>
-            <select id="venue-input-sport" class="form-select">
-              <option value="Fútbol">Fútbol</option>
-              <option value="Wally">Wally</option>
-            </select>
-          </div>
-
-          <div class="form-input-group">
-            <label>Dirección exacta</label>
-            <input type="text" id="venue-input-address" placeholder="Ej. Av. Radial 25, entre 3er y 4to anillo" required>
-          </div>
-
-          <div class="form-input-group">
-            <label>Enlace de Google Maps (URL)</label>
-            <input type="url" id="venue-input-maps" placeholder="https://maps.app.goo.gl/... o https://goo.gl/maps/..." required>
-          </div>
-
-          <div class="form-input-group">
-            <label>Foto de la Cancha</label>
-            <label for="venue-input-file" class="upload-label" style="margin-top: 4px;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
-              <span id="venue-upload-text">Seleccionar foto de la cancha</span>
-            </label>
-            <input type="file" id="venue-input-file" accept="image/*" style="display: none;" required>
-
-            <div id="venue-preview-wrapper" class="preview-wrapper" hidden style="margin-top: 6px;">
-              <img id="venue-image-preview" src="" alt="Vista previa cancha">
-            </div>
-          </div>
-
-          <button type="submit" id="btn-submit-venue" class="btn-primary-action" style="margin-top: 0.6rem;">
-            Guardar Cancha en la Base de Datos
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal Crear Partido (Organizador) con Select de Canchas -->
+    <!-- Modal Crear Partido (Organizador) -->
     <div id="modal-create-match" class="modal-overlay" hidden>
       <div class="modal-card modal-form-card">
         <div class="modal-header">
@@ -573,24 +507,20 @@
 
         <form id="form-new-match" class="create-match-form">
           <div class="form-input-group">
-            <label>Seleccionar Cancha / Complejo</label>
-            <select id="select-venue" class="form-select" required>
-              <option value="">Cargando canchas...</option>
-            </select>
-          </div>
-
-          <div class="form-input-group">
-            <label>Dirección</label>
-            <input type="text" id="input-match-address" placeholder="Selecciona una cancha arriba" readonly style="opacity: 0.8; cursor: not-allowed;">
+            <label>Título del Partido / Cancha</label>
+            <input type="text" id="input-match-title" placeholder="Ej. Cancha Sintética El Golazo" required>
           </div>
 
           <div class="form-row-2">
             <div class="form-input-group">
               <label>Deporte</label>
-              <input type="text" id="input-match-sport" readonly style="opacity: 0.8; cursor: not-allowed;">
+              <select id="input-match-sport" class="form-select">
+                <option value="Fútbol">Fútbol</option>
+                <option value="Wally">Wally</option>
+              </select>
             </div>
             <div class="form-input-group">
-              <label>Fecha del encuentro</label>
+              <label>Fecha</label>
               <input type="date" id="input-match-date" required>
             </div>
           </div>
@@ -598,7 +528,7 @@
           <div class="form-row-2">
             <div class="form-input-group">
               <label>Rango Horario</label>
-              <input type="text" id="input-match-time" placeholder="Ej. 20:00 - 21:00" required>
+              <input type="text" id="input-match-time" placeholder="Ej. 20:00 — 21:00" required>
             </div>
             <div class="form-input-group">
               <label>Precio por Jugador (Bs.)</label>
@@ -609,6 +539,16 @@
           <div class="form-input-group">
             <label>Cupo Máximo (Jugadores)</label>
             <input type="number" id="input-match-max" min="4" max="30" placeholder="14" required>
+          </div>
+
+          <div class="form-input-group">
+            <label>Dirección exacta</label>
+            <input type="text" id="input-match-address" placeholder="Ej. Av. Busch esq. Villalobos" required>
+          </div>
+
+          <div class="form-input-group">
+            <label>URL de Foto de Cancha (Unsplash u otra)</label>
+            <input type="url" id="input-match-image" placeholder="https://images.unsplash.com/..." required>
           </div>
 
           <button type="submit" class="btn-primary-action" style="margin-top: 0.5rem;">
