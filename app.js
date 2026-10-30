@@ -42,6 +42,7 @@ if (btnInstall) {
 // ==========================================
 let matches = [];
 let receipts = [];
+let venuesList = [];
 let currentProfile = null;
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
@@ -49,7 +50,7 @@ let selectedMatch = null;
 let currentReceiptBase64 = null;
 
 // ==========================================
-// 4. REFERENCIAS DEL DOM (DECLARACIONES ÚNICAS)
+// 4. REFERENCIAS DEL DOM
 // ==========================================
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
@@ -84,7 +85,7 @@ const tabAlerts = document.getElementById("tab-alerts");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Detalle Cancha & Switch Organizador
+// Detalle Cancha & Opciones Organizador
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -98,6 +99,8 @@ const detailPlayersList = document.getElementById("detail-players-list");
 const detailPlayersRatio = document.getElementById("detail-players-ratio");
 const organizerConfirmBox = document.getElementById("organizer-confirm-box");
 const toggleMatchConfirmed = document.getElementById("toggle-match-confirmed");
+const organizerFinishBox = document.getElementById("organizer-finish-box");
+const btnFinishMatch = document.getElementById("btn-finish-match");
 
 // Modal QR y Comprobante
 const modalQr = document.getElementById("modal-qr");
@@ -113,7 +116,7 @@ const receiptPreview = document.getElementById("receipt-preview");
 const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
 const uploadLabelText = document.getElementById("upload-label-text");
 
-// Panel Admin & Organizador
+// Panel Admin
 const adminReceiptsList = document.getElementById("admin-receipts-list");
 const adminPendingCount = document.getElementById("admin-pending-count");
 const btnClearReceipts = document.getElementById("btn-clear-receipts");
@@ -130,11 +133,14 @@ const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
 const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
 const inputPromoCode = document.getElementById("input-promo-code");
 
-// Modal Crear Partido
+// Modal Crear Partido con Select de Sedes
 const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
 const modalCreateMatch = document.getElementById("modal-create-match");
 const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
 const formNewMatch = document.getElementById("form-new-match");
+const selectVenue = document.getElementById("select-venue");
+const inputMatchAddress = document.getElementById("input-match-address");
+const inputMatchSport = document.getElementById("input-match-sport");
 
 // Modal Credenciales
 const modalSecurity = document.getElementById("modal-security");
@@ -144,7 +150,7 @@ const btnSaveSecurity = document.getElementById("btn-save-security");
 const inputEditUsername = document.getElementById("input-edit-username");
 const inputEditPassword = document.getElementById("input-edit-password");
 
-// Perfil, Avatar y Logout
+// Perfil y Avatar
 const btnLogout = document.getElementById("btn-logout");
 const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
@@ -154,13 +160,78 @@ const pillMyMatches = document.getElementById("pill-my-matches");
 const pillMyBookings = document.getElementById("pill-my-bookings");
 const eventsMatchesSub = document.getElementById("events-matches-subview");
 const eventsBookingsSub = document.getElementById("events-bookings-subview");
-
 const btnChangeAvatar = document.getElementById("btn-change-avatar");
 const inputAvatarFile = document.getElementById("input-avatar-file");
 const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
-// 5. SESIÓN, LOGIN Y REGISTRO
+// 5. FORMATEO INTELIGENTE DE FECHAS (Hoy, Mañana, Posterior)
+// ==========================================
+function formatSmartDateGroup(dateString) {
+  // Dividir año, mes, día (evita desfases por zona horaria)
+  const [year, month, day] = dateString.split("-").map(Number);
+  const targetDate = new Date(year, month - 1, day);
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((targetDate - today) / oneDayMs);
+
+  const weekday = targetDate.toLocaleDateString("es-ES", { weekday: "long" });
+  const dayNum = targetDate.getDate();
+  const monthName = targetDate.toLocaleDateString("es-ES", { month: "long" });
+
+  const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+
+  if (diffDays === 0) {
+    return `Hoy · ${capitalizedWeekday} ${dayNum} de ${monthName}`;
+  } else if (diffDays === 1) {
+    return `Mañana · ${capitalizedWeekday} ${dayNum} de ${monthName}`;
+  } else {
+    return `${capitalizedWeekday} ${dayNum} de ${monthName}`;
+  }
+}
+
+// ==========================================
+// 6. CARGA DE CANCHAS PREDEFINIDAS (VENUES)
+// ==========================================
+async function fetchVenues() {
+  const { data, error } = await db.from("venues").select("*").order("name", { ascending: true });
+  if (error) {
+    console.error("Error al cargar sedes:", error);
+    return;
+  }
+
+  venuesList = data;
+  if (!selectVenue) return;
+
+  selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
+  venuesList.forEach((venue) => {
+    const opt = document.createElement("option");
+    opt.value = venue.id;
+    opt.textContent = `${venue.name} (${venue.sport})`;
+    selectVenue.appendChild(opt);
+  });
+}
+
+if (selectVenue) {
+  selectVenue.addEventListener("change", () => {
+    const venueId = selectVenue.value;
+    const selected = venuesList.find((v) => v.id == venueId);
+
+    if (selected) {
+      inputMatchAddress.value = selected.address;
+      inputMatchSport.value = selected.sport;
+    } else {
+      inputMatchAddress.value = "";
+      inputMatchSport.value = "";
+    }
+  });
+}
+
+// ==========================================
+// 7. SESIÓN, LOGIN Y REGISTRO
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
@@ -189,6 +260,7 @@ async function checkUserSession() {
   applyRolePermissions();
   renderProfileView();
   switchScreen(viewList);
+  fetchVenues();
   fetchMatches();
   fetchReceipts();
 }
@@ -249,6 +321,7 @@ if (formLoginUser) {
     applyRolePermissions();
     renderProfileView();
     switchScreen(viewList);
+    fetchVenues();
     fetchMatches();
     fetchReceipts();
 
@@ -307,6 +380,7 @@ if (formRegisterUser) {
     applyRolePermissions();
     renderProfileView();
     switchScreen(viewList);
+    fetchVenues();
     fetchMatches();
     fetchReceipts();
 
@@ -333,7 +407,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 6. PERMISOS & CARGA DE DATOS
+// 8. PERMISOS & CARGA DE PARTIDOS
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
@@ -357,11 +431,18 @@ function applyRolePermissions() {
 }
 
 async function fetchMatches() {
-  const { data, error } = await db.from("matches").select("*").order("id", { ascending: true });
+  // Excluir partidos marcados como finalizados
+  const { data, error } = await db
+    .from("matches")
+    .select("*")
+    .eq("is_finished", false)
+    .order("id", { ascending: true });
+
   if (error) {
     console.error("Error al obtener partidos:", error);
     return;
   }
+
   matches = data.map((m) => ({
     id: m.id,
     title: m.title,
@@ -378,6 +459,7 @@ async function fetchMatches() {
     organizer: m.organizer,
     isConfirmed: m.is_confirmed || false
   }));
+
   renderMatches();
 }
 
@@ -387,6 +469,7 @@ async function fetchReceipts() {
     console.error("Error al obtener comprobantes:", error);
     return;
   }
+
   receipts = data.map((r) => ({
     id: r.id,
     matchId: r.match_id,
@@ -411,7 +494,7 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 7. REALTIME & AUDIO
+// 9. REALTIME & AUDIO
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
@@ -469,7 +552,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 8. RENDERIZADO DE PARTIDOS & DETALLE
+// 10. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -488,7 +571,7 @@ function renderMatches() {
   if (filtered.length === 0) {
     matchesContainer.innerHTML = `
       <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
-        No se encontraron partidos.
+        No hay partidos activos en este momento.
       </div>`;
     return;
   }
@@ -562,7 +645,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// CONTROL DEL DETALLE Y RESTRICCIÓN DE SWITCH
+// 11. DETALLE DEL PARTIDO, JUGADORES Y FINALIZACIÓN
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -578,10 +661,10 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
-  // CONTROL ESTRICTO DE VISIBILIDAD: Solo el ORGANIZADOR puede ver y usar el switch
-  if (organizerConfirmBox && toggleMatchConfirmed) {
-    const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
+  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
+  // Control estricto de visibilidad del switch
+  if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
       organizerConfirmBox.style.display = "flex";
@@ -594,15 +677,25 @@ function showDetail(id) {
     }
   }
 
+  // Control estricto del botón Finalizar Partido
+  if (organizerFinishBox) {
+    if (isOrganizer) {
+      organizerFinishBox.removeAttribute("hidden");
+      organizerFinishBox.style.display = "block";
+    } else {
+      organizerFinishBox.setAttribute("hidden", "");
+      organizerFinishBox.style.display = "none";
+    }
+  }
+
   renderConfirmedPlayers(selectedMatch.id);
   updateSubscribeButton();
   switchScreen(viewDetail);
 }
 
-// Evento de cambio protegido
+// Evento switch estado confirmado
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
-    // Si no es ORGANIZADOR, denegamos inmediatamente
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
       alert("Acceso denegado: solo el Organizador puede modificar el estado del partido.");
       e.target.checked = !e.target.checked;
@@ -628,17 +721,44 @@ if (toggleMatchConfirmed) {
   });
 }
 
-function renderConfirmedPlayers(matchId) {
+// Evento: Finalizar y quitar partido de la lista
+if (btnFinishMatch) {
+  btnFinishMatch.addEventListener("click", async () => {
+    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede finalizar partidos.");
+      return;
+    }
+
+    if (confirm(`¿Deseas dar por finalizado el partido en "${selectedMatch.title}" y quitarlo de la lista?`)) {
+      const { error } = await db
+        .from("matches")
+        .update({ is_finished: true })
+        .eq("id", selectedMatch.id);
+
+      if (error) {
+        alert("Error al finalizar partido: " + error.message);
+        return;
+      }
+
+      alert("El partido ha finalizado y ha sido retirado de la cartelera.");
+      switchScreen(viewList);
+      fetchMatches();
+    }
+  });
+}
+
+// Renderizado de jugadores con avatar real
+async function renderConfirmedPlayers(matchId) {
   if (!detailPlayersList || !selectedMatch) return;
   detailPlayersList.innerHTML = "";
 
-  const approvedUsers = receipts.filter(
+  const approvedReceipts = receipts.filter(
     (r) => r.matchId === matchId && r.status === "Aprobado"
   );
 
-  detailPlayersRatio.textContent = `${approvedUsers.length}-${selectedMatch.maxPlayers}`;
+  detailPlayersRatio.textContent = `${approvedReceipts.length}-${selectedMatch.maxPlayers}`;
 
-  if (approvedUsers.length === 0) {
+  if (approvedReceipts.length === 0) {
     detailPlayersList.innerHTML = `
       <div style="color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0;">
         Aún no hay jugadores confirmados. ¡Sé el primero en unirte!
@@ -646,14 +766,35 @@ function renderConfirmedPlayers(matchId) {
     return;
   }
 
-  approvedUsers.forEach((player) => {
+  // Obtener los perfiles en tiempo real para reflejar su avatar más reciente
+  const userIds = approvedReceipts.map((r) => r.userId).filter(Boolean);
+  let profilesMap = {};
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await db
+      .from("profiles")
+      .select("id, username, avatar_url")
+      .in("id", userIds);
+
+    if (profiles) {
+      profiles.forEach((p) => {
+        profilesMap[p.id] = p;
+      });
+    }
+  }
+
+  approvedReceipts.forEach((player) => {
+    const profile = profilesMap[player.userId];
+    const username = profile?.username || player.username || "Jugador";
+    const avatarUrl = profile?.avatar_url || player.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80";
+
     const card = document.createElement("div");
     card.className = "player-card-item";
     card.innerHTML = `
       <div class="player-meta-wrap">
-        <img class="player-thumb-avatar" src="${player.avatarUrl}" alt="${player.username}">
+        <img class="player-thumb-avatar" src="${avatarUrl}" alt="${username}">
         <div class="player-names-col">
-          <span class="player-name-val">${player.username}</span>
+          <span class="player-name-val">${username}</span>
           <span class="player-role-tag">Jugador</span>
         </div>
       </div>
@@ -678,7 +819,7 @@ function updateSubscribeButton() {
 }
 
 // ==========================================
-// 9. NAVEGACIÓN ENTRE VISTAS
+// 12. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
 function switchScreen(targetScreen) {
   [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
@@ -764,7 +905,7 @@ if (pillMyMatches && pillMyBookings) {
 }
 
 // ==========================================
-// 10. MODAL: MODIFICAR CREDENCIALES
+// 13. MODAL: MODIFICAR CREDENCIALES
 // ==========================================
 function openSecurityModal() {
   if (!currentProfile) return;
@@ -837,7 +978,7 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 11. REDIMENSIONAR AVATAR Y STORAGE
+// 14. REDIMENSIONAR AVATAR Y STORAGE
 // ==========================================
 function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -947,7 +1088,7 @@ if (btnChangeAvatar && inputAvatarFile) {
 }
 
 // ==========================================
-// 12. PUBLICAR CANCHA (ORGANIZADOR)
+// 15. PUBLICAR CANCHA (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -976,38 +1117,46 @@ if (formNewMatch) {
       return;
     }
 
-    const title = document.getElementById("input-match-title").value.trim();
-    const sport = document.getElementById("input-match-sport").value;
+    const venueId = selectVenue.value;
+    const venue = venuesList.find((v) => v.id == venueId);
+
+    if (!venue) {
+      alert("Por favor selecciona una cancha de la lista.");
+      return;
+    }
+
     const rawDate = document.getElementById("input-match-date").value;
     const timeFull = document.getElementById("input-match-time").value.trim();
     const price = parseFloat(document.getElementById("input-match-price").value);
     const maxPlayers = parseInt(document.getElementById("input-match-max").value);
-    const address = document.getElementById("input-match-address").value.trim();
-    const image = document.getElementById("input-match-image").value.trim();
 
-    const dateObj = new Date(rawDate + "T00:00:00");
+    // Formateo inteligente de fecha
+    const dateGroup = formatSmartDateGroup(rawDate);
+
+    const [year, month, day] = rawDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
     const dateLong = dateObj.toLocaleDateString("es-ES", {
       weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric"
     });
-    const dateGroup = `Fecha · ${dateLong.charAt(0).toUpperCase() + dateLong.slice(1)}`;
 
     const newMatchPayload = {
-      title,
-      sport,
+      title: venue.name,
+      sport: venue.sport,
       date_group: dateGroup,
       date_long: dateLong,
-      time: timeFull.split("—")[0].trim(),
+      time: timeFull.split("—")[0].split("-")[0].trim(),
       time_full: timeFull,
       price,
       current_players: 0,
       max_players: maxPlayers,
-      address,
-      image,
+      address: venue.address,
+      image: venue.image_url,
       organizer: currentProfile.username || "Organizador",
-      is_confirmed: false
+      is_confirmed: false,
+      is_finished: false
     };
 
     const { error } = await db.from("matches").insert([newMatchPayload]);
@@ -1020,12 +1169,14 @@ if (formNewMatch) {
     modalCreateMatch.setAttribute("hidden", "");
     modalCreateMatch.style.display = "none";
     formNewMatch.reset();
-    alert("¡Cancha habilitada con éxito en la nube!");
+    inputMatchAddress.value = "";
+    inputMatchSport.value = "";
+    alert("¡Cancha habilitada con éxito en la lista de partidos!");
   });
 }
 
 // ==========================================
-// 13. PAGO QR & COMPROBANTE
+// 16. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -1142,7 +1293,7 @@ if (btnConfirmPayment) {
 }
 
 // ==========================================
-// 14. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
+// 17. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1293,7 +1444,7 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
-// 15. FILTROS Y ARRANQUE
+// 18. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
