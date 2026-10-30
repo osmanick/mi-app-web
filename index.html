@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Partidos - Reserva de Canchas</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js"></script>
-
-
   <!-- PWA & Metas -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121316">
@@ -20,7 +15,8 @@
 
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Generador de PDF en el cliente (jsPDF) -->
+  <!-- Librerías Externas CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -41,16 +37,20 @@
         </button>
       </header>
 
+      <!-- Barra de búsqueda con icono SVG validado -->
       <div class="search-container">
         <div class="search-input-wrapper">
           <input type="text" id="search-input" placeholder="Buscar una cancha">
-          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="#717680"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/></svg>
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="#717680">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
         </div>
         <button class="filter-icon-btn" title="Filtros">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         </button>
       </div>
 
+      <!-- Filtros por categoría -->
       <section class="chips-container">
         <button class="chip-item active" data-sport="Todos">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-5.5 9h11zM17.5 13H6.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h11c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zm-5.5 5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
@@ -72,7 +72,7 @@
         <div id="my-tickets-list" class="tickets-list"></div>
       </section>
 
-      <!-- Lista de partidos -->
+      <!-- Lista de partidos cargados desde Supabase -->
       <section id="matches-list-container" class="matches-content"></section>
     </main>
 
@@ -92,20 +92,20 @@
         <img id="detail-img" src="" alt="Cancha">
         <div class="quota-badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff5a1f"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-          <span id="detail-badge-quota">18/22 jugadores</span>
+          <span id="detail-badge-quota">0/0 jugadores</span>
         </div>
       </div>
 
       <div class="detail-body">
-        <h2 id="detail-venue-name" class="detail-title">Cañada Strongest</h2>
+        <h2 id="detail-venue-name" class="detail-title">-</h2>
 
         <div class="info-row">
           <div class="info-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
           </div>
           <div>
-            <span class="info-label" id="detail-sport-tag">FÚTBOL</span>
-            <div class="info-value" id="detail-date-long">jueves 29 de octubre, 2026</div>
+            <span class="info-label" id="detail-sport-tag">DEPORTE</span>
+            <div class="info-value" id="detail-date-long">-</div>
           </div>
         </div>
 
@@ -115,7 +115,7 @@
           </div>
           <div>
             <span class="info-label">HORARIO</span>
-            <div class="info-value" id="detail-time">21:00 - 22:00</div>
+            <div class="info-value" id="detail-time">-</div>
           </div>
         </div>
 
@@ -124,8 +124,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
           </div>
           <div class="address-text">
-            <span class="info-label" id="detail-venue-sub">CAÑADA STRONGEST</span>
-            <div class="info-value address-highlight" id="detail-address">Calle Francisco Monroy, entre avenida illimani y calle yungas</div>
+            <span class="info-label" id="detail-venue-sub">UBICACIÓN</span>
+            <div class="info-value address-highlight" id="detail-address">-</div>
           </div>
           <a id="btn-map" href="#" target="_blank" class="map-icon-btn" title="Abrir Mapa">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
@@ -153,7 +153,7 @@
         <div class="organizer-card">
           <img class="organizer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Organizador">
           <div class="organizer-info">
-            <h4 id="detail-organizer-name">BenjaminVidal</h4>
+            <h4 id="detail-organizer-name">Organizador</h4>
             <span>Organizador</span>
           </div>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
@@ -162,7 +162,7 @@
 
       <footer class="bottom-action-bar">
         <button id="btn-subscribe" class="btn-primary-action">
-          Inscribirme Bs. 29
+          Inscribirme
         </button>
       </footer>
     </section>
