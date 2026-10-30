@@ -169,7 +169,33 @@ const inputAvatarFile = document.getElementById("input-avatar-file");
 const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
-// 5. FORMATEO INTELIGENTE DE FECHAS
+// 5. CONTROL SEGURO DE PANTALLAS
+// ==========================================
+function switchScreen(targetScreen) {
+  const screens = [
+    viewRegister,
+    viewList,
+    viewDetail,
+    viewMessages,
+    viewProfile,
+    viewAdmin
+  ];
+
+  screens.forEach((screen) => {
+    if (screen) {
+      screen.classList.remove("active");
+      screen.style.display = "none";
+    }
+  });
+
+  if (targetScreen) {
+    targetScreen.classList.add("active");
+    targetScreen.style.display = "flex";
+  }
+}
+
+// ==========================================
+// 6. FORMATEO INTELIGENTE DE FECHAS
 // ==========================================
 function formatSmartDateGroup(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -197,25 +223,26 @@ function formatSmartDateGroup(dateString) {
 }
 
 // ==========================================
-// 6. CARGA DE CANCHAS PREDEFINIDAS (VENUES)
+// 7. CARGA DE CANCHAS (VENUES)
 // ==========================================
 async function fetchVenues() {
-  const { data, error } = await db.from("venues").select("*").order("name", { ascending: true });
-  if (error) {
-    console.error("Error al cargar sedes:", error);
-    return;
+  try {
+    const { data, error } = await db.from("venues").select("*").order("name", { ascending: true });
+    if (error) throw error;
+
+    venuesList = data || [];
+    if (!selectVenue) return;
+
+    selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
+    venuesList.forEach((venue) => {
+      const opt = document.createElement("option");
+      opt.value = venue.id;
+      opt.textContent = `${venue.name} (${venue.sport})`;
+      selectVenue.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("Error al cargar sedes:", err);
   }
-
-  venuesList = data || [];
-  if (!selectVenue) return;
-
-  selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
-  venuesList.forEach((venue) => {
-    const opt = document.createElement("option");
-    opt.value = venue.id;
-    opt.textContent = `${venue.name} (${venue.sport})`;
-    selectVenue.appendChild(opt);
-  });
 }
 
 if (selectVenue) {
@@ -248,7 +275,7 @@ if (btnCloseVenueModal) {
   });
 }
 
-// Selección y compresión de foto de cancha (800 px ancho)
+// Selección y compresión de foto de cancha (800 px)
 if (venueInputFile) {
   venueInputFile.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -280,7 +307,7 @@ if (venueInputFile) {
   });
 }
 
-// Subida de nueva cancha a Supabase Storage y DB
+// Subir nueva cancha a Storage y base de datos
 if (formNewVenue) {
   formNewVenue.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -350,11 +377,15 @@ if (formNewVenue) {
 }
 
 // ==========================================
-// 7. GESTIÓN ROBUSTA DE SESIÓN (RESTAURACIÓN FIABLE)
+// 8. SESIÓN ROBUSTA (PERSISTENCIA TOTAL)
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
+  // Carga previa en paralelo de datos para que la app nunca arranque en blanco
+  await Promise.allSettled([fetchVenues(), fetchMatches(), fetchReceipts()]);
+
+  // Si no hay sesión previa guardada, mostrar Login
   if (!activeUserId) {
     if (bottomBar) bottomBar.style.display = "none";
     switchScreen(viewRegister);
@@ -362,54 +393,48 @@ async function checkUserSession() {
   }
 
   try {
-    // 1. Intentar buscar por ID primario
     let { data: user, error } = await db
       .from("profiles")
       .select("*")
       .eq("id", activeUserId)
       .maybeSingle();
 
-    // 2. Si no lo encuentra por ID, intentar buscar por username como respaldo
-    if (error || !user) {
-      const { data: userFallback } = await db
+    // Respaldo de búsqueda por username
+    if (!user) {
+      const { data: userByUsername } = await db
         .from("profiles")
         .select("*")
         .eq("username", activeUserId)
         .maybeSingle();
 
-      if (!userFallback) {
-        localStorage.removeItem("app_active_user");
-        if (bottomBar) bottomBar.style.display = "none";
-        switchScreen(viewRegister);
-        return;
-      }
-      user = userFallback;
-      localStorage.setItem("app_active_user", user.id);
+      user = userByUsername;
     }
 
-    // 3. Establecer perfil global
+    if (!user) {
+      console.warn("Sesión no válida en la base de datos.");
+      localStorage.removeItem("app_active_user");
+      if (bottomBar) bottomBar.style.display = "none";
+      switchScreen(viewRegister);
+      return;
+    }
+
     currentProfile = user;
+    localStorage.setItem("app_active_user", user.id);
 
-    // 4. Mostrar barra de navegación inferior
     if (bottomBar) bottomBar.style.display = "flex";
-
-    // 5. Aplicar permisos y pintar las vistas según el rol real
     applyRolePermissions();
     renderProfileView();
 
-    // 6. Pre-renderizar panel admin si es Organizador
     if (currentProfile.role === "ORGANIZADOR") {
       renderAdminPanel();
     }
 
-    // 7. Cargar datos en paralelo y mostrar cartelera
     switchScreen(viewList);
-    await Promise.all([fetchVenues(), fetchMatches(), fetchReceipts()]);
+    renderMatches();
 
   } catch (err) {
     console.error("Error al restaurar sesión:", err);
-    if (bottomBar) bottomBar.style.display = "none";
-    switchScreen(viewRegister);
+    switchScreen(viewList);
   }
 }
 
@@ -462,7 +487,6 @@ if (formLoginUser) {
       return;
     }
 
-    // Guardar ID exacto y establecer perfil
     localStorage.setItem("app_active_user", user.id);
     currentProfile = user;
 
@@ -475,8 +499,8 @@ if (formLoginUser) {
     }
 
     switchScreen(viewList);
+    renderMatches();
     fetchVenues();
-    fetchMatches();
     fetchReceipts();
 
     formLoginUser.reset();
@@ -561,7 +585,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 8. PERMISOS & CARGA DE PARTIDOS
+// 9. PERMISOS & CARGA DE PARTIDOS
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
@@ -585,70 +609,72 @@ function applyRolePermissions() {
 }
 
 async function fetchMatches() {
-  const { data, error } = await db
-    .from("matches")
-    .select("*")
-    .eq("is_finished", false)
-    .order("id", { ascending: true });
+  try {
+    const { data, error } = await db
+      .from("matches")
+      .select("*")
+      .eq("is_finished", false)
+      .order("id", { ascending: true });
 
-  if (error) {
-    console.error("Error al obtener partidos:", error);
-    return;
+    if (error) throw error;
+
+    matches = (data || []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      dateGroup: m.date_group,
+      dateLong: m.date_long,
+      sport: m.sport,
+      time: m.time,
+      timeFull: m.time_full,
+      address: m.address,
+      price: Number(m.price),
+      currentPlayers: m.current_players,
+      maxPlayers: m.max_players,
+      image: m.image,
+      organizer: m.organizer,
+      isConfirmed: m.is_confirmed || false,
+      mapsUrl: m.maps_url || ""
+    }));
+
+    renderMatches();
+  } catch (err) {
+    console.error("Error al obtener partidos:", err);
   }
-
-  matches = data.map((m) => ({
-    id: m.id,
-    title: m.title,
-    dateGroup: m.date_group,
-    dateLong: m.date_long,
-    sport: m.sport,
-    time: m.time,
-    timeFull: m.time_full,
-    address: m.address,
-    price: Number(m.price),
-    currentPlayers: m.current_players,
-    maxPlayers: m.max_players,
-    image: m.image,
-    organizer: m.organizer,
-    isConfirmed: m.is_confirmed || false,
-    mapsUrl: m.maps_url || ""
-  }));
-
-  renderMatches();
 }
 
 async function fetchReceipts() {
-  const { data, error } = await db.from("receipts").select("*").order("id", { ascending: false });
-  if (error) {
-    console.error("Error al obtener comprobantes:", error);
-    return;
-  }
+  try {
+    const { data, error } = await db.from("receipts").select("*").order("id", { ascending: false });
+    if (error) throw error;
 
-  receipts = data.map((r) => ({
-    id: r.id,
-    matchId: r.match_id,
-    matchTitle: r.match_title,
-    sport: r.sport,
-    amount: Number(r.amount),
-    date: r.date,
-    status: r.status,
-    receiptImage: r.receipt_image,
-    userId: r.user_id,
-    username: r.username || "Jugador",
-    avatarUrl: r.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
-  }));
+    receipts = (data || []).map((r) => ({
+      id: r.id,
+      matchId: r.match_id,
+      matchTitle: r.match_title,
+      sport: r.sport,
+      amount: Number(r.amount),
+      date: r.date,
+      status: r.status,
+      receiptImage: r.receipt_image,
+      userId: r.user_id,
+      username: r.username || "Jugador",
+      avatarUrl: r.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
+    }));
 
-  updatePendingBadge();
-  if (viewAdmin && viewAdmin.classList.contains("active")) {
-    renderAdminPanel();
-  }
-  if (selectedMatch) {
-    renderConfirmedPlayers(selectedMatch.id);
+    updatePendingBadge();
+    if (viewAdmin && viewAdmin.classList.contains("active")) {
+      renderAdminPanel();
+    }
+    if (selectedMatch) {
+      renderConfirmedPlayers(selectedMatch.id);
+    }
+  } catch (err) {
+    console.error("Error al obtener comprobantes:", err);
   }
 }
 
 // ==========================================
-// 9. REALTIME & AUDIO
+// 10. REALTIME & AUDIO
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
@@ -707,7 +733,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 10. RENDERIZADO DE PARTIDOS
+// 11. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -800,7 +826,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// 11. DETALLE DEL PARTIDO, JUGADORES Y FINALIZACIÓN
+// 12. DETALLE DEL PARTIDO, JUGADORES Y FINALIZACIÓN
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -815,7 +841,7 @@ function showDetail(id) {
   detailVenueSub.textContent = selectedMatch.title.toUpperCase();
   detailAddress.textContent = selectedMatch.address;
 
-  // Enlace directo de Google Maps desde la base de datos
+  // Enlace directo de Google Maps
   if (detailMap) {
     if (selectedMatch.mapsUrl && selectedMatch.mapsUrl.trim() !== "") {
       detailMap.href = selectedMatch.mapsUrl;
@@ -826,7 +852,7 @@ function showDetail(id) {
 
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
-  // Control estricto de visibilidad del switch
+  // Control estricto del Switch
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -840,7 +866,7 @@ function showDetail(id) {
     }
   }
 
-  // Control estricto del botón Finalizar Partido
+  // Control estricto del Botón Finalizar
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
@@ -981,15 +1007,8 @@ function updateSubscribeButton() {
 }
 
 // ==========================================
-// 12. NAVEGACIÓN ENTRE VISTAS
+// 13. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
-function switchScreen(targetScreen) {
-  [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
-    if (screen) screen.classList.remove("active");
-  });
-  if (targetScreen) targetScreen.classList.add("active");
-}
-
 function clearTabSelection() {
   [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
     if (t) t.classList.remove("active");
@@ -1067,7 +1086,7 @@ if (pillMyMatches && pillMyBookings) {
 }
 
 // ==========================================
-// 13. MODAL: MODIFICAR CREDENCIALES
+// 14. MODAL: MODIFICAR CREDENCIALES
 // ==========================================
 function openSecurityModal() {
   if (!currentProfile) return;
@@ -1140,7 +1159,7 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 14. REDIMENSIONAR AVATAR Y STORAGE
+// 15. REDIMENSIONAR AVATAR Y STORAGE
 // ==========================================
 function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -1250,7 +1269,7 @@ if (btnChangeAvatar && inputAvatarFile) {
 }
 
 // ==========================================
-// 15. PUBLICAR CANCHA (ORGANIZADOR)
+// 16. PUBLICAR CANCHA (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -1338,7 +1357,7 @@ if (formNewMatch) {
 }
 
 // ==========================================
-// 16. PAGO QR & COMPROBANTE
+// 17. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -1455,7 +1474,7 @@ if (btnConfirmPayment) {
 }
 
 // ==========================================
-// 17. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
+// 18. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1606,7 +1625,7 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
-// 18. FILTROS Y ARRANQUE
+// 19. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
