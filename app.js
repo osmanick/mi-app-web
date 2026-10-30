@@ -49,7 +49,7 @@ let selectedMatch = null;
 let currentReceiptBase64 = null;
 
 // ==========================================
-// 4. REFERENCIAS DEL DOM
+// 4. REFERENCIAS DEL DOM (DECLARACIONES ÚNICAS)
 // ==========================================
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
@@ -59,6 +59,14 @@ const viewProfile = document.getElementById("view-profile");
 const viewAdmin = document.getElementById("view-admin");
 const bottomBar = document.getElementById("bottom-bar");
 
+// Pestañas Auth
+const tabAuthLogin = document.getElementById("tab-auth-login");
+const tabAuthRegister = document.getElementById("tab-auth-register");
+const formLoginUser = document.getElementById("form-login-user");
+const formRegisterUser = document.getElementById("form-register-user");
+const authTitle = document.getElementById("auth-title");
+
+// Vista Partidos
 const matchesContainer = document.getElementById("matches-list-container");
 const searchInput = document.getElementById("search-input");
 const chipButtons = document.querySelectorAll(".chip-item");
@@ -68,7 +76,7 @@ const btnShare = document.getElementById("btn-share");
 const btnInvite = document.getElementById("btn-invite");
 const btnSubscribe = document.getElementById("btn-subscribe");
 
-// Pestañas
+// Pestañas inferiores
 const tabMatches = document.getElementById("tab-matches");
 const tabClubs = document.getElementById("tab-clubs");
 const tabMessages = document.getElementById("tab-messages");
@@ -103,28 +111,30 @@ const receiptPreview = document.getElementById("receipt-preview");
 const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
 const uploadLabelText = document.getElementById("upload-label-text");
 
-// Panel Admin
+// Panel Admin & Organizador
 const adminReceiptsList = document.getElementById("admin-receipts-list");
 const adminPendingCount = document.getElementById("admin-pending-count");
 const btnClearReceipts = document.getElementById("btn-clear-receipts");
 const modalImageViewer = document.getElementById("modal-image-viewer");
 const viewerFullImage = document.getElementById("viewer-full-image");
 const btnCloseViewer = document.getElementById("btn-close-viewer");
+const btnAdminLogout = document.getElementById("btn-admin-logout");
+const btnAdminLogoutTop = document.getElementById("btn-admin-logout-top");
 
-// Modal Canjear
+// Modal Canjear Promo
 const modalRedeem = document.getElementById("modal-redeem");
 const btnOpenRedeem = document.getElementById("btn-open-redeem");
 const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
 const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
 const inputPromoCode = document.getElementById("input-promo-code");
 
-// Modal Crear Partido (Organizador)
+// Modal Crear Partido
 const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
 const modalCreateMatch = document.getElementById("modal-create-match");
 const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
 const formNewMatch = document.getElementById("form-new-match");
 
-// Modal de Modificación de Credenciales
+// Modal Credenciales
 const modalSecurity = document.getElementById("modal-security");
 const btnOpenSecurityModal = document.getElementById("btn-open-security-modal");
 const btnCancelSecurity = document.getElementById("btn-cancel-security");
@@ -132,7 +142,7 @@ const btnSaveSecurity = document.getElementById("btn-save-security");
 const inputEditUsername = document.getElementById("input-edit-username");
 const inputEditPassword = document.getElementById("input-edit-password");
 
-// Perfil y Eventos
+// Perfil y Logout
 const btnLogout = document.getElementById("btn-logout");
 const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
@@ -143,23 +153,18 @@ const pillMyBookings = document.getElementById("pill-my-bookings");
 const eventsMatchesSub = document.getElementById("events-matches-subview");
 const eventsBookingsSub = document.getElementById("events-bookings-subview");
 
-// Formulario de Registro
-const formRegisterUser = document.getElementById("form-register-user");
-
 // ==========================================
-// 5. FLUJO DE SESIÓN Y REGISTRO INICIAL
+// 5. SESIÓN, LOGIN Y REGISTRO
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
   if (!activeUserId) {
-    // Si no ha iniciado sesión ni se ha registrado, mostrar pantalla de registro
     if (bottomBar) bottomBar.style.display = "none";
     switchScreen(viewRegister);
     return;
   }
 
-  // Usuario con sesión guardada: cargar datos de Supabase
   const { data, error } = await db
     .from("profiles")
     .select("*")
@@ -182,7 +187,72 @@ async function checkUserSession() {
   fetchReceipts();
 }
 
-// Envío del Formulario de Registro (JUGADOR por defecto)
+// Selector pestañas Iniciar Sesión / Registro
+if (tabAuthLogin && tabAuthRegister) {
+  tabAuthLogin.addEventListener("click", () => {
+    tabAuthRegister.classList.remove("active");
+    tabAuthLogin.classList.add("active");
+    formRegisterUser.classList.remove("active");
+    formLoginUser.classList.add("active");
+    if (authTitle) authTitle.textContent = "Iniciar Sesión";
+  });
+
+  tabAuthRegister.addEventListener("click", () => {
+    tabAuthLogin.classList.remove("active");
+    tabAuthRegister.classList.add("active");
+    formLoginUser.classList.remove("active");
+    formRegisterUser.classList.add("active");
+    if (authTitle) authTitle.textContent = "Crear Cuenta";
+  });
+}
+
+// Iniciar Sesión
+if (formLoginUser) {
+  formLoginUser.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("login-username").value.trim().toLowerCase();
+    const password = document.getElementById("login-password").value.trim();
+    const btnSubmit = document.getElementById("btn-submit-login");
+
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Verificando...";
+
+    const { data: user, error } = await db
+      .from("profiles")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .maybeSingle();
+
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = "Entrar";
+
+    if (error) {
+      alert("Error al conectar con la base de datos: " + error.message);
+      return;
+    }
+
+    if (!user) {
+      alert("Usuario o contraseña incorrectos. Verifica tus credenciales.");
+      return;
+    }
+
+    localStorage.setItem("app_active_user", user.id);
+    currentProfile = user;
+
+    if (bottomBar) bottomBar.style.display = "flex";
+    applyRolePermissions();
+    renderProfileView();
+    switchScreen(viewList);
+    fetchMatches();
+    fetchReceipts();
+
+    formLoginUser.reset();
+  });
+}
+
+// Registrar Usuario
 if (formRegisterUser) {
   formRegisterUser.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -237,34 +307,37 @@ if (formRegisterUser) {
     fetchMatches();
     fetchReceipts();
 
-    alert(`¡Bienvenido ${firstName}! Tu cuenta de Jugador ha sido creada con éxito.`);
+    alert(`¡Bienvenido ${firstName}! Tu cuenta ha sido creada.`);
   });
 }
 
-// Cierre de sesión
-if (btnLogout) {
-  btnLogout.addEventListener("click", () => {
-    if (confirm("¿Seguro que deseas cerrar sesión?")) {
-      localStorage.removeItem("app_active_user");
-      currentProfile = null;
-      if (bottomBar) bottomBar.style.display = "none";
-      if (formRegisterUser) formRegisterUser.reset();
-      if (formLoginUser) formLoginUser.reset();
-      tabAuthLogin.click();
-      switchScreen(viewRegister);
-    }
-  });
+// Función Centralizada de Cierre de Sesión
+function logoutUser() {
+  if (confirm("¿Seguro que deseas cerrar sesión?")) {
+    localStorage.removeItem("app_active_user");
+    currentProfile = null;
+
+    if (bottomBar) bottomBar.style.display = "none";
+    if (formRegisterUser) formRegisterUser.reset();
+    if (formLoginUser) formLoginUser.reset();
+
+    if (tabAuthLogin) tabAuthLogin.click();
+    switchScreen(viewRegister);
+  }
 }
+
+if (btnLogout) btnLogout.addEventListener("click", logoutUser);
+if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
+if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 6. PERMISOS Y CARGA DE DATOS
+// 6. PERMISOS & CARGA DE DATOS
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
 
   const isOrganizer = currentProfile.role === "ORGANIZADOR";
 
-  // El botón de publicar cancha solo lo ve el ORGANIZADOR
   if (btnCreateMatchFab) {
     if (isOrganizer) {
       btnCreateMatchFab.removeAttribute("hidden");
@@ -273,7 +346,6 @@ function applyRolePermissions() {
     }
   }
 
-  // Nombre de la pestaña inferior
   const tabProfileLabel = tabProfile.querySelector("span");
   if (tabProfileLabel) {
     tabProfileLabel.textContent = isOrganizer ? "Organizador" : "Perfil";
@@ -336,7 +408,7 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 7. REALTIME & NOTIFICACIONES
+// 7. REALTIME & AUDIO
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
@@ -394,7 +466,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 8. RENDERIZADO DE PARTIDOS & JUGADORES
+// 8. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -542,7 +614,7 @@ function updateSubscribeButton() {
 }
 
 // ==========================================
-// 9. NAVEGACIÓN Y VISTAS
+// 9. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
 function switchScreen(targetScreen) {
   [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
@@ -595,37 +667,41 @@ btnAdminBack.addEventListener("click", () => {
   renderMatches();
 });
 
-// Pestañas Perfil: Sobre mí vs. Mis eventos
-btnTabAbout.addEventListener("click", () => {
-  btnTabEvents.classList.remove("active");
-  btnTabAbout.classList.add("active");
-  tabEventsContent.classList.remove("active");
-  tabAboutContent.classList.add("active");
-});
+// Pestañas Perfil
+if (btnTabAbout && btnTabEvents) {
+  btnTabAbout.addEventListener("click", () => {
+    btnTabEvents.classList.remove("active");
+    btnTabAbout.classList.add("active");
+    tabEventsContent.classList.remove("active");
+    tabAboutContent.classList.add("active");
+  });
 
-btnTabEvents.addEventListener("click", () => {
-  btnTabAbout.classList.remove("active");
-  btnTabEvents.classList.add("active");
-  tabAboutContent.classList.remove("active");
-  tabEventsContent.classList.add("active");
-});
+  btnTabEvents.addEventListener("click", () => {
+    btnTabAbout.classList.remove("active");
+    btnTabEvents.classList.add("active");
+    tabAboutContent.classList.remove("active");
+    tabEventsContent.classList.add("active");
+  });
+}
 
-pillMyMatches.addEventListener("click", () => {
-  pillMyBookings.classList.remove("active");
-  pillMyMatches.classList.add("active");
-  eventsBookingsSub.style.display = "none";
-  eventsMatchesSub.style.display = "block";
-});
+if (pillMyMatches && pillMyBookings) {
+  pillMyMatches.addEventListener("click", () => {
+    pillMyBookings.classList.remove("active");
+    pillMyMatches.classList.add("active");
+    eventsBookingsSub.style.display = "none";
+    eventsMatchesSub.style.display = "block";
+  });
 
-pillMyBookings.addEventListener("click", () => {
-  pillMyMatches.classList.remove("active");
-  pillMyBookings.classList.add("active");
-  eventsMatchesSub.style.display = "none";
-  eventsBookingsSub.style.display = "block";
-});
+  pillMyBookings.addEventListener("click", () => {
+    pillMyMatches.classList.remove("active");
+    pillMyBookings.classList.add("active");
+    eventsMatchesSub.style.display = "none";
+    eventsBookingsSub.style.display = "block";
+  });
+}
 
 // ==========================================
-// 10. MODAL: MODIFICAR USERNAME Y PASSWORD
+// 10. MODAL: MODIFICAR CREDENCIALES
 // ==========================================
 function openSecurityModal() {
   if (!currentProfile) return;
@@ -635,9 +711,7 @@ function openSecurityModal() {
   modalSecurity.style.display = "flex";
 }
 
-if (btnOpenSecurityModal) {
-  btnOpenSecurityModal.addEventListener("click", openSecurityModal);
-}
+if (btnOpenSecurityModal) btnOpenSecurityModal.addEventListener("click", openSecurityModal);
 
 if (btnCancelSecurity) {
   btnCancelSecurity.addEventListener("click", () => {
@@ -674,7 +748,7 @@ if (btnSaveSecurity) {
     modalSecurity.setAttribute("hidden", "");
     modalSecurity.style.display = "none";
     renderProfileView();
-    alert("¡Datos de acceso actualizados exitosamente!");
+    alert("¡Credenciales actualizadas exitosamente!");
   });
 }
 
@@ -687,7 +761,6 @@ function renderProfileView() {
   document.getElementById("profile-promo").textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
   document.getElementById("profile-avatar-img").src = currentProfile.avatar_url;
 
-  // Campos no modificables
   document.getElementById("field-firstname").textContent = currentProfile.first_name;
   document.getElementById("field-lastname").textContent = currentProfile.last_name;
   document.getElementById("field-phone").textContent = currentProfile.phone;
@@ -697,13 +770,11 @@ function renderProfileView() {
   document.getElementById("field-city").textContent = currentProfile.city;
   document.getElementById("field-email").textContent = currentProfile.email;
   document.getElementById("field-plan").textContent = currentProfile.plan;
-
-  // Único campo visible y editable
   document.getElementById("field-username").textContent = currentProfile.username;
 }
 
 // ==========================================
-// 11. PUBLICACIÓN DE CANCHA (ORGANIZADOR)
+// 11. PUBLICAR CANCHA (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -966,7 +1037,6 @@ window.approveReceipt = async function (receiptId) {
     await db.from("matches").update({ current_players: match.currentPlayers + 1 }).eq("id", match.id);
   }
 
-  // Incrementar partidos jugados del perfil registrado
   if (receipt.userId) {
     const { data: prof } = await db.from("profiles").select("matches_played").eq("id", receipt.userId).single();
     if (prof) {
@@ -1006,7 +1076,7 @@ if (btnClearReceipts) {
   });
 }
 
-// Canjear Código Promo
+// Canjear Promo
 if (btnOpenRedeem) {
   btnOpenRedeem.addEventListener("click", () => {
     modalRedeem.removeAttribute("hidden");
@@ -1047,82 +1117,6 @@ if (btnConfirmRedeem) {
     alert(`¡Felicidades! Se sumaron Bs. ${bonus.toFixed(2)} de saldo promocional.`);
   });
 }
-
-// ==========================================
-// REFERENCIAS Y SWITCH LOGIN / REGISTRO
-// ==========================================
-const tabAuthLogin = document.getElementById("tab-auth-login");
-const tabAuthRegister = document.getElementById("tab-auth-register");
-const formLoginUser = document.getElementById("form-login-user");
-const authTitle = document.getElementById("auth-title");
-
-tabAuthLogin.addEventListener("click", () => {
-  tabAuthRegister.classList.remove("active");
-  tabAuthLogin.classList.add("active");
-  formRegisterUser.classList.remove("active");
-  formLoginUser.classList.add("active");
-  if (authTitle) authTitle.textContent = "Iniciar Sesión";
-});
-
-tabAuthRegister.addEventListener("click", () => {
-  tabAuthLogin.classList.remove("active");
-  tabAuthRegister.classList.add("active");
-  formLoginUser.classList.remove("active");
-  formRegisterUser.classList.add("active");
-  if (authTitle) authTitle.textContent = "Crear Cuenta";
-});
-
-// ==========================================
-// PROCESO DE INICIO DE SESIÓN
-// ==========================================
-if (formLoginUser) {
-  formLoginUser.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const username = document.getElementById("login-username").value.trim().toLowerCase();
-    const password = document.getElementById("login-password").value.trim();
-    const btnSubmit = document.getElementById("btn-submit-login");
-
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = "Verificando...";
-
-    // Consultar usuario en la tabla profiles de Supabase
-    const { data: user, error } = await db
-      .from("profiles")
-      .select("*")
-      .eq("username", username)
-      .eq("password", password)
-      .maybeSingle();
-
-    btnSubmit.disabled = false;
-    btnSubmit.textContent = "Entrar";
-
-    if (error) {
-      alert("Error al conectar con el servidor: " + error.message);
-      return;
-    }
-
-    if (!user) {
-      alert("Usuario o contraseña incorrectos. Por favor verifica tus datos.");
-      return;
-    }
-
-    // Guardar sesión activa localmente
-    localStorage.setItem("app_active_user", user.id);
-    currentProfile = user;
-
-    // Habilitar interfaz principal
-    if (bottomBar) bottomBar.style.display = "flex";
-    applyRolePermissions();
-    renderProfileView();
-    switchScreen(viewList);
-    fetchMatches();
-    fetchReceipts();
-
-    formLoginUser.reset();
-  });
-}
-
 
 // ==========================================
 // 14. FILTROS Y ARRANQUE

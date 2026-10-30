@@ -428,14 +428,17 @@
       </div>
     </section>
 
-    <!-- ================= VISTA 5: PANEL DEL ORGANIZADOR ================= -->
+  <!-- ================= VISTA 5: PANEL DEL ORGANIZADOR ================= -->
     <section id="view-admin" class="view-screen">
       <header class="top-nav">
-        <button id="btn-admin-back" class="icon-nav-btn">
+        <button id="btn-admin-back" class="icon-nav-btn" title="Volver">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
         <h2 class="screen-title">Revisión de Pagos</h2>
-        <div style="width: 38px;"></div>
+        <!-- Botón rápido de salida en la cabecera -->
+        <button id="btn-admin-logout-top" class="icon-nav-btn" title="Cerrar Sesión">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff3b30"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </button>
       </header>
 
       <div class="admin-content">
@@ -448,6 +451,12 @@
         </div>
 
         <div id="admin-receipts-list" class="receipts-list"></div>
+
+        <!-- Botón de Cerrar Sesión al final del panel -->
+        <button id="btn-admin-logout" class="btn-logout-action">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+          Cerrar Sesión Organizador
+        </button>
       </div>
     </section>
 
