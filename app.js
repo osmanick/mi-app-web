@@ -1,5 +1,13 @@
 // ==========================================
-// 1. REGISTRO DEL SERVICE WORKER (PWA)
+// 1. CONFIGURACIÓN Y CLIENTE DE SUPABASE
+// ==========================================
+const SUPABASE_URL = "https://ygnuwxvtqnfrycewaqqk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnbnV3eHZ0cW5mcnljZXdhcXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMjM2NzYsImV4cCI6MjEwODg5OTY3Nn0.ffmCdbClTToLHrK6a7RUQ_EKo6ZbBnKR1ZKZIwdVdZ0";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==========================================
+// 2. REGISTRO DEL SERVICE WORKER (PWA)
 // ==========================================
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -32,75 +40,18 @@ if (btnInstall) {
 }
 
 // ==========================================
-// 2. BASE DE DATOS Y PERSISTENCIA (LOCALSTORAGE)
+// 3. ESTADOS Y VARIABLES GLOBALES
 // ==========================================
-const DEFAULT_MATCHES = [
-  {
-    id: 1,
-    title: "Cañada Strongest",
-    dateGroup: "Hoy · Jueves 29 de octubre",
-    dateLong: "jueves 29 de octubre, 2026",
-    sport: "Fútbol",
-    time: "21:00 — 22:00",
-    timeFull: "21:00 - 22:00",
-    address: "Calle Francisco Monroy, entre avenida illimani y calle yungas",
-    price: 29.00,
-    currentPlayers: 18,
-    maxPlayers: 22,
-    image: "https://images.unsplash.com/photo-1529900241451-b939e447ff64?w=600&q=80",
-    organizer: "BenjaminVidal"
-  },
-  {
-    id: 2,
-    title: "Cañada Strongest",
-    dateGroup: "Mañana · Viernes 30 de octubre",
-    dateLong: "viernes 30 de octubre, 2026",
-    sport: "Fútbol",
-    time: "20:00 — 21:00",
-    timeFull: "20:00 - 21:00",
-    address: "Calle Francisco Monroy, entre avenida illimani y calle yungas",
-    price: 29.00,
-    currentPlayers: 0,
-    maxPlayers: 22,
-    image: "https://images.unsplash.com/photo-1529900241451-b939e447ff64?w=600&q=80",
-    organizer: "BenjaminVidal"
-  },
-  {
-    id: 3,
-    title: "Cancha Zapata",
-    dateGroup: "Mañana · Viernes 30 de octubre",
-    dateLong: "viernes 30 de octubre, 2026",
-    sport: "Wally",
-    time: "20:00 — 21:00",
-    timeFull: "20:00 - 21:00",
-    address: "Calle Zapata y avenida del poeta",
-    price: 20.00,
-    currentPlayers: 6,
-    maxPlayers: 12,
-    image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&q=80",
-    organizer: "CarlosReyes"
-  }
-];
-
-let matches = JSON.parse(localStorage.getItem("app_matches")) || DEFAULT_MATCHES;
-let receipts = JSON.parse(localStorage.getItem("app_receipts")) || [];
-
-function saveMatches() {
-  localStorage.setItem("app_matches", JSON.stringify(matches));
-}
-
-function saveReceipts() {
-  localStorage.setItem("app_receipts", JSON.stringify(receipts));
-}
-
-// ==========================================
-// 3. REFERENCIAS DEL DOM
-// ==========================================
+let matches = [];
+let receipts = [];
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
 let currentReceiptBase64 = null;
 
+// ==========================================
+// 4. REFERENCIAS DEL DOM
+// ==========================================
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
 const viewAdmin = document.getElementById("view-admin");
@@ -113,16 +64,16 @@ const btnShare = document.getElementById("btn-share");
 const btnInvite = document.getElementById("btn-invite");
 const btnSubscribe = document.getElementById("btn-subscribe");
 
-// Pestañas inferiores
+// Pestañas
 const tabMatches = document.getElementById("tab-matches");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Pases Digitales
+// Pases
 const myTicketsSection = document.getElementById("my-tickets-section");
 const myTicketsList = document.getElementById("my-tickets-list");
 
-// Detalle del partido
+// Detalle
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -134,7 +85,7 @@ const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
 const detailOrganizer = document.getElementById("detail-organizer-name");
 
-// Modal QR y Comprobante
+// Modal QR & Comprobante
 const modalQr = document.getElementById("modal-qr");
 const qrImage = document.getElementById("qr-image");
 const modalConcept = document.getElementById("modal-concept");
@@ -148,7 +99,7 @@ const receiptPreview = document.getElementById("receipt-preview");
 const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
 const uploadLabelText = document.getElementById("upload-label-text");
 
-// Panel Administrador
+// Panel Admin
 const adminReceiptsList = document.getElementById("admin-receipts-list");
 const adminPendingCount = document.getElementById("admin-pending-count");
 const btnClearReceipts = document.getElementById("btn-clear-receipts");
@@ -157,7 +108,70 @@ const viewerFullImage = document.getElementById("viewer-full-image");
 const btnCloseViewer = document.getElementById("btn-close-viewer");
 
 // ==========================================
-// 4. SONIDO Y NOTIFICACIÓN
+// 5. CARGA DE DATOS DESDE SUPABASE
+// ==========================================
+async function fetchMatches() {
+  const { data, error } = await db.from("matches").select("*").order("id", { ascending: true });
+  if (error) {
+    console.error("Error al obtener partidos:", error);
+    return;
+  }
+  matches = data.map((m) => ({
+    id: m.id,
+    title: m.title,
+    dateGroup: m.date_group,
+    dateLong: m.date_long,
+    sport: m.sport,
+    time: m.time,
+    timeFull: m.time_full,
+    address: m.address,
+    price: Number(m.price),
+    currentPlayers: m.current_players,
+    maxPlayers: m.max_players,
+    image: m.image,
+    organizer: m.organizer
+  }));
+  renderMatches();
+}
+
+async function fetchReceipts() {
+  const { data, error } = await db.from("receipts").select("*").order("id", { ascending: false });
+  if (error) {
+    console.error("Error al obtener comprobantes:", error);
+    return;
+  }
+  receipts = data.map((r) => ({
+    id: r.id,
+    matchId: r.match_id,
+    matchTitle: r.match_title,
+    sport: r.sport,
+    amount: Number(r.amount),
+    date: r.date,
+    status: r.status,
+    receiptImage: r.receipt_image
+  }));
+  updatePendingBadge();
+  renderMyTickets();
+  if (viewAdmin && viewAdmin.classList.contains("active")) {
+    renderAdminPanel();
+  }
+}
+
+// ==========================================
+// 6. TIEMPO REAL (SUPABASE REALTIME)
+// ==========================================
+db.channel("realtime-updates")
+  .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => {
+    fetchMatches();
+  })
+  .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => {
+    fetchReceipts();
+    playNotificationSound();
+  })
+  .subscribe();
+
+// ==========================================
+// 7. SONIDO Y NOTIFICACIÓN
 // ==========================================
 function playNotificationSound() {
   try {
@@ -180,7 +194,7 @@ function playNotificationSound() {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.35);
   } catch (err) {
-    console.log("Audio no permitido en este contexto");
+    console.log("Audio en espera de interacción");
   }
 }
 
@@ -201,7 +215,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 5. RENDERIZADO DE PARTIDOS
+// 8. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -220,7 +234,7 @@ function renderMatches() {
   if (filtered.length === 0) {
     matchesContainer.innerHTML = `
       <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
-        No se encontraron partidos para tu búsqueda.
+        No se encontraron partidos.
       </div>`;
     return;
   }
@@ -281,7 +295,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// 6. NAVEGACIÓN Y DETALLES
+// 9. NAVEGACIÓN Y DETALLES
 // ==========================================
 function switchScreen(targetScreen) {
   [viewList, viewDetail, viewAdmin].forEach((screen) => {
@@ -350,7 +364,7 @@ tabProfile.addEventListener("click", () => {
 });
 
 // ==========================================
-// 7. GESTIÓN DEL MODAL, QR Y COMPROBANTE
+// 10. GESTIÓN DEL MODAL, QR Y COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -424,7 +438,7 @@ if (btnCloseModal) btnCloseModal.addEventListener("click", closeQrModal);
 if (btnCancelPayment) btnCancelPayment.addEventListener("click", closeQrModal);
 
 if (btnConfirmPayment) {
-  btnConfirmPayment.addEventListener("click", () => {
+  btnConfirmPayment.addEventListener("click", async () => {
     if (!selectedMatch) return;
 
     if (!currentReceiptBase64) {
@@ -435,30 +449,36 @@ if (btnConfirmPayment) {
     const now = new Date();
     const formattedTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-    const newReceipt = {
-      id: Date.now(),
-      matchId: selectedMatch.id,
-      matchTitle: selectedMatch.title,
-      sport: selectedMatch.sport,
-      amount: selectedMatch.price,
-      date: formattedTime,
-      status: "Pendiente",
-      receiptImage: currentReceiptBase64
-    };
+    btnConfirmPayment.disabled = true;
+    btnConfirmPayment.textContent = "Enviando comprobante...";
 
-    receipts.unshift(newReceipt);
-    saveReceipts();
+    const { error } = await db.from("receipts").insert([
+      {
+        match_id: selectedMatch.id,
+        match_title: selectedMatch.title,
+        sport: selectedMatch.sport,
+        amount: selectedMatch.price,
+        date: formattedTime,
+        status: "Pendiente",
+        receipt_image: currentReceiptBase64
+      }
+    ]);
 
-    updatePendingBadge();
-    playNotificationSound();
+    btnConfirmPayment.disabled = false;
+    btnConfirmPayment.textContent = "Confirmar Inscripción";
+
+    if (error) {
+      alert("Error al enviar comprobante: " + error.message);
+      return;
+    }
 
     closeQrModal();
-    alert(`¡Comprobante enviado!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)} para aprobar tu cupo.`);
+    alert(`¡Comprobante enviado a la nube!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)}.`);
   });
 }
 
 // ==========================================
-// 8. PANEL DE ADMINISTRADOR
+// 11. PANEL DE ADMINISTRADOR
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -513,7 +533,7 @@ function renderAdminPanel() {
   });
 }
 
-window.approveReceipt = function(receiptId) {
+window.approveReceipt = async function(receiptId) {
   const receipt = receipts.find((r) => r.id === receiptId);
   if (!receipt) return;
 
@@ -523,28 +543,19 @@ window.approveReceipt = function(receiptId) {
       alert("No se puede aprobar: la cancha ya llenó todos sus cupos.");
       return;
     }
-    match.currentPlayers += 1;
-    saveMatches();
+    // Actualizar cupos en Supabase
+    await db.from("matches").update({ current_players: match.currentPlayers + 1 }).eq("id", match.id);
   }
 
-  receipt.status = "Aprobado";
-  saveReceipts();
-  updatePendingBadge();
-  renderAdminPanel();
-  renderMyTickets();
-  alert("Inscripción aprobada. Se ha generado el pase digital de entrada.");
+  // Actualizar estado en Supabase
+  await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
+  alert("Inscripción aprobada en la nube. Se ha generado el pase digital.");
 };
 
-window.rejectReceipt = function(receiptId) {
-  const receipt = receipts.find((r) => r.id === receiptId);
-  if (!receipt) return;
-
+window.rejectReceipt = async function(receiptId) {
   const confirmReject = confirm("¿Estás seguro de rechazar este comprobante?");
   if (confirmReject) {
-    receipt.status = "Rechazado";
-    saveReceipts();
-    updatePendingBadge();
-    renderAdminPanel();
+    await db.from("receipts").update({ status: "Rechazado" }).eq("id", receiptId);
   }
 };
 
@@ -562,19 +573,16 @@ if (btnCloseViewer) {
 }
 
 if (btnClearReceipts) {
-  btnClearReceipts.addEventListener("click", () => {
-    if (confirm("¿Deseas vaciar todo el historial de comprobantes?")) {
-      receipts = [];
-      saveReceipts();
-      renderAdminPanel();
-      updatePendingBadge();
-      renderMyTickets();
+  btnClearReceipts.addEventListener("click", async () => {
+    if (confirm("¿Deseas vaciar todo el historial de comprobantes en la nube?")) {
+      await db.from("receipts").delete().neq("id", 0);
+      fetchReceipts();
     }
   });
 }
 
 // ==========================================
-// 9. PASES DIGITALES & DESCARGA PDF
+// 12. PASES DIGITALES & DESCARGA PDF
 // ==========================================
 function renderMyTickets() {
   if (!myTicketsSection || !myTicketsList) return;
@@ -694,7 +702,7 @@ window.downloadPassPDF = function (ticketId) {
 };
 
 // ==========================================
-// 10. COMPARTIR E INVITAR
+// 13. COMPARTIR E INVITAR
 // ==========================================
 async function shareMatch() {
   if (!selectedMatch) return;
@@ -720,7 +728,7 @@ btnShare.addEventListener("click", shareMatch);
 btnInvite.addEventListener("click", shareMatch);
 
 // ==========================================
-// 11. FILTROS Y BÚSQUEDA
+// 14. FILTROS Y BÚSQUEDA
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -738,9 +746,10 @@ if (searchInput) {
   });
 }
 
-// Arranque inicial
+// ==========================================
+// 15. ARRANQUE
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  renderMatches();
-  updatePendingBadge();
-  renderMyTickets();
+  fetchMatches();
+  fetchReceipts();
 });
