@@ -191,6 +191,18 @@
       <div class="detail-body">
         <h2 id="detail-venue-name" class="detail-title">-</h2>
 
+        <!-- Switch visible solo para el ORGANIZADOR -->
+        <div id="organizer-confirm-box" class="organizer-switch-card" hidden>
+          <div class="switch-label-group">
+            <span class="switch-title">Estado del Partido</span>
+            <span class="switch-desc">Marcar como "Confirmado" para los jugadores</span>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" id="toggle-match-confirmed">
+            <span class="slider-round"></span>
+          </label>
+        </div>
+
         <div class="info-row">
           <div class="info-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>

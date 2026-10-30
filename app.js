@@ -84,7 +84,7 @@ const tabAlerts = document.getElementById("tab-alerts");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Detalle Cancha
+// Detalle Cancha & Switch Organizador
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -96,6 +96,8 @@ const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
 const detailPlayersList = document.getElementById("detail-players-list");
 const detailPlayersRatio = document.getElementById("detail-players-ratio");
+const organizerConfirmBox = document.getElementById("organizer-confirm-box");
+const toggleMatchConfirmed = document.getElementById("toggle-match-confirmed");
 
 // Modal QR y Comprobante
 const modalQr = document.getElementById("modal-qr");
@@ -142,7 +144,7 @@ const btnSaveSecurity = document.getElementById("btn-save-security");
 const inputEditUsername = document.getElementById("input-edit-username");
 const inputEditPassword = document.getElementById("input-edit-password");
 
-// Perfil y Logout
+// Perfil, Avatar y Logout
 const btnLogout = document.getElementById("btn-logout");
 const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
@@ -152,6 +154,10 @@ const pillMyMatches = document.getElementById("pill-my-matches");
 const pillMyBookings = document.getElementById("pill-my-bookings");
 const eventsMatchesSub = document.getElementById("events-matches-subview");
 const eventsBookingsSub = document.getElementById("events-bookings-subview");
+
+const btnChangeAvatar = document.getElementById("btn-change-avatar");
+const inputAvatarFile = document.getElementById("input-avatar-file");
+const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
 // 5. SESIÓN, LOGIN Y REGISTRO
@@ -187,7 +193,6 @@ async function checkUserSession() {
   fetchReceipts();
 }
 
-// Selector pestañas Iniciar Sesión / Registro
 if (tabAuthLogin && tabAuthRegister) {
   tabAuthLogin.addEventListener("click", () => {
     tabAuthRegister.classList.remove("active");
@@ -206,7 +211,6 @@ if (tabAuthLogin && tabAuthRegister) {
   });
 }
 
-// Iniciar Sesión
 if (formLoginUser) {
   formLoginUser.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -252,7 +256,6 @@ if (formLoginUser) {
   });
 }
 
-// Registrar Usuario
 if (formRegisterUser) {
   formRegisterUser.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -311,7 +314,6 @@ if (formRegisterUser) {
   });
 }
 
-// Función Centralizada de Cierre de Sesión
 function logoutUser() {
   if (confirm("¿Seguro que deseas cerrar sesión?")) {
     localStorage.removeItem("app_active_user");
@@ -373,7 +375,8 @@ async function fetchMatches() {
     currentPlayers: m.current_players,
     maxPlayers: m.max_players,
     image: m.image,
-    organizer: m.organizer
+    organizer: m.organizer,
+    isConfirmed: m.is_confirmed || false
   }));
   renderMatches();
 }
@@ -466,7 +469,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 8. RENDERIZADO DE PARTIDOS
+// 8. RENDERIZADO DE PARTIDOS & DETALLE
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -509,8 +512,18 @@ function renderMatches() {
       card.className = "match-card";
       card.addEventListener("click", () => showDetail(match.id));
 
+      const confirmedBadgeHtml = match.isConfirmed
+        ? `<div class="badge-confirmed-tag">
+             <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+             Confirmado
+           </div>`
+        : "";
+
       card.innerHTML = `
-        <img class="match-thumb" src="${match.image}" alt="${match.title}">
+        <div class="match-thumb-wrapper">
+          <img class="match-thumb" src="${match.image}" alt="${match.title}">
+          ${confirmedBadgeHtml}
+        </div>
         <div class="match-details">
           <div>
             <h4 class="match-title">${match.title}</h4>
@@ -528,6 +541,9 @@ function renderMatches() {
           </div>
           <div class="match-footer">
             <span class="match-price">Bs ${match.price.toFixed(2)}</span>
+            <div class="match-footer-icons">
+              <svg class="players-icon-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            </div>
             <div class="quota-indicator">
               <div class="progress-track">
                 <div class="progress-fill" style="width: ${percentage}%"></div>
@@ -559,9 +575,40 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
+  if (organizerConfirmBox && toggleMatchConfirmed) {
+    if (currentProfile && currentProfile.role === "ORGANIZADOR") {
+      organizerConfirmBox.removeAttribute("hidden");
+      toggleMatchConfirmed.checked = !!selectedMatch.isConfirmed;
+    } else {
+      organizerConfirmBox.setAttribute("hidden", "");
+    }
+  }
+
   renderConfirmedPlayers(selectedMatch.id);
   updateSubscribeButton();
   switchScreen(viewDetail);
+}
+
+if (toggleMatchConfirmed) {
+  toggleMatchConfirmed.addEventListener("change", async (e) => {
+    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") return;
+
+    const newStatus = e.target.checked;
+    selectedMatch.isConfirmed = newStatus;
+
+    const { error } = await db
+      .from("matches")
+      .update({ is_confirmed: newStatus })
+      .eq("id", selectedMatch.id);
+
+    if (error) {
+      alert("Error al actualizar estado en Supabase: " + error.message);
+      toggleMatchConfirmed.checked = !newStatus;
+      return;
+    }
+
+    renderMatches();
+  });
 }
 
 function renderConfirmedPlayers(matchId) {
@@ -667,7 +714,6 @@ btnAdminBack.addEventListener("click", () => {
   renderMatches();
 });
 
-// Pestañas Perfil
 if (btnTabAbout && btnTabEvents) {
   btnTabAbout.addEventListener("click", () => {
     btnTabEvents.classList.remove("active");
@@ -774,7 +820,117 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 11. PUBLICAR CANCHA (ORGANIZADOR)
+// 11. REDIMENSIONAR AVATAR Y STORAGE
+// ==========================================
+function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = maxSize;
+        canvas.height = maxSize;
+
+        const minDimension = Math.min(img.width, img.height);
+        const startX = (img.width - minDimension) / 2;
+        const startY = (img.height - minDimension) / 2;
+
+        ctx.drawImage(
+          img,
+          startX,
+          startY,
+          minDimension,
+          minDimension,
+          0,
+          0,
+          maxSize,
+          maxSize
+        );
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Error al procesar la imagen"));
+            }
+          },
+          "image/webp",
+          quality
+        );
+      };
+
+      img.onerror = (err) => reject(err);
+    };
+
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+if (btnChangeAvatar && inputAvatarFile) {
+  btnChangeAvatar.addEventListener("click", () => {
+    inputAvatarFile.click();
+  });
+
+  inputAvatarFile.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentProfile) return;
+
+    btnChangeAvatar.textContent = "⏳";
+    btnChangeAvatar.disabled = true;
+
+    try {
+      const compressedBlob = await resizeAndCompressImage(file, 300, 0.82);
+      const fileName = `${currentProfile.id}_${Date.now()}.webp`;
+      const filePath = `profiles/${fileName}`;
+
+      const { error: uploadError } = await db.storage
+        .from("avatars")
+        .upload(filePath, compressedBlob, {
+          contentType: "image/webp",
+          cacheControl: "31536000",
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = db.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicAvatarUrl = urlData.publicUrl;
+
+      const { error: dbError } = await db
+        .from("profiles")
+        .update({ avatar_url: publicAvatarUrl })
+        .eq("id", currentProfile.id);
+
+      if (dbError) throw dbError;
+
+      currentProfile.avatar_url = publicAvatarUrl;
+      if (profileAvatarImg) profileAvatarImg.src = publicAvatarUrl;
+
+      alert("¡Foto de perfil actualizada con éxito!");
+    } catch (err) {
+      console.error("Error al subir avatar:", err);
+      alert("Hubo un error al actualizar la foto: " + err.message);
+    } finally {
+      btnChangeAvatar.textContent = "+";
+      btnChangeAvatar.disabled = false;
+      inputAvatarFile.value = "";
+    }
+  });
+}
+
+// ==========================================
+// 12. PUBLICAR CANCHA (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -833,7 +989,8 @@ if (formNewMatch) {
       max_players: maxPlayers,
       address,
       image,
-      organizer: currentProfile.username || "Organizador"
+      organizer: currentProfile.username || "Organizador",
+      is_confirmed: false
     };
 
     const { error } = await db.from("matches").insert([newMatchPayload]);
@@ -851,7 +1008,7 @@ if (formNewMatch) {
 }
 
 // ==========================================
-// 12. PAGO QR & COMPROBANTE
+// 13. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -968,7 +1125,7 @@ if (btnConfirmPayment) {
 }
 
 // ==========================================
-// 13. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
+// 14. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1119,135 +1276,7 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
-// FUNCIÓN AUXILIAR: REDIMENSIONAR Y COMPRIMIR IMAGEN (CANVAS)
-// ==========================================
-function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-
-        // Calcular recorte central cuadrado (Center Crop)
-        const minDimension = Math.min(img.width, img.height);
-        const startX = (img.width - minDimension) / 2;
-        const startY = (img.height - minDimension) / 2;
-
-        // Dibujar solo la porción central ajustada a 300x300 px
-        ctx.drawImage(
-          img,
-          startX,
-          startY,
-          minDimension,
-          minDimension,
-          0,
-          0,
-          maxSize,
-          maxSize
-        );
-
-        // Exportar como Blob comprimido (WebP si el navegador lo soporta, o JPEG)
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Error al procesar la compresión de la imagen."));
-            }
-          },
-          "image/webp",
-          quality
-        );
-      };
-
-      img.onerror = (err) => reject(err);
-    };
-
-    reader.onerror = (err) => reject(err);
-  });
-}
-
-// ==========================================
-// SUBIDA OPTIMIZADA DE AVATAR A SUPABASE STORAGE
-// ==========================================
-const btnChangeAvatar = document.getElementById("btn-change-avatar");
-const inputAvatarFile = document.getElementById("input-avatar-file");
-const profileAvatarImg = document.getElementById("profile-avatar-img");
-
-if (btnChangeAvatar && inputAvatarFile) {
-  btnChangeAvatar.addEventListener("click", () => {
-    inputAvatarFile.click();
-  });
-
-  inputAvatarFile.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file || !currentProfile) return;
-
-    btnChangeAvatar.textContent = "⏳";
-    btnChangeAvatar.disabled = true;
-
-    try {
-      // 1. Redimensionar localmente a 300x300 px y comprimir (reduce de MBs a ~40 KB)
-      const compressedBlob = await resizeAndCompressImage(file, 300, 0.82);
-
-      // 2. Nombre único con extensión webp
-      const fileName = `${currentProfile.id}_${Date.now()}.webp`;
-      const filePath = `profiles/${fileName}`;
-
-      // 3. Subir el archivo optimizado a Supabase
-      const { error: uploadError } = await db.storage
-        .from("avatars")
-        .upload(filePath, compressedBlob, {
-          contentType: "image/webp",
-          cacheControl: "31536000", // Cache de 1 año en CDN para carga instantánea
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      // 4. Obtener URL pública
-      const { data: urlData } = db.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      const publicAvatarUrl = urlData.publicUrl;
-
-      // 5. Actualizar en la base de datos profiles
-      const { error: dbError } = await db
-        .from("profiles")
-        .update({ avatar_url: publicAvatarUrl })
-        .eq("id", currentProfile.id);
-
-      if (dbError) throw dbError;
-
-      // 6. Actualizar interfaz local
-      currentProfile.avatar_url = publicAvatarUrl;
-      if (profileAvatarImg) profileAvatarImg.src = publicAvatarUrl;
-
-      alert("¡Foto de perfil actualizada y optimizada con éxito!");
-    } catch (err) {
-      console.error("Error al subir avatar:", err);
-      alert("Hubo un error al actualizar la foto: " + err.message);
-    } finally {
-      btnChangeAvatar.textContent = "+";
-      btnChangeAvatar.disabled = false;
-      inputAvatarFile.value = "";
-    }
-  });
-}
-
-
-// ==========================================
-// 14. FILTROS Y ARRANQUE
+// 15. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {

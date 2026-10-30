@@ -1475,6 +1475,135 @@ body {
   cursor: pointer;
 }
 
+/* ================= BADGE CONFIRMADO SOBRE LA FOTO ================= */
+.match-thumb-wrapper {
+  position: relative;
+  width: 95px;
+  height: 95px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.match-thumb-wrapper .match-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Badge flotante naranja de la captura */
+.badge-confirmed-tag {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background-color: var(--accent); /* Naranja oficial */
+  color: #ffffff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.2px;
+}
+
+.badge-confirmed-tag svg {
+  width: 10px;
+  height: 10px;
+  fill: #ffffff;
+}
+
+/* Ícono de jugadores junto al precio */
+.match-footer-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.players-icon-svg {
+  width: 14px;
+  height: 14px;
+  fill: var(--accent);
+}
+
+/* ================= SWITCH CONFIRMADO PARA EL ORGANIZADOR ================= */
+.organizer-switch-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.switch-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switch-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.switch-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Control Toggle Switch */
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-round {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #2a2c35;
+  transition: 0.25s;
+  border-radius: 34px;
+}
+
+.slider-round:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+input:checked + .slider-round {
+  background-color: var(--accent);
+}
+
+input:checked + .slider-round:before {
+  transform: translateX(22px);
+}
+
+
 /* ================= PESTAÑAS LOGIN / REGISTRO ================= */
 .auth-tabs-container {
   display: flex;
