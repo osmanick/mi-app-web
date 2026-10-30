@@ -350,7 +350,7 @@ if (formNewVenue) {
 }
 
 // ==========================================
-// 7. SESIÓN, LOGIN Y REGISTRO
+// 7. GESTIÓN ROBUSTA DE SESIÓN (RESTAURACIÓN FIABLE)
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
@@ -361,27 +361,56 @@ async function checkUserSession() {
     return;
   }
 
-  const { data, error } = await db
-    .from("profiles")
-    .select("*")
-    .eq("id", activeUserId)
-    .single();
+  try {
+    // 1. Intentar buscar por ID primario
+    let { data: user, error } = await db
+      .from("profiles")
+      .select("*")
+      .eq("id", activeUserId)
+      .maybeSingle();
 
-  if (error || !data) {
-    localStorage.removeItem("app_active_user");
+    // 2. Si no lo encuentra por ID, intentar buscar por username como respaldo
+    if (error || !user) {
+      const { data: userFallback } = await db
+        .from("profiles")
+        .select("*")
+        .eq("username", activeUserId)
+        .maybeSingle();
+
+      if (!userFallback) {
+        localStorage.removeItem("app_active_user");
+        if (bottomBar) bottomBar.style.display = "none";
+        switchScreen(viewRegister);
+        return;
+      }
+      user = userFallback;
+      localStorage.setItem("app_active_user", user.id);
+    }
+
+    // 3. Establecer perfil global
+    currentProfile = user;
+
+    // 4. Mostrar barra de navegación inferior
+    if (bottomBar) bottomBar.style.display = "flex";
+
+    // 5. Aplicar permisos y pintar las vistas según el rol real
+    applyRolePermissions();
+    renderProfileView();
+
+    // 6. Pre-renderizar panel admin si es Organizador
+    if (currentProfile.role === "ORGANIZADOR") {
+      renderAdminPanel();
+    }
+
+    // 7. Cargar datos en paralelo y mostrar cartelera
+    switchScreen(viewList);
+    await Promise.all([fetchVenues(), fetchMatches(), fetchReceipts()]);
+
+  } catch (err) {
+    console.error("Error al restaurar sesión:", err);
     if (bottomBar) bottomBar.style.display = "none";
     switchScreen(viewRegister);
-    return;
   }
-
-  currentProfile = data;
-  if (bottomBar) bottomBar.style.display = "flex";
-  applyRolePermissions();
-  renderProfileView();
-  switchScreen(viewList);
-  fetchVenues();
-  fetchMatches();
-  fetchReceipts();
 }
 
 if (tabAuthLogin && tabAuthRegister) {
@@ -433,12 +462,18 @@ if (formLoginUser) {
       return;
     }
 
+    // Guardar ID exacto y establecer perfil
     localStorage.setItem("app_active_user", user.id);
     currentProfile = user;
 
     if (bottomBar) bottomBar.style.display = "flex";
     applyRolePermissions();
     renderProfileView();
+
+    if (user.role === "ORGANIZADOR") {
+      renderAdminPanel();
+    }
+
     switchScreen(viewList);
     fetchVenues();
     fetchMatches();
@@ -791,7 +826,7 @@ function showDetail(id) {
 
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
-  // Control del Switch de Confirmado
+  // Control estricto de visibilidad del switch
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -805,7 +840,7 @@ function showDetail(id) {
     }
   }
 
-  // Control del Botón Finalizar Partido
+  // Control estricto del botón Finalizar Partido
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
