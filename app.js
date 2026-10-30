@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURACIÓN Y CLIENTE DE SUPABASE
+// 1. SUPABASE CLIENT
 // ==========================================
 const SUPABASE_URL = "https://ygnuwxvtqnfrycewaqqk.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnbnV3eHZ0cW5mcnljZXdhcXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMjM2NzYsImV4cCI6MjEwODg5OTY3Nn0.ffmCdbClTToLHrK6a7RUQ_EKo6ZbBnKR1ZKZIwdVdZ0";
@@ -18,7 +18,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// Botón de instalación nativa PWA
 let deferredPrompt = null;
 const btnInstall = document.getElementById("btn-install");
 
@@ -32,8 +31,7 @@ if (btnInstall) {
   btnInstall.addEventListener("click", async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log("Elección de instalación:", outcome);
+    await deferredPrompt.userChoice;
     deferredPrompt = null;
     btnInstall.setAttribute("hidden", "");
   });
@@ -44,6 +42,7 @@ if (btnInstall) {
 // ==========================================
 let matches = [];
 let receipts = [];
+let currentProfile = null;
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
@@ -52,9 +51,14 @@ let currentReceiptBase64 = null;
 // ==========================================
 // 4. REFERENCIAS DEL DOM
 // ==========================================
+const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
+const viewMessages = document.getElementById("view-messages");
+const viewProfile = document.getElementById("view-profile");
 const viewAdmin = document.getElementById("view-admin");
+const bottomBar = document.getElementById("bottom-bar");
+
 const matchesContainer = document.getElementById("matches-list-container");
 const searchInput = document.getElementById("search-input");
 const chipButtons = document.querySelectorAll(".chip-item");
@@ -66,14 +70,13 @@ const btnSubscribe = document.getElementById("btn-subscribe");
 
 // Pestañas
 const tabMatches = document.getElementById("tab-matches");
+const tabClubs = document.getElementById("tab-clubs");
+const tabMessages = document.getElementById("tab-messages");
+const tabAlerts = document.getElementById("tab-alerts");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Pases
-const myTicketsSection = document.getElementById("my-tickets-section");
-const myTicketsList = document.getElementById("my-tickets-list");
-
-// Detalle
+// Detalle Cancha
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -83,9 +86,10 @@ const detailTime = document.getElementById("detail-time");
 const detailVenueSub = document.getElementById("detail-venue-sub");
 const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
-const detailOrganizer = document.getElementById("detail-organizer-name");
+const detailPlayersList = document.getElementById("detail-players-list");
+const detailPlayersRatio = document.getElementById("detail-players-ratio");
 
-// Modal QR & Comprobante
+// Modal QR y Comprobante
 const modalQr = document.getElementById("modal-qr");
 const qrImage = document.getElementById("qr-image");
 const modalConcept = document.getElementById("modal-concept");
@@ -107,9 +111,175 @@ const modalImageViewer = document.getElementById("modal-image-viewer");
 const viewerFullImage = document.getElementById("viewer-full-image");
 const btnCloseViewer = document.getElementById("btn-close-viewer");
 
+// Modal Canjear
+const modalRedeem = document.getElementById("modal-redeem");
+const btnOpenRedeem = document.getElementById("btn-open-redeem");
+const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
+const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
+const inputPromoCode = document.getElementById("input-promo-code");
+
+// Modal Crear Partido (Organizador)
+const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
+const modalCreateMatch = document.getElementById("modal-create-match");
+const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
+const formNewMatch = document.getElementById("form-new-match");
+
+// Modal de Modificación de Credenciales
+const modalSecurity = document.getElementById("modal-security");
+const btnOpenSecurityModal = document.getElementById("btn-open-security-modal");
+const btnCancelSecurity = document.getElementById("btn-cancel-security");
+const btnSaveSecurity = document.getElementById("btn-save-security");
+const inputEditUsername = document.getElementById("input-edit-username");
+const inputEditPassword = document.getElementById("input-edit-password");
+
+// Perfil y Eventos
+const btnLogout = document.getElementById("btn-logout");
+const btnTabAbout = document.getElementById("btn-tab-about");
+const btnTabEvents = document.getElementById("btn-tab-events");
+const tabAboutContent = document.getElementById("profile-tab-about");
+const tabEventsContent = document.getElementById("profile-tab-events");
+const pillMyMatches = document.getElementById("pill-my-matches");
+const pillMyBookings = document.getElementById("pill-my-bookings");
+const eventsMatchesSub = document.getElementById("events-matches-subview");
+const eventsBookingsSub = document.getElementById("events-bookings-subview");
+
+// Formulario de Registro
+const formRegisterUser = document.getElementById("form-register-user");
+
 // ==========================================
-// 5. CARGA DE DATOS DESDE SUPABASE
+// 5. FLUJO DE SESIÓN Y REGISTRO INICIAL
 // ==========================================
+async function checkUserSession() {
+  const activeUserId = localStorage.getItem("app_active_user");
+
+  if (!activeUserId) {
+    // Si no ha iniciado sesión ni se ha registrado, mostrar pantalla de registro
+    if (bottomBar) bottomBar.style.display = "none";
+    switchScreen(viewRegister);
+    return;
+  }
+
+  // Usuario con sesión guardada: cargar datos de Supabase
+  const { data, error } = await db
+    .from("profiles")
+    .select("*")
+    .eq("id", activeUserId)
+    .single();
+
+  if (error || !data) {
+    localStorage.removeItem("app_active_user");
+    if (bottomBar) bottomBar.style.display = "none";
+    switchScreen(viewRegister);
+    return;
+  }
+
+  currentProfile = data;
+  if (bottomBar) bottomBar.style.display = "flex";
+  applyRolePermissions();
+  renderProfileView();
+  switchScreen(viewList);
+  fetchMatches();
+  fetchReceipts();
+}
+
+// Envío del Formulario de Registro (JUGADOR por defecto)
+if (formRegisterUser) {
+  formRegisterUser.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const firstName = document.getElementById("reg-firstname").value.trim();
+    const lastName = document.getElementById("reg-lastname").value.trim();
+    const phone = document.getElementById("reg-phone").value.trim();
+    const birthDate = document.getElementById("reg-birth").value;
+    const skill = document.getElementById("reg-skill").value;
+    const city = document.getElementById("reg-city").value.trim();
+    const nationality = document.getElementById("reg-nationality").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const username = document.getElementById("reg-username").value.trim().toLowerCase();
+    const password = document.getElementById("reg-password").value.trim();
+
+    const newUserId = "user_" + Date.now();
+
+    const newProfile = {
+      id: newUserId,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone,
+      birth_date: birthDate,
+      skill_level: skill,
+      city: city,
+      nationality: nationality,
+      email: email,
+      username: username,
+      password: password,
+      role: "JUGADOR",
+      matches_played: 0,
+      balance: 0.00,
+      promo_balance: 0.00,
+      plan: "FREE",
+      avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
+    };
+
+    const { error } = await db.from("profiles").insert([newProfile]);
+
+    if (error) {
+      alert("Error al registrarse: " + error.message);
+      return;
+    }
+
+    localStorage.setItem("app_active_user", newUserId);
+    currentProfile = newProfile;
+
+    if (bottomBar) bottomBar.style.display = "flex";
+    applyRolePermissions();
+    renderProfileView();
+    switchScreen(viewList);
+    fetchMatches();
+    fetchReceipts();
+
+    alert(`¡Bienvenido ${firstName}! Tu cuenta de Jugador ha sido creada con éxito.`);
+  });
+}
+
+// Cierre de sesión
+if (btnLogout) {
+  btnLogout.addEventListener("click", () => {
+    if (confirm("¿Seguro que deseas cerrar sesión?")) {
+      localStorage.removeItem("app_active_user");
+      currentProfile = null;
+      if (bottomBar) bottomBar.style.display = "none";
+      formRegisterUser.reset();
+      switchScreen(viewRegister);
+    }
+  });
+}
+
+// ==========================================
+// 6. PERMISOS Y CARGA DE DATOS
+// ==========================================
+function applyRolePermissions() {
+  if (!currentProfile) return;
+
+  const isOrganizer = currentProfile.role === "ORGANIZADOR";
+
+  // El botón de publicar cancha solo lo ve el ORGANIZADOR
+  if (btnCreateMatchFab) {
+    if (isOrganizer) {
+      btnCreateMatchFab.removeAttribute("hidden");
+    } else {
+      btnCreateMatchFab.setAttribute("hidden", "");
+    }
+  }
+
+  // Nombre de la pestaña inferior
+  const tabProfileLabel = tabProfile.querySelector("span");
+  if (tabProfileLabel) {
+    tabProfileLabel.textContent = isOrganizer ? "Organizador" : "Perfil";
+  }
+
+  updatePendingBadge();
+}
+
 async function fetchMatches() {
   const { data, error } = await db.from("matches").select("*").order("id", { ascending: true });
   if (error) {
@@ -148,31 +318,39 @@ async function fetchReceipts() {
     amount: Number(r.amount),
     date: r.date,
     status: r.status,
-    receiptImage: r.receipt_image
+    receiptImage: r.receipt_image,
+    userId: r.user_id,
+    username: r.username || "Jugador",
+    avatarUrl: r.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
   }));
+
   updatePendingBadge();
-  renderMyTickets();
   if (viewAdmin && viewAdmin.classList.contains("active")) {
     renderAdminPanel();
+  }
+  if (selectedMatch) {
+    renderConfirmedPlayers(selectedMatch.id);
   }
 }
 
 // ==========================================
-// 6. TIEMPO REAL (SUPABASE REALTIME)
+// 7. REALTIME & NOTIFICACIONES
 // ==========================================
-db.channel("realtime-updates")
-  .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => {
-    fetchMatches();
-  })
+db.channel("global-realtime")
+  .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
   .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => {
     fetchReceipts();
     playNotificationSound();
   })
+  .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, (payload) => {
+    if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
+      currentProfile = payload.new;
+      renderProfileView();
+      applyRolePermissions();
+    }
+  })
   .subscribe();
 
-// ==========================================
-// 7. SONIDO Y NOTIFICACIÓN
-// ==========================================
 function playNotificationSound() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -190,11 +368,10 @@ function playNotificationSound() {
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     osc.start();
     osc.stop(audioCtx.currentTime + 0.35);
   } catch (err) {
-    console.log("Audio en espera de interacción");
+    console.log("Audio pausado");
   }
 }
 
@@ -202,7 +379,7 @@ function updatePendingBadge() {
   if (!badgePending) return;
   const pendingCount = receipts.filter((r) => r.status === "Pendiente").length;
 
-  if (pendingCount > 0) {
+  if (currentProfile && currentProfile.role === "ORGANIZADOR" && pendingCount > 0) {
     badgePending.textContent = pendingCount > 99 ? "99+" : pendingCount;
     badgePending.removeAttribute("hidden");
   } else {
@@ -215,7 +392,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 8. RENDERIZADO DE PARTIDOS
+// 8. RENDERIZADO DE PARTIDOS & JUGADORES
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -294,16 +471,6 @@ function renderMatches() {
   }
 }
 
-// ==========================================
-// 9. NAVEGACIÓN Y DETALLES
-// ==========================================
-function switchScreen(targetScreen) {
-  [viewList, viewDetail, viewAdmin].forEach((screen) => {
-    if (screen) screen.classList.remove("active");
-  });
-  if (targetScreen) targetScreen.classList.add("active");
-}
-
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
@@ -316,11 +483,46 @@ function showDetail(id) {
   detailTime.textContent = selectedMatch.timeFull;
   detailVenueSub.textContent = selectedMatch.title.toUpperCase();
   detailAddress.textContent = selectedMatch.address;
-  detailOrganizer.textContent = selectedMatch.organizer;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
+  renderConfirmedPlayers(selectedMatch.id);
   updateSubscribeButton();
   switchScreen(viewDetail);
+}
+
+function renderConfirmedPlayers(matchId) {
+  if (!detailPlayersList || !selectedMatch) return;
+  detailPlayersList.innerHTML = "";
+
+  const approvedUsers = receipts.filter(
+    (r) => r.matchId === matchId && r.status === "Aprobado"
+  );
+
+  detailPlayersRatio.textContent = `${approvedUsers.length}-${selectedMatch.maxPlayers}`;
+
+  if (approvedUsers.length === 0) {
+    detailPlayersList.innerHTML = `
+      <div style="color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0;">
+        Aún no hay jugadores confirmados. ¡Sé el primero en unirte!
+      </div>`;
+    return;
+  }
+
+  approvedUsers.forEach((player) => {
+    const card = document.createElement("div");
+    card.className = "player-card-item";
+    card.innerHTML = `
+      <div class="player-meta-wrap">
+        <img class="player-thumb-avatar" src="${player.avatarUrl}" alt="${player.username}">
+        <div class="player-names-col">
+          <span class="player-name-val">${player.username}</span>
+          <span class="player-role-tag">Jugador</span>
+        </div>
+      </div>
+      <span class="player-chevron">›</span>
+    `;
+    detailPlayersList.appendChild(card);
+  });
 }
 
 function updateSubscribeButton() {
@@ -337,6 +539,48 @@ function updateSubscribeButton() {
   }
 }
 
+// ==========================================
+// 9. NAVEGACIÓN Y VISTAS
+// ==========================================
+function switchScreen(targetScreen) {
+  [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
+    if (screen) screen.classList.remove("active");
+  });
+  if (targetScreen) targetScreen.classList.add("active");
+}
+
+function clearTabSelection() {
+  [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
+    if (t) t.classList.remove("active");
+  });
+}
+
+tabMatches.addEventListener("click", () => {
+  clearTabSelection();
+  tabMatches.classList.add("active");
+  switchScreen(viewList);
+  renderMatches();
+});
+
+tabMessages.addEventListener("click", () => {
+  clearTabSelection();
+  tabMessages.classList.add("active");
+  switchScreen(viewMessages);
+});
+
+tabProfile.addEventListener("click", () => {
+  clearTabSelection();
+  tabProfile.classList.add("active");
+
+  if (currentProfile && currentProfile.role === "ORGANIZADOR") {
+    renderAdminPanel();
+    switchScreen(viewAdmin);
+  } else {
+    renderProfileView();
+    switchScreen(viewProfile);
+  }
+});
+
 btnBack.addEventListener("click", () => {
   switchScreen(viewList);
   renderMatches();
@@ -344,27 +588,197 @@ btnBack.addEventListener("click", () => {
 
 btnAdminBack.addEventListener("click", () => {
   switchScreen(viewList);
-  tabProfile.classList.remove("active");
+  clearTabSelection();
   tabMatches.classList.add("active");
   renderMatches();
 });
 
-tabMatches.addEventListener("click", () => {
-  tabProfile.classList.remove("active");
-  tabMatches.classList.add("active");
-  switchScreen(viewList);
-  renderMatches();
+// Pestañas Perfil: Sobre mí vs. Mis eventos
+btnTabAbout.addEventListener("click", () => {
+  btnTabEvents.classList.remove("active");
+  btnTabAbout.classList.add("active");
+  tabEventsContent.classList.remove("active");
+  tabAboutContent.classList.add("active");
 });
 
-tabProfile.addEventListener("click", () => {
-  tabMatches.classList.remove("active");
-  tabProfile.classList.add("active");
-  renderAdminPanel();
-  switchScreen(viewAdmin);
+btnTabEvents.addEventListener("click", () => {
+  btnTabAbout.classList.remove("active");
+  btnTabEvents.classList.add("active");
+  tabAboutContent.classList.remove("active");
+  tabEventsContent.classList.add("active");
+});
+
+pillMyMatches.addEventListener("click", () => {
+  pillMyBookings.classList.remove("active");
+  pillMyMatches.classList.add("active");
+  eventsBookingsSub.style.display = "none";
+  eventsMatchesSub.style.display = "block";
+});
+
+pillMyBookings.addEventListener("click", () => {
+  pillMyMatches.classList.remove("active");
+  pillMyBookings.classList.add("active");
+  eventsMatchesSub.style.display = "none";
+  eventsBookingsSub.style.display = "block";
 });
 
 // ==========================================
-// 10. GESTIÓN DEL MODAL, QR Y COMPROBANTE
+// 10. MODAL: MODIFICAR USERNAME Y PASSWORD
+// ==========================================
+function openSecurityModal() {
+  if (!currentProfile) return;
+  inputEditUsername.value = currentProfile.username || "";
+  inputEditPassword.value = "";
+  modalSecurity.removeAttribute("hidden");
+  modalSecurity.style.display = "flex";
+}
+
+if (btnOpenSecurityModal) {
+  btnOpenSecurityModal.addEventListener("click", openSecurityModal);
+}
+
+if (btnCancelSecurity) {
+  btnCancelSecurity.addEventListener("click", () => {
+    modalSecurity.setAttribute("hidden", "");
+    modalSecurity.style.display = "none";
+  });
+}
+
+if (btnSaveSecurity) {
+  btnSaveSecurity.addEventListener("click", async () => {
+    if (!currentProfile) return;
+
+    const newUsername = inputEditUsername.value.trim().toLowerCase();
+    const newPassword = inputEditPassword.value.trim();
+
+    if (!newUsername) {
+      alert("El username no puede estar vacío.");
+      return;
+    }
+
+    const updates = { username: newUsername };
+    if (newPassword) updates.password = newPassword;
+
+    const { error } = await db.from("profiles").update(updates).eq("id", currentProfile.id);
+
+    if (error) {
+      alert("Error al actualizar: " + error.message);
+      return;
+    }
+
+    currentProfile.username = newUsername;
+    if (newPassword) currentProfile.password = newPassword;
+
+    modalSecurity.setAttribute("hidden", "");
+    modalSecurity.style.display = "none";
+    renderProfileView();
+    alert("¡Datos de acceso actualizados exitosamente!");
+  });
+}
+
+function renderProfileView() {
+  if (!currentProfile) return;
+
+  document.getElementById("profile-name-display").textContent = `${currentProfile.first_name} ${currentProfile.last_name}`;
+  document.getElementById("profile-matches-count").textContent = currentProfile.matches_played || 0;
+  document.getElementById("profile-balance").textContent = Number(currentProfile.balance || 0).toFixed(2);
+  document.getElementById("profile-promo").textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
+  document.getElementById("profile-avatar-img").src = currentProfile.avatar_url;
+
+  // Campos no modificables
+  document.getElementById("field-firstname").textContent = currentProfile.first_name;
+  document.getElementById("field-lastname").textContent = currentProfile.last_name;
+  document.getElementById("field-phone").textContent = currentProfile.phone;
+  document.getElementById("field-birth").textContent = currentProfile.birth_date;
+  document.getElementById("field-skill").textContent = currentProfile.skill_level;
+  document.getElementById("field-nationality").textContent = currentProfile.nationality;
+  document.getElementById("field-city").textContent = currentProfile.city;
+  document.getElementById("field-email").textContent = currentProfile.email;
+  document.getElementById("field-plan").textContent = currentProfile.plan;
+
+  // Único campo visible y editable
+  document.getElementById("field-username").textContent = currentProfile.username;
+}
+
+// ==========================================
+// 11. PUBLICACIÓN DE CANCHA (ORGANIZADOR)
+// ==========================================
+if (btnCreateMatchFab) {
+  btnCreateMatchFab.addEventListener("click", () => {
+    if (currentProfile?.role !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede publicar canchas.");
+      return;
+    }
+    modalCreateMatch.removeAttribute("hidden");
+    modalCreateMatch.style.display = "flex";
+  });
+}
+
+if (btnCloseCreateModal) {
+  btnCloseCreateModal.addEventListener("click", () => {
+    modalCreateMatch.setAttribute("hidden", "");
+    modalCreateMatch.style.display = "none";
+  });
+}
+
+if (formNewMatch) {
+  formNewMatch.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (currentProfile?.role !== "ORGANIZADOR") {
+      alert("No tienes permisos de organizador.");
+      return;
+    }
+
+    const title = document.getElementById("input-match-title").value.trim();
+    const sport = document.getElementById("input-match-sport").value;
+    const rawDate = document.getElementById("input-match-date").value;
+    const timeFull = document.getElementById("input-match-time").value.trim();
+    const price = parseFloat(document.getElementById("input-match-price").value);
+    const maxPlayers = parseInt(document.getElementById("input-match-max").value);
+    const address = document.getElementById("input-match-address").value.trim();
+    const image = document.getElementById("input-match-image").value.trim();
+
+    const dateObj = new Date(rawDate + "T00:00:00");
+    const dateLong = dateObj.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    const dateGroup = `Fecha · ${dateLong.charAt(0).toUpperCase() + dateLong.slice(1)}`;
+
+    const newMatchPayload = {
+      title,
+      sport,
+      date_group: dateGroup,
+      date_long: dateLong,
+      time: timeFull.split("—")[0].trim(),
+      time_full: timeFull,
+      price,
+      current_players: 0,
+      max_players: maxPlayers,
+      address,
+      image,
+      organizer: currentProfile.username || "Organizador"
+    };
+
+    const { error } = await db.from("matches").insert([newMatchPayload]);
+
+    if (error) {
+      alert("Error al guardar: " + error.message);
+      return;
+    }
+
+    modalCreateMatch.setAttribute("hidden", "");
+    modalCreateMatch.style.display = "none";
+    formNewMatch.reset();
+    alert("¡Cancha habilitada con éxito en la nube!");
+  });
+}
+
+// ==========================================
+// 12. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -460,7 +874,10 @@ if (btnConfirmPayment) {
         amount: selectedMatch.price,
         date: formattedTime,
         status: "Pendiente",
-        receipt_image: currentReceiptBase64
+        receipt_image: currentReceiptBase64,
+        user_id: currentProfile ? currentProfile.id : "user_anon",
+        username: currentProfile ? currentProfile.username : "Jugador",
+        avatar_url: currentProfile ? currentProfile.avatar_url : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
       }
     ]);
 
@@ -473,12 +890,12 @@ if (btnConfirmPayment) {
     }
 
     closeQrModal();
-    alert(`¡Comprobante enviado a la nube!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)}.`);
+    alert(`¡Comprobante enviado!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)}.`);
   });
 }
 
 // ==========================================
-// 11. PANEL DE ADMINISTRADOR
+// 13. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -512,6 +929,7 @@ function renderAdminPanel() {
       <div class="receipt-body-layout">
         <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
         <div class="receipt-info-text">
+          <span><strong>Jugador:</strong> @${item.username}</span>
           <span><strong>Deporte:</strong> ${item.sport}</span>
           <span><strong>Monto:</strong> Bs. ${Number(item.amount).toFixed(2)}</span>
           <span><strong>Hora:</strong> ${item.date}</span>
@@ -533,7 +951,7 @@ function renderAdminPanel() {
   });
 }
 
-window.approveReceipt = async function(receiptId) {
+window.approveReceipt = async function (receiptId) {
   const receipt = receipts.find((r) => r.id === receiptId);
   if (!receipt) return;
 
@@ -543,18 +961,23 @@ window.approveReceipt = async function(receiptId) {
       alert("No se puede aprobar: la cancha ya llenó todos sus cupos.");
       return;
     }
-    // Actualizar cupos en Supabase
     await db.from("matches").update({ current_players: match.currentPlayers + 1 }).eq("id", match.id);
   }
 
-  // Actualizar estado en Supabase
+  // Incrementar partidos jugados del perfil registrado
+  if (receipt.userId) {
+    const { data: prof } = await db.from("profiles").select("matches_played").eq("id", receipt.userId).single();
+    if (prof) {
+      await db.from("profiles").update({ matches_played: (prof.matches_played || 0) + 1 }).eq("id", receipt.userId);
+    }
+  }
+
   await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
-  alert("Inscripción aprobada en la nube. Se ha generado el pase digital.");
+  alert("Inscripción aprobada: se sumó al partido y aumentó el contador de partidos jugados.");
 };
 
-window.rejectReceipt = async function(receiptId) {
-  const confirmReject = confirm("¿Estás seguro de rechazar este comprobante?");
-  if (confirmReject) {
+window.rejectReceipt = async function (receiptId) {
+  if (confirm("¿Estás seguro de rechazar este comprobante?")) {
     await db.from("receipts").update({ status: "Rechazado" }).eq("id", receiptId);
   }
 };
@@ -574,161 +997,57 @@ if (btnCloseViewer) {
 
 if (btnClearReceipts) {
   btnClearReceipts.addEventListener("click", async () => {
-    if (confirm("¿Deseas vaciar todo el historial de comprobantes en la nube?")) {
+    if (confirm("¿Deseas vaciar el historial de comprobantes?")) {
       await db.from("receipts").delete().neq("id", 0);
       fetchReceipts();
     }
   });
 }
 
-// ==========================================
-// 12. PASES DIGITALES & DESCARGA PDF
-// ==========================================
-function renderMyTickets() {
-  if (!myTicketsSection || !myTicketsList) return;
-
-  const approvedList = receipts.filter((r) => r.status === "Aprobado");
-
-  if (approvedList.length === 0) {
-    myTicketsSection.setAttribute("hidden", "");
-    myTicketsList.innerHTML = "";
-    return;
-  }
-
-  myTicketsSection.removeAttribute("hidden");
-  myTicketsList.innerHTML = "";
-
-  approvedList.forEach((ticket) => {
-    const card = document.createElement("div");
-    card.className = "ticket-card";
-    card.innerHTML = `
-      <div class="ticket-info">
-        <span class="ticket-tag">✓ Pase Confirmado</span>
-        <h4 class="ticket-title">${ticket.matchTitle}</h4>
-        <span class="ticket-meta">Monto: Bs. ${Number(ticket.amount).toFixed(2)} | Hora: ${ticket.date}</span>
-      </div>
-      <button class="btn-download-pdf" onclick="downloadPassPDF(${ticket.id})">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-        PDF
-      </button>
-    `;
-    myTicketsList.appendChild(card);
+// Canjear Código Promo
+if (btnOpenRedeem) {
+  btnOpenRedeem.addEventListener("click", () => {
+    modalRedeem.removeAttribute("hidden");
+    modalRedeem.style.display = "flex";
+    inputPromoCode.value = "";
   });
 }
 
-window.downloadPassPDF = function (ticketId) {
-  const ticket = receipts.find((r) => r.id === ticketId);
-  if (!ticket) return;
-
-  const match = matches.find((m) => m.id === ticket.matchId) || {};
-  const { jsPDF } = window.jspdf;
-
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: [100, 150]
+if (btnCancelRedeem) {
+  btnCancelRedeem.addEventListener("click", () => {
+    modalRedeem.setAttribute("hidden", "");
+    modalRedeem.style.display = "none";
   });
+}
 
-  doc.setFillColor(18, 19, 22);
-  doc.rect(0, 0, 100, 150, "F");
-
-  doc.setFillColor(255, 90, 31);
-  doc.rect(0, 0, 100, 18, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(255, 255, 255);
-  doc.text("PASE DIGITAL DE ENTRADA", 50, 12, { align: "center" });
-
-  doc.setDrawColor(39, 41, 48);
-  doc.setFillColor(27, 28, 33);
-  doc.roundedRect(6, 24, 88, 118, 3, 3, "FD");
-
-  doc.setFontSize(9);
-  doc.setTextColor(0, 200, 83);
-  doc.text("● PAGO APROBADO & CONFIRMADO", 12, 34);
-
-  doc.setFontSize(13);
-  doc.setTextColor(255, 255, 255);
-  doc.text(ticket.matchTitle, 12, 43);
-
-  doc.setFontSize(9);
-  doc.setTextColor(255, 90, 31);
-  doc.text(`DEPORTE: ${(ticket.sport || "Fútbol").toUpperCase()}`, 12, 51);
-
-  doc.setDrawColor(50, 52, 60);
-  doc.setLineDashPattern([1.5, 1.5], 0);
-  doc.line(12, 56, 88, 56);
-  doc.setLineDashPattern([], 0);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(139, 144, 154);
-  doc.text("HORARIO:", 12, 63);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(240, 241, 243);
-  doc.text(match.timeFull || "21:00 - 22:00", 12, 68);
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(139, 144, 154);
-  doc.text("FECHA:", 12, 75);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(240, 241, 243);
-  doc.text(match.dateLong || "Fecha confirmada", 12, 80);
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(139, 144, 154);
-  doc.text("DIRECCIÓN:", 12, 87);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(240, 241, 243);
-  const splitAddress = doc.splitTextToSize(match.address || "La Paz, Bolivia", 76);
-  doc.text(splitAddress, 12, 92);
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(139, 144, 154);
-  doc.text("MONTO PAGADO:", 12, 106);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 90, 31);
-  doc.setFontSize(11);
-  doc.text(`Bs. ${Number(ticket.amount).toFixed(2)}`, 12, 112);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(101, 105, 115);
-  doc.text(`CÓDIGO PASE: #${ticket.id}`, 50, 128, { align: "center" });
-  doc.text("Muestra este PDF o captura al ingresar a la cancha.", 50, 133, { align: "center" });
-
-  doc.save(`Pase-${ticket.matchTitle.replace(/\s+/g, "_")}-${ticket.id}.pdf`);
-};
-
-// ==========================================
-// 13. COMPARTIR E INVITAR
-// ==========================================
-async function shareMatch() {
-  if (!selectedMatch) return;
-  const shareData = {
-    title: `Partido en ${selectedMatch.title}`,
-    text: `¡Vamos a jugar! Partido de ${selectedMatch.sport} el ${selectedMatch.dateLong} a las ${selectedMatch.timeFull}. Cupos: ${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers}.`,
-    url: window.location.href
-  };
-
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-    } catch (err) {
-      console.log("Compartir descartado");
+if (btnConfirmRedeem) {
+  btnConfirmRedeem.addEventListener("click", async () => {
+    const code = inputPromoCode.value.trim().toUpperCase();
+    if (!code) {
+      alert("Por favor ingresa un código.");
+      return;
     }
-  } else {
-    navigator.clipboard.writeText(`${shareData.text} Enlace: ${shareData.url}`);
-    alert("Enlace copiado al portapapeles para invitar a tus amigos.");
-  }
+
+    let bonus = 0;
+    if (code === "PROMO20" || code === "FUTBOL20") bonus = 20.00;
+    else if (code === "BIENVENIDO") bonus = 10.00;
+    else {
+      alert("Código no válido o expirado.");
+      return;
+    }
+
+    currentProfile.promo_balance = Number(currentProfile.promo_balance || 0) + bonus;
+    await db.from("profiles").update({ promo_balance: currentProfile.promo_balance }).eq("id", currentProfile.id);
+
+    modalRedeem.setAttribute("hidden", "");
+    modalRedeem.style.display = "none";
+    renderProfileView();
+    alert(`¡Felicidades! Se sumaron Bs. ${bonus.toFixed(2)} de saldo promocional.`);
+  });
 }
 
-btnShare.addEventListener("click", shareMatch);
-btnInvite.addEventListener("click", shareMatch);
-
 // ==========================================
-// 14. FILTROS Y BÚSQUEDA
+// 14. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -746,10 +1065,6 @@ if (searchInput) {
   });
 }
 
-// ==========================================
-// 15. ARRANQUE
-// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  fetchMatches();
-  fetchReceipts();
+  checkUserSession();
 });
