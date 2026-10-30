@@ -374,13 +374,10 @@ if (formNewVenue) {
 }
 
 // ==========================================
-// 8. SESIÓN ROBUSTA (PERSISTENCIA TOTAL)
+// 8. SESIÓN ROBUSTA (SIN EXPULSIÓN AL RECARGAR)
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
-
-  // Carga previa en paralelo de canchas, partidos y comprobantes
-  await Promise.allSettled([fetchVenues(), fetchMatches(), fetchReceipts()]);
 
   if (!activeUserId) {
     if (bottomBar) bottomBar.style.display = "none";
@@ -388,48 +385,36 @@ async function checkUserSession() {
     return;
   }
 
+  if (bottomBar) bottomBar.style.display = "flex";
+
   try {
     let { data: user, error } = await db
       .from("profiles")
       .select("*")
-      .eq("id", activeUserId)
+      .or(`id.eq.${activeUserId},username.eq.${activeUserId}`)
       .maybeSingle();
 
-    if (!user) {
-      const { data: userByUsername } = await db
-        .from("profiles")
-        .select("*")
-        .eq("username", activeUserId)
-        .maybeSingle();
+    if (user) {
+      currentProfile = user;
+      localStorage.setItem("app_active_user", user.id);
+      applyRolePermissions();
+      renderProfileView();
 
-      user = userByUsername;
-    }
-
-    if (!user) {
-      console.warn("Sesión no válida en la base de datos.");
-      localStorage.removeItem("app_active_user");
-      if (bottomBar) bottomBar.style.display = "none";
-      switchScreen(viewRegister);
-      return;
-    }
-
-    currentProfile = user;
-    localStorage.setItem("app_active_user", user.id);
-
-    if (bottomBar) bottomBar.style.display = "flex";
-    applyRolePermissions();
-    renderProfileView();
-
-    if (currentProfile.role === "ORGANIZADOR") {
-      renderAdminPanel();
+      if (currentProfile.role === "ORGANIZADOR") {
+        renderAdminPanel();
+      }
+    } else {
+      console.warn("Perfil no sincronizado aún.");
     }
 
     switchScreen(viewList);
+    await Promise.allSettled([fetchVenues(), fetchMatches(), fetchReceipts()]);
     renderMatches();
 
   } catch (err) {
     console.error("Error al restaurar sesión:", err);
     switchScreen(viewList);
+    renderMatches();
   }
 }
 
@@ -494,8 +479,8 @@ if (formLoginUser) {
     }
 
     switchScreen(viewList);
-    renderMatches();
     fetchVenues();
+    fetchMatches();
     fetchReceipts();
 
     formLoginUser.reset();
@@ -605,7 +590,6 @@ function applyRolePermissions() {
 
 async function fetchMatches() {
   try {
-    // Permite que se muestren los partidos cuando is_finished sea false o null
     const { data, error } = await db
       .from("matches")
       .select("*")
