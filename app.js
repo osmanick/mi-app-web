@@ -5,12 +5,12 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("SW Activo en alcance:", reg.scope))
+      .then((reg) => console.log("SW Activo en el alcance:", reg.scope))
       .catch((err) => console.error("Error al registrar SW:", err));
   });
 }
 
-// Control del evento de instalación nativo
+// Botón de instalación nativa PWA
 let deferredPrompt = null;
 const btnInstall = document.getElementById("btn-install");
 
@@ -32,7 +32,7 @@ if (btnInstall) {
 }
 
 window.addEventListener("appinstalled", () => {
-  console.log("Aplicación instalada en el dispositivo.");
+  console.log("Aplicación instalada en el sistema.");
   if (btnInstall) btnInstall.setAttribute("hidden", "");
   deferredPrompt = null;
 });
@@ -95,11 +95,12 @@ function saveMatches() {
 }
 
 // ==========================================
-// 3. REFERENCIAS DEL DOM Y VARIABLES DE ESTADO
+// 3. REFERENCIAS DEL DOM
 // ==========================================
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
+let currentReceiptBase64 = null;
 
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
@@ -111,7 +112,7 @@ const btnShare = document.getElementById("btn-share");
 const btnInvite = document.getElementById("btn-invite");
 const btnSubscribe = document.getElementById("btn-subscribe");
 
-// Elementos de la vista detalle
+// Elementos detalle
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -123,7 +124,7 @@ const detailAddress = document.getElementById("detail-address");
 const detailMap = document.getElementById("btn-map");
 const detailOrganizer = document.getElementById("detail-organizer-name");
 
-// Elementos del Modal QR Simple
+// Elementos Modal QR & Comprobante
 const modalQr = document.getElementById("modal-qr");
 const qrImage = document.getElementById("qr-image");
 const modalConcept = document.getElementById("modal-concept");
@@ -131,9 +132,14 @@ const modalPrice = document.getElementById("modal-price");
 const btnCloseModal = document.getElementById("btn-close-modal");
 const btnCancelPayment = document.getElementById("btn-cancel-payment");
 const btnConfirmPayment = document.getElementById("btn-confirm-payment");
+const receiptInput = document.getElementById("receipt-input");
+const previewWrapper = document.getElementById("preview-wrapper");
+const receiptPreview = document.getElementById("receipt-preview");
+const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
+const uploadLabelText = document.getElementById("upload-label-text");
 
 // ==========================================
-// 4. RENDERIZADO DE PARTIDOS EN LA VISTA LISTA
+// 4. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -157,7 +163,6 @@ function renderMatches() {
     return;
   }
 
-  // Agrupar por fecha/sección
   const groups = {};
   filtered.forEach((m) => {
     if (!groups[m.dateGroup]) groups[m.dateGroup] = [];
@@ -214,22 +219,22 @@ function renderMatches() {
 }
 
 // ==========================================
-// 5. NAVEGACIÓN Y DETALLE DE PARTIDO
+// 5. NAVEGACIÓN Y DETALLES
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
 
   detailImg.src = selectedMatch.image;
-  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
-  detailVenueName.textContent = selectedMatch.title;
-  detailSportTag.textContent = selectedMatch.sport.toUpperCase();
-  detailDateLong.textContent = selectedMatch.dateLong;
-  detailTime.textContent = selectedMatch.timeFull;
-  detailVenueSub.textContent = selectedMatch.title.toUpperCase();
-  detailAddress.textContent = selectedMatch.address;
-  detailOrganizer.textContent = selectedMatch.organizer;
-  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
+  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
+  detailVenueName.textContent = selectedMatch.title[cite: 1, 2];
+  detailSportTag.textContent = selectedMatch.sport.toUpperCase()[cite: 1];
+  detailDateLong.textContent = selectedMatch.dateLong[cite: 1];
+  detailTime.textContent = selectedMatch.timeFull[cite: 1];
+  detailVenueSub.textContent = selectedMatch.title.toUpperCase()[cite: 1];
+  detailAddress.textContent = selectedMatch.address[cite: 1, 2];
+  detailOrganizer.textContent = selectedMatch.organizer[cite: 1];
+  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`[cite: 1, 2];
 
   updateSubscribeButton();
 
@@ -245,7 +250,7 @@ function updateSubscribeButton() {
     btnSubscribe.style.backgroundColor = "#43454d";
     btnSubscribe.disabled = true;
   } else {
-    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`;
+    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`[cite: 1];
     btnSubscribe.style.backgroundColor = "var(--accent)";
     btnSubscribe.disabled = false;
   }
@@ -258,15 +263,24 @@ btnBack.addEventListener("click", () => {
 });
 
 // ==========================================
-// 6. GESTIÓN DEL MODAL QR SIMPLE
+// 6. GESTIÓN DEL MODAL, QR Y COMPROBANTE
 // ==========================================
+function resetReceiptInput() {
+  currentReceiptBase64 = null;
+  if (receiptInput) receiptInput.value = "";
+  if (receiptPreview) receiptPreview.src = "";
+  if (previewWrapper) previewWrapper.setAttribute("hidden", "");
+  if (uploadLabelText) uploadLabelText.textContent = "Adjuntar captura del pago";
+}
+
 function openQrModal() {
   if (!selectedMatch || !modalQr) return;
+
+  resetReceiptInput();
 
   modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
   modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
 
-  // Generación dinámica de QR con los datos del partido
   const qrPayload = encodeURIComponent(
     `PAGO-QR-SIMPLE|PARTIDO:${selectedMatch.id}|MONTO:${selectedMatch.price}|CANCHA:${selectedMatch.title}`
   );
@@ -277,7 +291,33 @@ function openQrModal() {
 
 function closeQrModal() {
   if (modalQr) modalQr.setAttribute("hidden", "");
+  resetReceiptInput();
 }
+
+// Cargar imagen de comprobante
+if (receiptInput) {
+  receiptInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      alert("El comprobante debe pesar menos de 4 MB.");
+      resetReceiptInput();
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      currentReceiptBase64 = event.target.result;
+      receiptPreview.src = currentReceiptBase64;
+      previewWrapper.removeAttribute("hidden");
+      uploadLabelText.textContent = "Cambiar imagen seleccionada";
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+if (btnRemoveReceipt) btnRemoveReceipt.addEventListener("click", resetReceiptInput);
 
 btnSubscribe.addEventListener("click", () => {
   if (!selectedMatch || selectedMatch.currentPlayers >= selectedMatch.maxPlayers) return;
@@ -291,21 +331,36 @@ if (btnConfirmPayment) {
   btnConfirmPayment.addEventListener("click", () => {
     if (!selectedMatch) return;
 
+    if (!currentReceiptBase64) {
+      alert("Por favor adjunta la captura de tu transferencia antes de confirmar la reserva.");
+      return;
+    }
+
+    // Incrementar y persistir
     selectedMatch.currentPlayers += 1;
+
+    let receiptsHistory = JSON.parse(localStorage.getItem("app_receipts")) || [];
+    receiptsHistory.push({
+      matchId: selectedMatch.id,
+      matchTitle: selectedMatch.title,
+      amount: selectedMatch.price,
+      date: new Date().toISOString(),
+      receiptImage: currentReceiptBase64
+    });
+    localStorage.setItem("app_receipts", JSON.stringify(receiptsHistory));
+
     saveMatches();
 
-    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
+    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
     updateSubscribeButton();
     closeQrModal();
 
-    alert(
-      `¡Pago verificado exitosamente!\nHas asegurado tu lugar en "${selectedMatch.title}" por Bs. ${selectedMatch.price.toFixed(2)}.`
-    );
+    alert(`¡Comprobante recibido con éxito!\nHas asegurado tu lugar en "${selectedMatch.title}" por Bs. ${selectedMatch.price.toFixed(2)}.`);
   });
 }
 
 // ==========================================
-// 7. COMPARTIR E INVITAR AMIGOS
+// 7. COMPARTIR E INVITAR
 // ==========================================
 async function shareMatch() {
   if (!selectedMatch) return;
@@ -322,7 +377,7 @@ async function shareMatch() {
       console.log("Compartir descartado");
     }
   } else {
-    navigator.clipboard.writeText(`${shareData.text} Entra aquí: ${shareData.url}`);
+    navigator.clipboard.writeText(`${shareData.text} Enlace: ${shareData.url}`);
     alert("Enlace copiado al portapapeles para invitar a tus amigos.");
   }
 }
@@ -331,7 +386,7 @@ btnShare.addEventListener("click", shareMatch);
 btnInvite.addEventListener("click", shareMatch);
 
 // ==========================================
-// 8. EVENTOS DE FILTROS Y BÚSQUEDA
+// 8. FILTROS Y BÚSQUEDA
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -349,7 +404,7 @@ if (searchInput) {
   });
 }
 
-// Carga inicial
+// Arranque
 document.addEventListener("DOMContentLoaded", () => {
   renderMatches();
 });

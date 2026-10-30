@@ -16,51 +16,10 @@
 </head>
 <body>
 
-  <!-- Contenedor con ancho de móvil centrado en PC -->
   <div class="app-viewport">
-
-<!-- Modal Pago QR Simple Bolivia -->
-<div id="modal-qr" class="modal-overlay" hidden>
-  <div class="modal-card">
-    <div class="modal-header">
-      <div class="modal-title-box">
-        <span class="qr-tag">PAGO RÁPIDO</span>
-        <h3>QR Simple Bolivia</h3>
-      </div>
-      <button id="btn-close-modal" class="modal-close-btn">&times;</button>
-    </div>
-
-    <div class="modal-body">
-      <p class="modal-desc">Escanea desde tu banca móvil (BCP, BNB, Banco Unión, GanaMóvil, etc.)</p>
-      
-      <!-- Contenedor del QR e imagen generada -->
-      <div class="qr-wrapper">
-        <img id="qr-image" src="" alt="Código QR Simple">
-        <div class="qr-logo-badge">QR</div>
-      </div>
-
-      <div class="payment-details">
-        <div class="payment-row">
-          <span>Concepto:</span>
-          <strong id="modal-concept">Cancha</strong>
-        </div>
-        <div class="payment-row">
-          <span>Total a pagar:</span>
-          <strong class="highlight-price" id="modal-price">Bs. 0.00</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button id="btn-confirm-payment" class="btn-primary-action">Ya realicé el pago</button>
-      <button id="btn-cancel-payment" class="btn-text-action">Cancelar</button>
-    </div>
-  </div>
-</div>
 
     <!-- ================= VISTA 1: LISTA DE PARTIDOS ================= -->
     <main id="view-list" class="view-screen active">
-      <!-- Barra superior con ciudad y título -->
       <header class="top-nav">
         <div class="location-selector">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
@@ -73,7 +32,6 @@
         </button>
       </header>
 
-      <!-- Barra de búsqueda -->
       <div class="search-container">
         <div class="search-input-wrapper">
           <input type="text" id="search-input" placeholder="Buscar una cancha">
@@ -84,7 +42,6 @@
         </button>
       </div>
 
-      <!-- Filtros de categoría -->
       <section class="chips-container">
         <button class="chip-item active" data-sport="Todos">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-5.5 9h11zM17.5 13H6.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h11c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zm-5.5 5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
@@ -100,15 +57,13 @@
         </button>
       </section>
 
-      <!-- Lista de partidos agrupados por fecha -->
       <section id="matches-list-container" class="matches-content">
-        <!-- Generado dinámicamente -->
+        <!-- Renderizado dinámico -->
       </section>
     </main>
 
     <!-- ================= VISTA 2: DETALLE DEL PARTIDO ================= -->
     <section id="view-detail" class="view-screen">
-      <!-- Cabecera de detalle -->
       <div class="detail-header-bar">
         <button id="btn-back" class="icon-nav-btn">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -119,7 +74,6 @@
         </button>
       </div>
 
-      <!-- Imagen hero del estadio/cancha -->
       <div class="detail-hero">
         <img id="detail-img" src="" alt="Cancha">
         <div class="quota-badge">
@@ -128,7 +82,6 @@
         </div>
       </div>
 
-      <!-- Datos específicos del partido -->
       <div class="detail-body">
         <h2 id="detail-venue-name" class="detail-title">Cañada Strongest</h2>
 
@@ -165,13 +118,11 @@
           </a>
         </div>
 
-        <!-- Botón invitar amigos -->
         <button id="btn-invite" class="btn-outline-invite">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
           Invitar amigos
         </button>
 
-        <!-- Bloque de reglas y recordatorios -->
         <div class="rules-box">
           <span class="rules-title">Recuerda:</span>
           <div class="rule-item">
@@ -185,7 +136,6 @@
           <a href="#" class="more-link">Ver más</a>
         </div>
 
-        <!-- Tarjeta del organizador -->
         <div class="organizer-card">
           <img class="organizer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Organizador">
           <div class="organizer-info">
@@ -196,7 +146,6 @@
         </div>
       </div>
 
-      <!-- Barra fija inferior con botón de inscripción -->
       <footer class="bottom-action-bar">
         <button id="btn-subscribe" class="btn-primary-action">
           Inscribirme Bs. 29
@@ -204,7 +153,59 @@
       </footer>
     </section>
 
-    <!-- Barra de pestañas inferior (Navegación tipo App móvil) -->
+    <!-- ================= MODAL PAGO QR SIMPLE & COMPROBANTE ================= -->
+    <div id="modal-qr" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <span class="qr-tag">PAGO RÁPIDO</span>
+            <h3>QR Simple Bolivia</h3>
+          </div>
+          <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">Escanea desde tu app bancaria (BCP, BNB, Banco Unión, GanaMóvil, etc.)</p>
+
+          <div class="qr-wrapper">
+            <img id="qr-image" src="" alt="Código QR Simple">
+            <div class="qr-logo-badge">QR</div>
+          </div>
+
+          <div class="payment-details">
+            <div class="payment-row">
+              <span>Concepto:</span>
+              <strong id="modal-concept">Cancha</strong>
+            </div>
+            <div class="payment-row">
+              <span>Total a pagar:</span>
+              <strong class="highlight-price" id="modal-price">Bs. 0.00</strong>
+            </div>
+          </div>
+
+          <!-- Subir comprobante -->
+          <div class="upload-section">
+            <label for="receipt-input" class="upload-label">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
+              <span id="upload-label-text">Adjuntar captura del pago</span>
+            </label>
+            <input type="file" id="receipt-input" accept="image/*" style="display: none;">
+
+            <div id="preview-wrapper" class="preview-wrapper" hidden>
+              <img id="receipt-preview" src="" alt="Comprobante">
+              <button id="btn-remove-receipt" type="button" class="btn-remove" title="Quitar">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-confirm-payment" class="btn-primary-action">Confirmar Inscripción</button>
+          <button id="btn-cancel-payment" class="btn-text-action">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pestañas de navegación inferiores -->
     <nav class="bottom-nav-tabs">
       <button class="nav-tab active">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6l3 2v4l-3 2-3-2V8z" fill="#121316"/></svg>
