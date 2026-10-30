@@ -25,7 +25,7 @@ if (btnInstall) {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`Elección de instalación: ${outcome}`);
+    console.log("Elección de instalación:", outcome);
     deferredPrompt = null;
     btnInstall.setAttribute("hidden", "");
   });
@@ -161,7 +161,9 @@ const btnCloseViewer = document.getElementById("btn-close-viewer");
 // ==========================================
 function playNotificationSound() {
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioCtx = new AudioContextClass();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -178,7 +180,7 @@ function playNotificationSound() {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.35);
   } catch (err) {
-    console.log("Audio contextual no permitido aún.");
+    console.log("Audio no permitido en este contexto");
   }
 }
 
@@ -293,15 +295,15 @@ function showDetail(id) {
   if (!selectedMatch) return;
 
   detailImg.src = selectedMatch.image;
-  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
-  detailVenueName.textContent = selectedMatch.title[cite: 1, 2];
-  detailSportTag.textContent = selectedMatch.sport.toUpperCase()[cite: 1];
-  detailDateLong.textContent = selectedMatch.dateLong[cite: 1];
-  detailTime.textContent = selectedMatch.timeFull[cite: 1];
-  detailVenueSub.textContent = selectedMatch.title.toUpperCase()[cite: 1];
-  detailAddress.textContent = selectedMatch.address[cite: 1, 2];
-  detailOrganizer.textContent = selectedMatch.organizer[cite: 1];
-  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`[cite: 1, 2];
+  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
+  detailVenueName.textContent = selectedMatch.title;
+  detailSportTag.textContent = selectedMatch.sport.toUpperCase();
+  detailDateLong.textContent = selectedMatch.dateLong;
+  detailTime.textContent = selectedMatch.timeFull;
+  detailVenueSub.textContent = selectedMatch.title.toUpperCase();
+  detailAddress.textContent = selectedMatch.address;
+  detailOrganizer.textContent = selectedMatch.organizer;
+  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
   updateSubscribeButton();
   switchScreen(viewDetail);
@@ -315,7 +317,7 @@ function updateSubscribeButton() {
     btnSubscribe.style.backgroundColor = "#43454d";
     btnSubscribe.disabled = true;
   } else {
-    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`[cite: 1];
+    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`;
     btnSubscribe.style.backgroundColor = "var(--accent)";
     btnSubscribe.disabled = false;
   }
@@ -430,13 +432,16 @@ if (btnConfirmPayment) {
       return;
     }
 
+    const now = new Date();
+    const formattedTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
     const newReceipt = {
       id: Date.now(),
       matchId: selectedMatch.id,
       matchTitle: selectedMatch.title,
       sport: selectedMatch.sport,
       amount: selectedMatch.price,
-      date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: formattedTime,
       status: "Pendiente",
       receiptImage: currentReceiptBase64
     };
