@@ -5,7 +5,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("SW Activo en el alcance:", reg.scope))
+      .then((reg) => console.log("SW Activo en alcance:", reg.scope))
       .catch((err) => console.error("Error al registrar SW:", err));
   });
 }
@@ -226,15 +226,15 @@ function showDetail(id) {
   if (!selectedMatch) return;
 
   detailImg.src = selectedMatch.image;
-  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
-  detailVenueName.textContent = selectedMatch.title[cite: 1, 2];
-  detailSportTag.textContent = selectedMatch.sport.toUpperCase()[cite: 1];
-  detailDateLong.textContent = selectedMatch.dateLong[cite: 1];
-  detailTime.textContent = selectedMatch.timeFull[cite: 1];
-  detailVenueSub.textContent = selectedMatch.title.toUpperCase()[cite: 1];
-  detailAddress.textContent = selectedMatch.address[cite: 1, 2];
-  detailOrganizer.textContent = selectedMatch.organizer[cite: 1];
-  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`[cite: 1, 2];
+  detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
+  detailVenueName.textContent = selectedMatch.title;
+  detailSportTag.textContent = selectedMatch.sport.toUpperCase();
+  detailDateLong.textContent = selectedMatch.dateLong;
+  detailTime.textContent = selectedMatch.timeFull;
+  detailVenueSub.textContent = selectedMatch.title.toUpperCase();
+  detailAddress.textContent = selectedMatch.address;
+  detailOrganizer.textContent = selectedMatch.organizer;
+  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
   updateSubscribeButton();
 
@@ -250,7 +250,7 @@ function updateSubscribeButton() {
     btnSubscribe.style.backgroundColor = "#43454d";
     btnSubscribe.disabled = true;
   } else {
-    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`[cite: 1];
+    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`;
     btnSubscribe.style.backgroundColor = "var(--accent)";
     btnSubscribe.disabled = false;
   }
@@ -274,23 +274,31 @@ function resetReceiptInput() {
 }
 
 function openQrModal() {
-  if (!selectedMatch || !modalQr) return;
+  if (!selectedMatch || !modalQr) {
+    console.error("No se encontró el partido o el modal en el DOM");
+    return;
+  }
 
   resetReceiptInput();
 
   modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
   modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
 
+  // Generar código QR dinámico
   const qrPayload = encodeURIComponent(
     `PAGO-QR-SIMPLE|PARTIDO:${selectedMatch.id}|MONTO:${selectedMatch.price}|CANCHA:${selectedMatch.title}`
   );
-  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrPayload}`;
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrPayload}`;
 
   modalQr.removeAttribute("hidden");
+  modalQr.style.display = "flex";
 }
 
 function closeQrModal() {
-  if (modalQr) modalQr.setAttribute("hidden", "");
+  if (modalQr) {
+    modalQr.setAttribute("hidden", "");
+    modalQr.style.display = "none";
+  }
   resetReceiptInput();
 }
 
@@ -319,10 +327,20 @@ if (receiptInput) {
 
 if (btnRemoveReceipt) btnRemoveReceipt.addEventListener("click", resetReceiptInput);
 
-btnSubscribe.addEventListener("click", () => {
-  if (!selectedMatch || selectedMatch.currentPlayers >= selectedMatch.maxPlayers) return;
-  openQrModal();
-});
+// Abrir modal con el botón de inscripción
+if (btnSubscribe) {
+  btnSubscribe.onclick = (e) => {
+    e.preventDefault();
+    if (!selectedMatch) return;
+
+    if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
+      alert("Lo sentimos, este partido ya no tiene cupos disponibles.");
+      return;
+    }
+
+    openQrModal();
+  };
+}
 
 if (btnCloseModal) btnCloseModal.addEventListener("click", closeQrModal);
 if (btnCancelPayment) btnCancelPayment.addEventListener("click", closeQrModal);
@@ -336,7 +354,6 @@ if (btnConfirmPayment) {
       return;
     }
 
-    // Incrementar y persistir
     selectedMatch.currentPlayers += 1;
 
     let receiptsHistory = JSON.parse(localStorage.getItem("app_receipts")) || [];
@@ -351,7 +368,7 @@ if (btnConfirmPayment) {
 
     saveMatches();
 
-    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`[cite: 1];
+    detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
     updateSubscribeButton();
     closeQrModal();
 
@@ -404,7 +421,7 @@ if (searchInput) {
   });
 }
 
-// Arranque
+// Arranque inicial
 document.addEventListener("DOMContentLoaded", () => {
   renderMatches();
 });

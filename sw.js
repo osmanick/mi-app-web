@@ -1,4 +1,4 @@
-const CACHE_NAME = "partidos-app-v1";
+const CACHE_NAME = "partidos-app-v3";
 
 const ASSETS = [
   "./",
@@ -10,12 +10,15 @@ const ASSETS = [
   "./icons/icon-512.png"
 ];
 
+// Instalación forzando el reemplazo inmediato
 self.addEventListener("install", (e) => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
+// Activación eliminando cualquier versión previa (v1, v2, etc.)
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -26,10 +29,25 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// Network-First para archivos HTML/JS para ver cambios de inmediato en desarrollo
 self.addEventListener("fetch", (e) => {
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request).catch(() => caches.match("./index.html"));
-    })
+    fetch(e.request)
+      .then((networkResponse) => {
+        // Si hay red, actualiza la caché dinámicamente
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Si no hay internet, responde con la copia guardada
+        return caches.match(e.request).then((res) => {
+          return res || caches.match("./index.html");
+        });
+      })
   );
 });
