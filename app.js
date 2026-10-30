@@ -561,6 +561,9 @@ function renderMatches() {
   }
 }
 
+// ==========================================
+// CONTROL DEL DETALLE Y RESTRICCIÓN DE SWITCH
+// ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
@@ -575,12 +578,19 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
+  // CONTROL ESTRICTO DE VISIBILIDAD: Solo el ORGANIZADOR puede ver y usar el switch
   if (organizerConfirmBox && toggleMatchConfirmed) {
-    if (currentProfile && currentProfile.role === "ORGANIZADOR") {
+    const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
+
+    if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
+      organizerConfirmBox.style.display = "flex";
+      toggleMatchConfirmed.disabled = false;
       toggleMatchConfirmed.checked = !!selectedMatch.isConfirmed;
     } else {
       organizerConfirmBox.setAttribute("hidden", "");
+      organizerConfirmBox.style.display = "none";
+      toggleMatchConfirmed.disabled = true;
     }
   }
 
@@ -589,9 +599,15 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
+// Evento de cambio protegido
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
-    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") return;
+    // Si no es ORGANIZADOR, denegamos inmediatamente
+    if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede modificar el estado del partido.");
+      e.target.checked = !e.target.checked;
+      return;
+    }
 
     const newStatus = e.target.checked;
     selectedMatch.isConfirmed = newStatus;
@@ -604,6 +620,7 @@ if (toggleMatchConfirmed) {
     if (error) {
       alert("Error al actualizar estado en Supabase: " + error.message);
       toggleMatchConfirmed.checked = !newStatus;
+      selectedMatch.isConfirmed = !newStatus;
       return;
     }
 
