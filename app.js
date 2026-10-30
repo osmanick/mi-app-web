@@ -48,6 +48,7 @@ let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
 let currentReceiptBase64 = null;
+let venueFileBlob = null;
 
 // ==========================================
 // 4. REFERENCIAS DEL DOM
@@ -126,14 +127,17 @@ const btnCloseViewer = document.getElementById("btn-close-viewer");
 const btnAdminLogout = document.getElementById("btn-admin-logout");
 const btnAdminLogoutTop = document.getElementById("btn-admin-logout-top");
 
-// Modal Canjear Promo
-const modalRedeem = document.getElementById("modal-redeem");
-const btnOpenRedeem = document.getElementById("btn-open-redeem");
-const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
-const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
-const inputPromoCode = document.getElementById("input-promo-code");
+// Modal Registrar Cancha (Venue)
+const btnOpenRegisterVenue = document.getElementById("btn-open-register-venue");
+const modalRegisterVenue = document.getElementById("modal-register-venue");
+const btnCloseVenueModal = document.getElementById("btn-close-venue-modal");
+const formNewVenue = document.getElementById("form-new-venue");
+const venueInputFile = document.getElementById("venue-input-file");
+const venueUploadText = document.getElementById("venue-upload-text");
+const venuePreviewWrapper = document.getElementById("venue-preview-wrapper");
+const venueImagePreview = document.getElementById("venue-image-preview");
 
-// Modal Crear Partido con Select de Sedes
+// Modal Crear Partido
 const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
 const modalCreateMatch = document.getElementById("modal-create-match");
 const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
@@ -165,10 +169,9 @@ const inputAvatarFile = document.getElementById("input-avatar-file");
 const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
-// 5. FORMATEO INTELIGENTE DE FECHAS (Hoy, Mañana, Posterior)
+// 5. FORMATEO INTELIGENTE DE FECHAS
 // ==========================================
 function formatSmartDateGroup(dateString) {
-  // Dividir año, mes, día (evita desfases por zona horaria)
   const [year, month, day] = dateString.split("-").map(Number);
   const targetDate = new Date(year, month - 1, day);
 
@@ -203,7 +206,7 @@ async function fetchVenues() {
     return;
   }
 
-  venuesList = data;
+  venuesList = data || [];
   if (!selectVenue) return;
 
   selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
@@ -226,6 +229,122 @@ if (selectVenue) {
     } else {
       inputMatchAddress.value = "";
       inputMatchSport.value = "";
+    }
+  });
+}
+
+// Modal Registrar Cancha: Abrir / Cerrar
+if (btnOpenRegisterVenue) {
+  btnOpenRegisterVenue.addEventListener("click", () => {
+    modalRegisterVenue.removeAttribute("hidden");
+    modalRegisterVenue.style.display = "flex";
+  });
+}
+
+if (btnCloseVenueModal) {
+  btnCloseVenueModal.addEventListener("click", () => {
+    modalRegisterVenue.setAttribute("hidden", "");
+    modalRegisterVenue.style.display = "none";
+  });
+}
+
+// Selección y compresión de foto de cancha (800 px ancho)
+if (venueInputFile) {
+  venueInputFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const targetWidth = 800;
+        const targetHeight = Math.round((img.height / img.width) * targetWidth);
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        canvas.toBlob((blob) => {
+          venueFileBlob = blob;
+          venueImagePreview.src = URL.createObjectURL(blob);
+          venuePreviewWrapper.removeAttribute("hidden");
+          venueUploadText.textContent = "Foto lista (Toca para cambiar)";
+        }, "image/webp", 0.82);
+      };
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Subida de nueva cancha a Supabase Storage y DB
+if (formNewVenue) {
+  formNewVenue.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!venueFileBlob) {
+      alert("Por favor selecciona una foto para la cancha.");
+      return;
+    }
+
+    const btnSubmit = document.getElementById("btn-submit-venue");
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Subiendo foto y guardando...";
+
+    try {
+      const name = document.getElementById("venue-input-name").value.trim();
+      const sport = document.getElementById("venue-input-sport").value;
+      const address = document.getElementById("venue-input-address").value.trim();
+      const mapsUrl = document.getElementById("venue-input-maps").value.trim();
+
+      const fileName = `venue_${Date.now()}.webp`;
+      const filePath = `canchas/${fileName}`;
+
+      const { error: uploadError } = await db.storage
+        .from("venues")
+        .upload(filePath, venueFileBlob, {
+          contentType: "image/webp",
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = db.storage
+        .from("venues")
+        .getPublicUrl(filePath);
+
+      const publicImageUrl = urlData.publicUrl;
+
+      const { error: insertError } = await db.from("venues").insert([
+        {
+          name: name,
+          sport: sport,
+          address: address,
+          image_url: publicImageUrl,
+          maps_url: mapsUrl
+        }
+      ]);
+
+      if (insertError) throw insertError;
+
+      alert(`¡Cancha "${name}" registrada con éxito! Ya puedes seleccionarla al publicar.`);
+      formNewVenue.reset();
+      venueFileBlob = null;
+      venuePreviewWrapper.setAttribute("hidden", "");
+      venueUploadText.textContent = "Seleccionar foto de la cancha";
+      modalRegisterVenue.setAttribute("hidden", "");
+      modalRegisterVenue.style.display = "none";
+
+      fetchVenues();
+    } catch (err) {
+      console.error("Error al registrar cancha:", err);
+      alert("Error: " + err.message);
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = "Guardar Cancha en la Base de Datos";
     }
   });
 }
@@ -431,7 +550,6 @@ function applyRolePermissions() {
 }
 
 async function fetchMatches() {
-  // Excluir partidos marcados como finalizados
   const { data, error } = await db
     .from("matches")
     .select("*")
@@ -457,7 +575,8 @@ async function fetchMatches() {
     maxPlayers: m.max_players,
     image: m.image,
     organizer: m.organizer,
-    isConfirmed: m.is_confirmed || false
+    isConfirmed: m.is_confirmed || false,
+    mapsUrl: m.maps_url || ""
   }));
 
   renderMatches();
@@ -502,6 +621,7 @@ db.channel("global-realtime")
     fetchReceipts();
     playNotificationSound();
   })
+  .on("postgres_changes", { event: "*", schema: "public", table: "venues" }, () => fetchVenues())
   .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, (payload) => {
     if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
       currentProfile = payload.new;
@@ -659,11 +779,19 @@ function showDetail(id) {
   detailTime.textContent = selectedMatch.timeFull;
   detailVenueSub.textContent = selectedMatch.title.toUpperCase();
   detailAddress.textContent = selectedMatch.address;
-  detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
+
+  // Enlace directo de Google Maps desde la base de datos
+  if (detailMap) {
+    if (selectedMatch.mapsUrl && selectedMatch.mapsUrl.trim() !== "") {
+      detailMap.href = selectedMatch.mapsUrl;
+    } else {
+      detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
+    }
+  }
 
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
-  // Control estricto de visibilidad del switch
+  // Control del Switch de Confirmado
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -677,7 +805,7 @@ function showDetail(id) {
     }
   }
 
-  // Control estricto del botón Finalizar Partido
+  // Control del Botón Finalizar Partido
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
@@ -693,7 +821,7 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// Evento switch estado confirmado
+// Toggle switch confirmado
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
@@ -721,7 +849,7 @@ if (toggleMatchConfirmed) {
   });
 }
 
-// Evento: Finalizar y quitar partido de la lista
+// Finalizar partido y quitar de la lista activa
 if (btnFinishMatch) {
   btnFinishMatch.addEventListener("click", async () => {
     if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
@@ -729,7 +857,7 @@ if (btnFinishMatch) {
       return;
     }
 
-    if (confirm(`¿Deseas dar por finalizado el partido en "${selectedMatch.title}" y quitarlo de la lista?`)) {
+    if (confirm(`¿Deseas dar por finalizado el partido en "${selectedMatch.title}" y quitarlo de la cartelera?`)) {
       const { error } = await db
         .from("matches")
         .update({ is_finished: true })
@@ -766,7 +894,6 @@ async function renderConfirmedPlayers(matchId) {
     return;
   }
 
-  // Obtener los perfiles en tiempo real para reflejar su avatar más reciente
   const userIds = approvedReceipts.map((r) => r.userId).filter(Boolean);
   let profilesMap = {};
 
@@ -1130,7 +1257,6 @@ if (formNewMatch) {
     const price = parseFloat(document.getElementById("input-match-price").value);
     const maxPlayers = parseInt(document.getElementById("input-match-max").value);
 
-    // Formateo inteligente de fecha
     const dateGroup = formatSmartDateGroup(rawDate);
 
     const [year, month, day] = rawDate.split("-").map(Number);
@@ -1154,6 +1280,7 @@ if (formNewMatch) {
       max_players: maxPlayers,
       address: venue.address,
       image: venue.image_url,
+      maps_url: venue.maps_url || "",
       organizer: currentProfile.username || "Organizador",
       is_confirmed: false,
       is_finished: false
