@@ -248,7 +248,9 @@ if (btnLogout) {
       localStorage.removeItem("app_active_user");
       currentProfile = null;
       if (bottomBar) bottomBar.style.display = "none";
-      formRegisterUser.reset();
+      if (formRegisterUser) formRegisterUser.reset();
+      if (formLoginUser) formLoginUser.reset();
+      tabAuthLogin.click();
       switchScreen(viewRegister);
     }
   });
@@ -1045,6 +1047,82 @@ if (btnConfirmRedeem) {
     alert(`¡Felicidades! Se sumaron Bs. ${bonus.toFixed(2)} de saldo promocional.`);
   });
 }
+
+// ==========================================
+// REFERENCIAS Y SWITCH LOGIN / REGISTRO
+// ==========================================
+const tabAuthLogin = document.getElementById("tab-auth-login");
+const tabAuthRegister = document.getElementById("tab-auth-register");
+const formLoginUser = document.getElementById("form-login-user");
+const authTitle = document.getElementById("auth-title");
+
+tabAuthLogin.addEventListener("click", () => {
+  tabAuthRegister.classList.remove("active");
+  tabAuthLogin.classList.add("active");
+  formRegisterUser.classList.remove("active");
+  formLoginUser.classList.add("active");
+  if (authTitle) authTitle.textContent = "Iniciar Sesión";
+});
+
+tabAuthRegister.addEventListener("click", () => {
+  tabAuthLogin.classList.remove("active");
+  tabAuthRegister.classList.add("active");
+  formLoginUser.classList.remove("active");
+  formRegisterUser.classList.add("active");
+  if (authTitle) authTitle.textContent = "Crear Cuenta";
+});
+
+// ==========================================
+// PROCESO DE INICIO DE SESIÓN
+// ==========================================
+if (formLoginUser) {
+  formLoginUser.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("login-username").value.trim().toLowerCase();
+    const password = document.getElementById("login-password").value.trim();
+    const btnSubmit = document.getElementById("btn-submit-login");
+
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Verificando...";
+
+    // Consultar usuario en la tabla profiles de Supabase
+    const { data: user, error } = await db
+      .from("profiles")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .maybeSingle();
+
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = "Entrar";
+
+    if (error) {
+      alert("Error al conectar con el servidor: " + error.message);
+      return;
+    }
+
+    if (!user) {
+      alert("Usuario o contraseña incorrectos. Por favor verifica tus datos.");
+      return;
+    }
+
+    // Guardar sesión activa localmente
+    localStorage.setItem("app_active_user", user.id);
+    currentProfile = user;
+
+    // Habilitar interfaz principal
+    if (bottomBar) bottomBar.style.display = "flex";
+    applyRolePermissions();
+    renderProfileView();
+    switchScreen(viewList);
+    fetchMatches();
+    fetchReceipts();
+
+    formLoginUser.reset();
+  });
+}
+
 
 // ==========================================
 // 14. FILTROS Y ARRANQUE

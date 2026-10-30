@@ -21,15 +21,43 @@
 
   <div class="app-viewport">
 
-    <!-- ================= VISTA 0: REGISTRO INICIAL (JUGADOR) ================= -->
+  <!-- ================= VISTA 0: ACCESO (LOGIN / REGISTRO) ================= -->
     <section id="view-register" class="view-screen">
       <header class="top-nav center-title">
-        <h1 class="screen-title">Crear Cuenta</h1>
+        <h1 class="screen-title" id="auth-title">Acceso</h1>
       </header>
+
+      <!-- Selector de pestañas: Iniciar Sesión / Registrarse -->
+      <div class="auth-tabs-container">
+        <button id="tab-auth-login" class="auth-tab-btn active">Iniciar Sesión</button>
+        <button id="tab-auth-register" class="auth-tab-btn">Registrarse</button>
+      </div>
+
       <div class="register-body">
-        <p class="register-desc">Completa tus datos para empezar a jugar y reservar canchas.</p>
-        
-        <form id="form-register-user" class="register-form">
+
+        <!-- FORMULARIO 1: INICIAR SESIÓN -->
+        <form id="form-login-user" class="auth-form active">
+          <p class="register-desc">Ingresa tu usuario y contraseña para acceder a tus reservas y partidos.</p>
+
+          <div class="form-input-group">
+            <label>Username</label>
+            <input type="text" id="login-username" placeholder="carlos_10" required autocomplete="username">
+          </div>
+
+          <div class="form-input-group">
+            <label>Contraseña</label>
+            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" id="btn-submit-login" class="btn-primary-action" style="margin-top: 1rem;">
+            Entrar
+          </button>
+        </form>
+
+        <!-- FORMULARIO 2: REGISTRO INICIAL -->
+        <form id="form-register-user" class="auth-form">
+          <p class="register-desc">Completa tus datos para empezar a jugar y reservar canchas.</p>
+
           <div class="form-row-2">
             <div class="form-input-group">
               <label>Nombre</label>
@@ -80,21 +108,21 @@
           <div class="form-row-2">
             <div class="form-input-group">
               <label>Username</label>
-              <input type="text" id="reg-username" placeholder="carlos_10" required>
+              <input type="text" id="reg-username" placeholder="carlos_10" required autocomplete="username">
             </div>
             <div class="form-input-group">
               <label>Contraseña</label>
-              <input type="password" id="reg-password" placeholder="••••••••" required>
+              <input type="password" id="reg-password" placeholder="••••••••" required autocomplete="new-password">
             </div>
           </div>
 
-          <button type="submit" class="btn-primary-action" style="margin-top: 0.8rem;">
+          <button type="submit" id="btn-submit-register" class="btn-primary-action" style="margin-top: 0.8rem;">
             Registrarme como Jugador
           </button>
         </form>
+
       </div>
     </section>
-
     <!-- ================= VISTA 1: LISTA DE PARTIDOS ================= -->
     <main id="view-list" class="view-screen">
       <header class="top-nav">
