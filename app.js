@@ -42,6 +42,7 @@ if (btnInstall) {
 // ==========================================
 let matches = [];
 let receipts = [];
+let venuesList = [];
 let currentProfile = null;
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
@@ -137,6 +138,7 @@ const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
 const modalCreateMatch = document.getElementById("modal-create-match");
 const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
 const formNewMatch = document.getElementById("form-new-match");
+const selectVenue = document.getElementById("select-venue");
 
 // Modal Credenciales
 const modalSecurity = document.getElementById("modal-security");
@@ -162,12 +164,36 @@ const inputAvatarFile = document.getElementById("input-avatar-file");
 const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
-// 5. SESIÓN, LOGIN Y REGISTRO (PERSISTENTE)
+// 5. CARGA DE CANCHAS DESDE SUPABASE
+// ==========================================
+async function fetchVenues() {
+  try {
+    const { data, error } = await db.from("venues").select("*").order("name", { ascending: true });
+    if (error) throw error;
+
+    venuesList = data || [];
+    if (!selectVenue) return;
+
+    selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
+    venuesList.forEach((venue) => {
+      const opt = document.createElement("option");
+      opt.value = venue.id;
+      opt.textContent = `${venue.name} (${venue.sport})`;
+      selectVenue.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("Error al cargar sedes:", err);
+  }
+}
+
+// ==========================================
+// 6. SESIÓN, LOGIN Y REGISTRO (PERSISTENTE)
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
-  // Iniciar siempre la carga de partidos
+  // Iniciar siempre la carga de datos
+  fetchVenues();
   fetchMatches();
   fetchReceipts();
 
@@ -263,6 +289,7 @@ if (formLoginUser) {
     switchScreen(viewList);
     fetchMatches();
     fetchReceipts();
+    fetchVenues();
 
     formLoginUser.reset();
   });
@@ -321,6 +348,7 @@ if (formRegisterUser) {
     switchScreen(viewList);
     fetchMatches();
     fetchReceipts();
+    fetchVenues();
 
     alert(`¡Bienvenido ${firstName}! Tu cuenta ha sido creada.`);
   });
@@ -345,7 +373,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 6. PERMISOS & CARGA DE DATOS (CON ORDEN CRONOLÓGICO)
+// 7. PERMISOS & CARGA DE DATOS (ORDEN CRONOLÓGICO)
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
@@ -369,8 +397,6 @@ function applyRolePermissions() {
 }
 
 async function fetchMatches() {
-  // Excluye únicamente partidos terminados (is_finished = true).
-  // Los false o null se muestran normalmente.
   const { data, error } = await db
     .from("matches")
     .select("*")
@@ -381,12 +407,10 @@ async function fetchMatches() {
     return;
   }
 
-  // Ordenar cronológicamente por fecha y hora más próxima
   const sortedData = (data || []).sort((a, b) => {
     const timeA = (a.time || "00:00").split("-")[0].trim();
     const timeB = (b.time || "00:00").split("-")[0].trim();
     
-    // Comparar fecha de grupo y hora
     if (a.date_group === b.date_group) {
       return timeA.localeCompare(timeB);
     }
@@ -444,7 +468,7 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 7. REALTIME & AUDIO
+// 8. REALTIME & AUDIO
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
@@ -452,6 +476,7 @@ db.channel("global-realtime")
     fetchReceipts();
     playNotificationSound();
   })
+  .on("postgres_changes", { event: "*", schema: "public", table: "venues" }, () => fetchVenues())
   .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, (payload) => {
     if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
       currentProfile = payload.new;
@@ -502,7 +527,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 8. RENDERIZADO DE PARTIDOS & DETALLE
+// 9. RENDERIZADO DE PARTIDOS & DETALLE
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -611,7 +636,6 @@ function showDetail(id) {
 
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
-  // Control estricto del Switch Confirmado
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -625,7 +649,6 @@ function showDetail(id) {
     }
   }
 
-  // Control estricto del Botón Finalizar Partido
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
@@ -641,7 +664,7 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// Evento switch confirmado (Organizador)
+// Evento switch confirmado
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
@@ -669,7 +692,7 @@ if (toggleMatchConfirmed) {
   });
 }
 
-// Evento: Finalizar y quitar partido de la lista
+// Evento: Finalizar y quitar partido de la cartelera activa
 if (btnFinishMatch) {
   btnFinishMatch.addEventListener("click", async () => {
     if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
@@ -745,7 +768,7 @@ function updateSubscribeButton() {
 }
 
 // ==========================================
-// 9. NAVEGACIÓN ENTRE VISTAS
+// 10. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
 function switchScreen(targetScreen) {
   [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
@@ -831,7 +854,7 @@ if (pillMyMatches && pillMyBookings) {
 }
 
 // ==========================================
-// 10. MODAL: MODIFICAR CREDENCIALES
+// 11. MODAL: MODIFICAR CREDENCIALES
 // ==========================================
 function openSecurityModal() {
   if (!currentProfile) return;
@@ -904,7 +927,7 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 11. REDIMENSIONAR AVATAR Y STORAGE (300x300 WebP)
+// 12. REDIMENSIONAR AVATAR Y STORAGE (300x300 WebP)
 // ==========================================
 function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -1014,7 +1037,7 @@ if (btnChangeAvatar && inputAvatarFile) {
 }
 
 // ==========================================
-// 12. PUBLICAR CANCHA (ORGANIZADOR)
+// 13. PUBLICAR CANCHA (ORGANIZADOR CON SELECT DE CANCHAS)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -1022,6 +1045,7 @@ if (btnCreateMatchFab) {
       alert("Acceso denegado: solo el Organizador puede publicar canchas.");
       return;
     }
+    fetchVenues();
     modalCreateMatch.removeAttribute("hidden");
     modalCreateMatch.style.display = "flex";
   });
@@ -1043,16 +1067,22 @@ if (formNewMatch) {
       return;
     }
 
-    const title = document.getElementById("input-match-title").value.trim();
-    const sport = document.getElementById("input-match-sport").value;
+    const venueId = selectVenue.value;
+    const selectedVenue = venuesList.find((v) => v.id == venueId);
+
+    if (!selectedVenue) {
+      alert("Por favor selecciona una cancha de la lista.");
+      return;
+    }
+
     const rawDate = document.getElementById("input-match-date").value;
     const timeFull = document.getElementById("input-match-time").value.trim();
     const price = parseFloat(document.getElementById("input-match-price").value);
     const maxPlayers = parseInt(document.getElementById("input-match-max").value);
-    const address = document.getElementById("input-match-address").value.trim();
-    const image = document.getElementById("input-match-image").value.trim();
 
-    const dateObj = new Date(rawDate + "T00:00:00");
+    // Formatear fecha
+    const [year, month, day] = rawDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
     const dateLong = dateObj.toLocaleDateString("es-ES", {
       weekday: "long",
       day: "numeric",
@@ -1062,17 +1092,17 @@ if (formNewMatch) {
     const dateGroup = `Fecha · ${dateLong.charAt(0).toUpperCase() + dateLong.slice(1)}`;
 
     const newMatchPayload = {
-      title,
-      sport,
+      title: selectedVenue.name,
+      sport: selectedVenue.sport || "Fútbol",
       date_group: dateGroup,
       date_long: dateLong,
-      time: timeFull.split("—")[0].trim(),
+      time: timeFull.split("—")[0].split("-")[0].trim(),
       time_full: timeFull,
-      price,
+      price: price,
       current_players: 0,
       max_players: maxPlayers,
-      address,
-      image,
+      address: selectedVenue.address,
+      image: selectedVenue.image_url,
       organizer: currentProfile.username || "Organizador",
       is_confirmed: false,
       is_finished: false
@@ -1081,19 +1111,20 @@ if (formNewMatch) {
     const { error } = await db.from("matches").insert([newMatchPayload]);
 
     if (error) {
-      alert("Error al guardar: " + error.message);
+      alert("Error al publicar partido: " + error.message);
       return;
     }
 
     modalCreateMatch.setAttribute("hidden", "");
     modalCreateMatch.style.display = "none";
     formNewMatch.reset();
-    alert("¡Cancha habilitada con éxito en la nube!");
+    alert("¡Partido habilitado con éxito!");
+    fetchMatches();
   });
 }
 
 // ==========================================
-// 13. PAGO QR & COMPROBANTE
+// 14. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -1210,7 +1241,7 @@ if (btnConfirmPayment) {
 }
 
 // ==========================================
-// 14. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
+// 15. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1361,7 +1392,7 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
-// 15. FILTROS Y ARRANQUE
+// 16. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {

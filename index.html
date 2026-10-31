@@ -501,7 +501,7 @@
       </div>
     </div>
 
-    <!-- Modal Crear Partido (Organizador) -->
+    <!-- ================= MODAL CREAR PARTIDO (ORGANIZADOR) ================= -->
     <div id="modal-create-match" class="modal-overlay" hidden>
       <div class="modal-card modal-form-card">
         <div class="modal-header">
@@ -514,22 +514,15 @@
 
         <form id="form-new-match" class="create-match-form">
           <div class="form-input-group">
-            <label>Título del Partido / Cancha</label>
-            <input type="text" id="input-match-title" placeholder="Ej. Cancha Sintética El Golazo" required>
+            <label>Seleccionar Cancha</label>
+            <select id="select-venue" class="form-select" required>
+              <option value="">Cargando canchas disponibles...</option>
+            </select>
           </div>
 
-          <div class="form-row-2">
-            <div class="form-input-group">
-              <label>Deporte</label>
-              <select id="input-match-sport" class="form-select">
-                <option value="Fútbol">Fútbol</option>
-                <option value="Wally">Wally</option>
-              </select>
-            </div>
-            <div class="form-input-group">
-              <label>Fecha</label>
-              <input type="date" id="input-match-date" required>
-            </div>
+          <div class="form-input-group">
+            <label>Fecha del encuentro</label>
+            <input type="date" id="input-match-date" required>
           </div>
 
           <div class="form-row-2">
@@ -548,17 +541,7 @@
             <input type="number" id="input-match-max" min="4" max="30" placeholder="14" required>
           </div>
 
-          <div class="form-input-group">
-            <label>Dirección exacta</label>
-            <input type="text" id="input-match-address" placeholder="Ej. Av. Busch esq. Villalobos" required>
-          </div>
-
-          <div class="form-input-group">
-            <label>URL de Foto de Cancha (Unsplash u otra)</label>
-            <input type="url" id="input-match-image" placeholder="https://images.unsplash.com/..." required>
-          </div>
-
-          <button type="submit" class="btn-primary-action" style="margin-top: 0.5rem;">
+          <button type="submit" class="btn-primary-action" style="margin-top: 0.8rem;">
             Publicar Partido
           </button>
         </form>
