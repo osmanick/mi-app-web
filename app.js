@@ -84,7 +84,7 @@ const tabAlerts = document.getElementById("tab-alerts");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Detalle Cancha & Switch Organizador
+// Detalle Cancha & Switch / Botón Organizador
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -98,6 +98,8 @@ const detailPlayersList = document.getElementById("detail-players-list");
 const detailPlayersRatio = document.getElementById("detail-players-ratio");
 const organizerConfirmBox = document.getElementById("organizer-confirm-box");
 const toggleMatchConfirmed = document.getElementById("toggle-match-confirmed");
+const organizerFinishBox = document.getElementById("organizer-finish-box");
+const btnFinishMatch = document.getElementById("btn-finish-match");
 
 // Modal QR y Comprobante
 const modalQr = document.getElementById("modal-qr");
@@ -165,49 +167,40 @@ const profileAvatarImg = document.getElementById("profile-avatar-img");
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
+  // Iniciar siempre la carga de partidos
+  fetchMatches();
+  fetchReceipts();
+
   if (!activeUserId) {
     if (bottomBar) bottomBar.style.display = "none";
     switchScreen(viewRegister);
     return;
   }
 
-  // Pre-cargar partidos primero para que la pantalla nunca arranque en blanco
-  fetchMatches();
-  fetchReceipts();
+  if (bottomBar) bottomBar.style.display = "flex";
 
   try {
     let { data: user, error } = await db
       .from("profiles")
       .select("*")
-      .eq("id", activeUserId)
+      .or(`id.eq.${activeUserId},username.eq.${activeUserId}`)
       .maybeSingle();
 
-    if (!user) {
-      // Intento por username
-      const { data: userByUsername } = await db
-        .from("profiles")
-        .select("*")
-        .eq("username", activeUserId)
-        .maybeSingle();
+    if (user) {
+      currentProfile = user;
+      localStorage.setItem("app_active_user", user.id);
+      applyRolePermissions();
+      renderProfileView();
 
-      user = userByUsername;
+      if (currentProfile.role === "ORGANIZADOR") {
+        renderAdminPanel();
+      }
     }
 
-    if (!user) {
-      console.warn("Usuario no encontrado, conservando datos locales de sesión.");
-      return;
-    }
-
-    currentProfile = user;
-    localStorage.setItem("app_active_user", user.id);
-
-    if (bottomBar) bottomBar.style.display = "flex";
-    applyRolePermissions();
-    renderProfileView();
     switchScreen(viewList);
 
   } catch (err) {
-    console.error("Error al cargar perfil en sesión:", err);
+    console.error("Error al restaurar perfil:", err);
     switchScreen(viewList);
   }
 }
@@ -352,7 +345,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 6. PERMISOS & CARGA DE DATOS
+// 6. PERMISOS & CARGA DE DATOS (CON ORDEN CRONOLÓGICO)
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
@@ -376,12 +369,31 @@ function applyRolePermissions() {
 }
 
 async function fetchMatches() {
-  const { data, error } = await db.from("matches").select("*").order("id", { ascending: true });
+  // Excluye únicamente partidos terminados (is_finished = true).
+  // Los false o null se muestran normalmente.
+  const { data, error } = await db
+    .from("matches")
+    .select("*")
+    .or("is_finished.eq.false,is_finished.is.null");
+
   if (error) {
     console.error("Error al obtener partidos:", error);
     return;
   }
-  matches = data.map((m) => ({
+
+  // Ordenar cronológicamente por fecha y hora más próxima
+  const sortedData = (data || []).sort((a, b) => {
+    const timeA = (a.time || "00:00").split("-")[0].trim();
+    const timeB = (b.time || "00:00").split("-")[0].trim();
+    
+    // Comparar fecha de grupo y hora
+    if (a.date_group === b.date_group) {
+      return timeA.localeCompare(timeB);
+    }
+    return (a.id || 0) - (b.id || 0);
+  });
+
+  matches = sortedData.map((m) => ({
     id: m.id,
     title: m.title,
     dateGroup: m.date_group,
@@ -395,8 +407,10 @@ async function fetchMatches() {
     maxPlayers: m.max_players,
     image: m.image,
     organizer: m.organizer,
-    isConfirmed: m.is_confirmed || false
+    isConfirmed: m.is_confirmed || false,
+    isFinished: m.is_finished || false
   }));
+
   renderMatches();
 }
 
@@ -507,7 +521,7 @@ function renderMatches() {
   if (filtered.length === 0) {
     matchesContainer.innerHTML = `
       <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
-        No se encontraron partidos.
+        No hay partidos activos en este momento.
       </div>`;
     return;
   }
@@ -580,7 +594,7 @@ function renderMatches() {
   }
 }
 
-// CONTROL DEL DETALLE Y RESTRICCIÓN DE SWITCH
+// CONTROL DEL DETALLE, SWITCH Y BOTÓN FINALIZAR
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
@@ -595,10 +609,10 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
-  // CONTROL ESTRICTO: Solo ORGANIZADOR ve y opera el switch
-  if (organizerConfirmBox && toggleMatchConfirmed) {
-    const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
+  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
+  // Control estricto del Switch Confirmado
+  if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
       organizerConfirmBox.style.display = "flex";
@@ -611,12 +625,23 @@ function showDetail(id) {
     }
   }
 
+  // Control estricto del Botón Finalizar Partido
+  if (organizerFinishBox) {
+    if (isOrganizer) {
+      organizerFinishBox.removeAttribute("hidden");
+      organizerFinishBox.style.display = "block";
+    } else {
+      organizerFinishBox.setAttribute("hidden", "");
+      organizerFinishBox.style.display = "none";
+    }
+  }
+
   renderConfirmedPlayers(selectedMatch.id);
   updateSubscribeButton();
   switchScreen(viewDetail);
 }
 
-// Evento de cambio protegido
+// Evento switch confirmado (Organizador)
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
@@ -641,6 +666,32 @@ if (toggleMatchConfirmed) {
     }
 
     renderMatches();
+  });
+}
+
+// Evento: Finalizar y quitar partido de la lista
+if (btnFinishMatch) {
+  btnFinishMatch.addEventListener("click", async () => {
+    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede finalizar partidos.");
+      return;
+    }
+
+    if (confirm(`¿Deseas dar por concluido el encuentro en "${selectedMatch.title}" y quitarlo de la lista?`)) {
+      const { error } = await db
+        .from("matches")
+        .update({ is_finished: true })
+        .eq("id", selectedMatch.id);
+
+      if (error) {
+        alert("Error al finalizar el partido: " + error.message);
+        return;
+      }
+
+      alert("El partido ha finalizado y ha sido retirado de la cartelera.");
+      switchScreen(viewList);
+      fetchMatches();
+    }
   });
 }
 
@@ -834,22 +885,22 @@ if (btnSaveSecurity) {
 function renderProfileView() {
   if (!currentProfile) return;
 
-  document.getElementById("profile-name-display").textContent = `${currentProfile.first_name} ${currentProfile.last_name}`;
+  document.getElementById("profile-name-display").textContent = `${currentProfile.first_name || ""} ${currentProfile.last_name || ""}`.trim() || currentProfile.username;
   document.getElementById("profile-matches-count").textContent = currentProfile.matches_played || 0;
   document.getElementById("profile-balance").textContent = Number(currentProfile.balance || 0).toFixed(2);
   document.getElementById("profile-promo").textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
   document.getElementById("profile-avatar-img").src = currentProfile.avatar_url;
 
-  document.getElementById("field-firstname").textContent = currentProfile.first_name;
-  document.getElementById("field-lastname").textContent = currentProfile.last_name;
-  document.getElementById("field-phone").textContent = currentProfile.phone;
-  document.getElementById("field-birth").textContent = currentProfile.birth_date;
-  document.getElementById("field-skill").textContent = currentProfile.skill_level;
-  document.getElementById("field-nationality").textContent = currentProfile.nationality;
-  document.getElementById("field-city").textContent = currentProfile.city;
-  document.getElementById("field-email").textContent = currentProfile.email;
-  document.getElementById("field-plan").textContent = currentProfile.plan;
-  document.getElementById("field-username").textContent = currentProfile.username;
+  document.getElementById("field-firstname").textContent = currentProfile.first_name || "-";
+  document.getElementById("field-lastname").textContent = currentProfile.last_name || "-";
+  document.getElementById("field-phone").textContent = currentProfile.phone || "-";
+  document.getElementById("field-birth").textContent = currentProfile.birth_date || "-";
+  document.getElementById("field-skill").textContent = currentProfile.skill_level || "-";
+  document.getElementById("field-nationality").textContent = currentProfile.nationality || "-";
+  document.getElementById("field-city").textContent = currentProfile.city || "-";
+  document.getElementById("field-email").textContent = currentProfile.email || "-";
+  document.getElementById("field-plan").textContent = currentProfile.plan || "FREE";
+  document.getElementById("field-username").textContent = currentProfile.username || "-";
 }
 
 // ==========================================
@@ -1023,7 +1074,8 @@ if (formNewMatch) {
       address,
       image,
       organizer: currentProfile.username || "Organizador",
-      is_confirmed: false
+      is_confirmed: false,
+      is_finished: false
     };
 
     const { error } = await db.from("matches").insert([newMatchPayload]);
