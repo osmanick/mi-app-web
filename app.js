@@ -1141,10 +1141,14 @@ function openQrModal() {
   modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
   modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
 
-  const qrPayload = encodeURIComponent(
-    `PAGO-QR-SIMPLE|PARTIDO:${selectedMatch.id}|MONTO:${selectedMatch.price}|CANCHA:${selectedMatch.title}`
-  );
-  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrPayload}`;
+  // ==========================================
+  // CONFIGURA AQUÍ TU QR PERSONALIZADO
+  // ==========================================
+  // Opción A: Archivo local (coloca tu archivo en la raíz o carpeta img)
+  qrImage.src = "./mi-qr.png"; 
+
+  // Opción B: Si tienes una URL directa de tu QR subido a Supabase o internet:
+  // qrImage.src = "https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/venues/...";
 
   modalQr.removeAttribute("hidden");
   modalQr.style.display = "flex";
