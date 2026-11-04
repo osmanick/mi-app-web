@@ -401,19 +401,19 @@ if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 // 8. PERMISOS & CARGA DE PARTIDOS
 // ==========================================
 function applyRolePermissions() {
-  if (!currentProfile) return;
-
-  const isOrganizer = currentProfile.role === "ORGANIZADOR";
+  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
 
   if (btnCreateMatchFab) {
     if (isOrganizer) {
       btnCreateMatchFab.removeAttribute("hidden");
+      btnCreateMatchFab.style.display = "flex";
     } else {
       btnCreateMatchFab.setAttribute("hidden", "");
+      btnCreateMatchFab.style.display = "none";
     }
   }
 
-  const tabProfileLabel = tabProfile.querySelector("span");
+  const tabProfileLabel = tabProfile ? tabProfile.querySelector("span") : null;
   if (tabProfileLabel) {
     tabProfileLabel.textContent = isOrganizer ? "Organizador" : "Perfil";
   }

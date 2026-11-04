@@ -681,6 +681,10 @@ input:checked + .slider-round:before {
   margin-top: 1rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .fab-organizer {
   position: fixed;
   bottom: calc(var(--bottom-bar-height) + 18px);
@@ -698,6 +702,11 @@ input:checked + .slider-round:before {
   align-items: center;
   gap: 6px;
   z-index: 999;
+}
+
+/* Regla explícita para cuando esté oculto */
+.fab-organizer[hidden] {
+  display: none !important;
 }
 
 @media (max-width: 480px) {
