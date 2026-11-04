@@ -13,8 +13,8 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("SW Activo en alcance:", reg.scope))
-      .catch((err) => console.error("Error al registrar SW:", err));
+      .then((reg) => console.log("SW Activo:", reg.scope))
+      .catch((err) => console.error("Error SW:", err));
   });
 }
 
@@ -50,7 +50,7 @@ let selectedMatch = null;
 let currentReceiptBase64 = null;
 
 // ==========================================
-// 4. REFERENCIAS DEL DOM (DECLARACIONES ÚNICAS)
+// 4. REFERENCIAS DEL DOM
 // ==========================================
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
@@ -85,7 +85,7 @@ const tabAlerts = document.getElementById("tab-alerts");
 const tabProfile = document.getElementById("tab-profile");
 const badgePending = document.getElementById("badge-pending");
 
-// Detalle Cancha & Switch / Botón Organizador
+// Detalle Cancha & Opciones Organizador
 const detailImg = document.getElementById("detail-img");
 const detailBadgeQuota = document.getElementById("detail-badge-quota");
 const detailVenueName = document.getElementById("detail-venue-name");
@@ -116,7 +116,7 @@ const receiptPreview = document.getElementById("receipt-preview");
 const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
 const uploadLabelText = document.getElementById("upload-label-text");
 
-// Panel Admin & Organizador
+// Panel Admin
 const adminReceiptsList = document.getElementById("admin-receipts-list");
 const adminPendingCount = document.getElementById("admin-pending-count");
 const btnClearReceipts = document.getElementById("btn-clear-receipts");
@@ -148,7 +148,7 @@ const btnSaveSecurity = document.getElementById("btn-save-security");
 const inputEditUsername = document.getElementById("input-edit-username");
 const inputEditPassword = document.getElementById("input-edit-password");
 
-// Perfil, Avatar y Logout
+// Perfil y Avatar
 const btnLogout = document.getElementById("btn-logout");
 const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
@@ -164,7 +164,33 @@ const inputAvatarFile = document.getElementById("input-avatar-file");
 const profileAvatarImg = document.getElementById("profile-avatar-img");
 
 // ==========================================
-// 5. CARGA DE CANCHAS DESDE SUPABASE
+// 5. CONTROL ESTRICTO DE PANTALLAS (SWITCH)
+// ==========================================
+function switchScreen(targetScreen) {
+  const allScreens = [
+    viewRegister,
+    viewList,
+    viewDetail,
+    viewMessages,
+    viewProfile,
+    viewAdmin
+  ];
+
+  allScreens.forEach((screen) => {
+    if (screen) {
+      screen.classList.remove("active");
+      screen.style.display = "none";
+    }
+  });
+
+  if (targetScreen) {
+    targetScreen.classList.add("active");
+    targetScreen.style.display = "flex";
+  }
+}
+
+// ==========================================
+// 6. CARGA DE CANCHAS (VENUES)
 // ==========================================
 async function fetchVenues() {
   try {
@@ -187,12 +213,11 @@ async function fetchVenues() {
 }
 
 // ==========================================
-// 6. SESIÓN, LOGIN Y REGISTRO (PERSISTENTE)
+// 7. SESIÓN ROBUSTA (SIN CIERRES ACCIDENTALES)
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
 
-  // Iniciar siempre la carga de datos
   fetchVenues();
   fetchMatches();
   fetchReceipts();
@@ -226,7 +251,7 @@ async function checkUserSession() {
     switchScreen(viewList);
 
   } catch (err) {
-    console.error("Error al restaurar perfil:", err);
+    console.error("Error al restaurar sesión:", err);
     switchScreen(viewList);
   }
 }
@@ -276,7 +301,7 @@ if (formLoginUser) {
     }
 
     if (!user) {
-      alert("Usuario o contraseña incorrectos. Verifica tus credenciales.");
+      alert("Usuario o contraseña incorrectos.");
       return;
     }
 
@@ -373,7 +398,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 7. PERMISOS & CARGA DE DATOS (ORDEN CRONOLÓGICO)
+// 8. PERMISOS & CARGA DE PARTIDOS
 // ==========================================
 function applyRolePermissions() {
   if (!currentProfile) return;
@@ -444,7 +469,7 @@ async function fetchReceipts() {
     console.error("Error al obtener comprobantes:", error);
     return;
   }
-  receipts = data.map((r) => ({
+  receipts = (data || []).map((r) => ({
     id: r.id,
     matchId: r.match_id,
     matchTitle: r.match_title,
@@ -468,7 +493,7 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 8. REALTIME & AUDIO
+// 9. REALTIME & AUDIO
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
@@ -527,7 +552,7 @@ function updatePendingBadge() {
 }
 
 // ==========================================
-// 9. RENDERIZADO DE PARTIDOS & DETALLE
+// 10. RENDERIZADO DE PARTIDOS & DETALLE
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -619,7 +644,6 @@ function renderMatches() {
   }
 }
 
-// CONTROL DEL DETALLE, SWITCH Y BOTÓN FINALIZAR
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
@@ -664,11 +688,10 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// Evento switch confirmado
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.addEventListener("change", async (e) => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
-      alert("Acceso denegado: solo el Organizador puede modificar el estado del partido.");
+      alert("Acceso denegado: solo el Organizador puede modificar el estado.");
       e.target.checked = !e.target.checked;
       return;
     }
@@ -692,7 +715,6 @@ if (toggleMatchConfirmed) {
   });
 }
 
-// Evento: Finalizar y quitar partido de la cartelera activa
 if (btnFinishMatch) {
   btnFinishMatch.addEventListener("click", async () => {
     if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
@@ -768,31 +790,8 @@ function updateSubscribeButton() {
 }
 
 // ==========================================
-// 10. NAVEGACIÓN ENTRE VISTAS
+// 11. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
-function switchScreen(targetScreen) {
-  const screens = [
-    viewRegister,
-    viewList,
-    viewDetail,
-    viewMessages,
-    viewProfile,
-    viewAdmin
-  ];
-
-  screens.forEach((screen) => {
-    if (screen) {
-      screen.classList.remove("active");
-      screen.style.display = "none"; // Oculta estrictamente cualquier otra vista
-    }
-  });
-
-  if (targetScreen) {
-    targetScreen.classList.add("active");
-    targetScreen.style.display = "flex"; // Muestra únicamente la vista destino
-  }
-}
-
 function clearTabSelection() {
   [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
     if (t) t.classList.remove("active");
@@ -870,7 +869,7 @@ if (pillMyMatches && pillMyBookings) {
 }
 
 // ==========================================
-// 11. MODAL: MODIFICAR CREDENCIALES
+// 12. MODAL: MODIFICAR CREDENCIALES
 // ==========================================
 function openSecurityModal() {
   if (!currentProfile) return;
@@ -924,26 +923,54 @@ if (btnSaveSecurity) {
 function renderProfileView() {
   if (!currentProfile) return;
 
-  document.getElementById("profile-name-display").textContent = `${currentProfile.first_name || ""} ${currentProfile.last_name || ""}`.trim() || currentProfile.username;
-  document.getElementById("profile-matches-count").textContent = currentProfile.matches_played || 0;
-  document.getElementById("profile-balance").textContent = Number(currentProfile.balance || 0).toFixed(2);
-  document.getElementById("profile-promo").textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
-  document.getElementById("profile-avatar-img").src = currentProfile.avatar_url;
+  const nameElem = document.getElementById("profile-name-display");
+  if (nameElem) nameElem.textContent = `${currentProfile.first_name || ""} ${currentProfile.last_name || ""}`.trim() || currentProfile.username;
 
-  document.getElementById("field-firstname").textContent = currentProfile.first_name || "-";
-  document.getElementById("field-lastname").textContent = currentProfile.last_name || "-";
-  document.getElementById("field-phone").textContent = currentProfile.phone || "-";
-  document.getElementById("field-birth").textContent = currentProfile.birth_date || "-";
-  document.getElementById("field-skill").textContent = currentProfile.skill_level || "-";
-  document.getElementById("field-nationality").textContent = currentProfile.nationality || "-";
-  document.getElementById("field-city").textContent = currentProfile.city || "-";
-  document.getElementById("field-email").textContent = currentProfile.email || "-";
-  document.getElementById("field-plan").textContent = currentProfile.plan || "FREE";
-  document.getElementById("field-username").textContent = currentProfile.username || "-";
+  const countElem = document.getElementById("profile-matches-count");
+  if (countElem) countElem.textContent = currentProfile.matches_played || 0;
+
+  const balanceElem = document.getElementById("profile-balance");
+  if (balanceElem) balanceElem.textContent = Number(currentProfile.balance || 0).toFixed(2);
+
+  const promoElem = document.getElementById("profile-promo");
+  if (promoElem) promoElem.textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
+
+  const avatarElem = document.getElementById("profile-avatar-img");
+  if (avatarElem && currentProfile.avatar_url) avatarElem.src = currentProfile.avatar_url;
+
+  const fName = document.getElementById("field-firstname");
+  if (fName) fName.textContent = currentProfile.first_name || "-";
+
+  const fLast = document.getElementById("field-lastname");
+  if (fLast) fLast.textContent = currentProfile.last_name || "-";
+
+  const fPhone = document.getElementById("field-phone");
+  if (fPhone) fPhone.textContent = currentProfile.phone || "-";
+
+  const fBirth = document.getElementById("field-birth");
+  if (fBirth) fBirth.textContent = currentProfile.birth_date || "-";
+
+  const fSkill = document.getElementById("field-skill");
+  if (fSkill) fSkill.textContent = currentProfile.skill_level || "-";
+
+  const fNat = document.getElementById("field-nationality");
+  if (fNat) fNat.textContent = currentProfile.nationality || "-";
+
+  const fCity = document.getElementById("field-city");
+  if (fCity) fCity.textContent = currentProfile.city || "-";
+
+  const fEmail = document.getElementById("field-email");
+  if (fEmail) fEmail.textContent = currentProfile.email || "-";
+
+  const fPlan = document.getElementById("field-plan");
+  if (fPlan) fPlan.textContent = currentProfile.plan || "FREE";
+
+  const fUser = document.getElementById("field-username");
+  if (fUser) fUser.textContent = currentProfile.username || "-";
 }
 
 // ==========================================
-// 12. REDIMENSIONAR AVATAR Y STORAGE (300x300 WebP)
+// 13. REDIMENSIONAR AVATAR Y STORAGE
 // ==========================================
 function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -1053,7 +1080,7 @@ if (btnChangeAvatar && inputAvatarFile) {
 }
 
 // ==========================================
-// 13. PUBLICAR CANCHA (ORGANIZADOR CON SELECT DE CANCHAS)
+// 14. PUBLICAR CANCHA (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -1096,7 +1123,6 @@ if (formNewMatch) {
     const price = parseFloat(document.getElementById("input-match-price").value);
     const maxPlayers = parseInt(document.getElementById("input-match-max").value);
 
-    // Formatear fecha
     const [year, month, day] = rawDate.split("-").map(Number);
     const dateObj = new Date(year, month - 1, day);
     const dateLong = dateObj.toLocaleDateString("es-ES", {
@@ -1140,7 +1166,7 @@ if (formNewMatch) {
 }
 
 // ==========================================
-// 14. PAGO QR & COMPROBANTE
+// 15. PAGO QR & COMPROBANTE
 // ==========================================
 function resetReceiptInput() {
   currentReceiptBase64 = null;
@@ -1157,14 +1183,8 @@ function openQrModal() {
   modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
   modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
 
-  // ==========================================
-  // CONFIGURA AQUÍ TU QR PERSONALIZADO
-  // ==========================================
-  // Opción A: Archivo local (coloca tu archivo en la raíz o carpeta img)
-  qrImage.src = "https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png"; 
-
-  // Opción B: Si tienes una URL directa de tu QR subido a Supabase o internet:
-  // qrImage.src = "https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/venues/...";
+  // Asigna tu imagen QR local o pública
+  qrImage.src = "./mi-qr.png";
 
   modalQr.removeAttribute("hidden");
   modalQr.style.display = "flex";
@@ -1261,7 +1281,7 @@ if (btnConfirmPayment) {
 }
 
 // ==========================================
-// 15. PANEL ADMIN (APROBACIÓN ORGANIZADOR)
+// 16. PANEL ADMIN (ORGANIZADOR)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1338,7 +1358,7 @@ window.approveReceipt = async function (receiptId) {
   }
 
   await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
-  alert("Inscripción aprobada: se sumó al partido y aumentó el contador de partidos jugados.");
+  alert("Inscripción aprobada exitosamente.");
 };
 
 window.rejectReceipt = async function (receiptId) {
@@ -1412,7 +1432,7 @@ if (btnConfirmRedeem) {
 }
 
 // ==========================================
-// 16. FILTROS Y ARRANQUE
+// 17. FILTROS Y ARRANQUE
 // ==========================================
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {

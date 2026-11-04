@@ -33,7 +33,7 @@ body {
   min-height: 100vh;
 }
 
-/* Contenedor tipo pantalla móvil */
+/* Contenedor móvil */
 .app-viewport {
   width: 100%;
   max-width: 480px;
@@ -45,24 +45,23 @@ body {
   flex-direction: column;
 }
 
-/* Pantallas individuales (View Screens) */
+/* Pantallas individuales (Aislamiento Total para evitar superposiciones) */
 .view-screen {
-  display: none;
+  display: none !important;
   flex-direction: column;
   width: 100%;
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Espacio inferior indispensable para que la barra fija no tape nada */
   padding-bottom: calc(var(--bottom-bar-height) + 15px);
 }
 
 .view-screen.active {
-  display: flex;
+  display: flex !important;
 }
 
 /* ==========================================================
-   BARRA DE NAVEGACIÓN INFERIOR (FIJA / ESTÁTICA)
+   BARRA DE NAVEGACIÓN INFERIOR (FIJA)
    ========================================================== */
 .bottom-nav-tabs {
   position: fixed;
@@ -127,7 +126,7 @@ body {
 }
 
 /* ==========================================================
-   CABECERAS Y NAVEGACIÓN SUPERIOR
+   CABECERAS
    ========================================================== */
 .top-nav {
   padding: 1rem 1.2rem;
@@ -170,7 +169,7 @@ body {
 }
 
 /* ==========================================================
-   BUSCADOR Y CHIPS DE FILTRO
+   BUSCADOR Y CHIPS
    ========================================================== */
 .search-container {
   display: flex;
@@ -246,7 +245,7 @@ body {
 }
 
 /* ==========================================================
-   TARJETAS DE PARTIDOS Y BADGE CONFIRMADO
+   TARJETAS DE PARTIDOS
    ========================================================== */
 .matches-content {
   padding: 0 1.2rem;
@@ -276,14 +275,13 @@ body {
   display: flex;
   gap: 0.85rem;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s;
+  transition: transform 0.15s ease;
 }
 
 .match-card:active {
   transform: scale(0.98);
 }
 
-/* Wrapper de miniatura con badge flotante */
 .match-thumb-wrapper {
   position: relative;
   width: 95px;
@@ -299,7 +297,6 @@ body {
   object-fit: cover;
 }
 
-/* Badge flotante naranja de la captura */
 .badge-confirmed-tag {
   position: absolute;
   top: 5px;
@@ -314,7 +311,6 @@ body {
   align-items: center;
   gap: 3px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  letter-spacing: 0.2px;
 }
 
 .badge-confirmed-tag svg {
@@ -399,7 +395,7 @@ body {
 }
 
 /* ==========================================================
-   DETALLE DEL PARTIDO
+   VISTA DE DETALLE
    ========================================================== */
 .detail-header-bar {
   display: flex;
@@ -645,7 +641,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================
-   BOTONES PRINCIPALES
+   BOTONES
    ========================================================== */
 .btn-primary-action {
   width: 100%;
@@ -711,7 +707,159 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================
-   PERFIL Y AVATAR
+   PANEL ORGANIZADOR / REVISIÓN DE PAGOS
+   ========================================================== */
+#view-admin {
+  background-color: var(--bg-main);
+}
+
+.admin-content {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-stats-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-count {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.btn-clean-data {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.receipts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.receipt-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.6rem;
+}
+
+.receipt-match-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.receipt-status-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.status-pending {
+  background-color: rgba(255, 179, 64, 0.15);
+  color: #ffb340;
+}
+
+.status-approved {
+  background-color: rgba(52, 199, 89, 0.15);
+  color: var(--success);
+}
+
+.status-rejected {
+  background-color: rgba(255, 59, 48, 0.15);
+  color: var(--danger);
+}
+
+.receipt-body-layout {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.receipt-thumb-admin {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  background-color: #000;
+  flex-shrink: 0;
+}
+
+.receipt-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.receipt-info-text strong {
+  color: var(--text-white);
+}
+
+.receipt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.btn-approve {
+  background-color: var(--success);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-reject {
+  background-color: var(--bg-card-subtle);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+/* ==========================================================
+   PERFIL DEL JUGADOR
    ========================================================== */
 .profile-top-bar {
   display: flex;
@@ -882,331 +1030,6 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================
-   PANEL ADMINISTRADOR / ORGANIZADOR (REVISIÓN DE PAGOS)
-   ========================================================== */
-
-#view-admin {
-  background-color: var(--bg-main);
-  min-height: 100vh;
-}
-
-.admin-content {
-  padding: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.admin-stats-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 1rem 1.2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.admin-count {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: var(--accent);
-  margin-top: 2px;
-}
-
-.btn-clean-data {
-  background: var(--bg-card-subtle);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  border-radius: 8px;
-  padding: 0.45rem 0.85rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-clean-data:hover {
-  color: var(--text-white);
-  border-color: var(--text-muted);
-}
-
-.receipts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.receipt-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.receipt-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 0.6rem;
-}
-
-.receipt-match-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-white);
-}
-
-.receipt-status-tag {
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.3px;
-}
-
-.status-pending {
-  background-color: rgba(255, 179, 64, 0.15);
-  color: #ffb340;
-}
-
-.status-approved {
-  background-color: rgba(52, 199, 89, 0.15);
-  color: var(--success);
-}
-
-.status-rejected {
-  background-color: rgba(255, 59, 48, 0.15);
-  color: var(--danger);
-}
-
-.receipt-body-layout {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.receipt-thumb-admin {
-  width: 70px;
-  height: 70px;
-  border-radius: 10px;
-  object-fit: cover;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  background-color: #000;
-  flex-shrink: 0;
-}
-
-.receipt-info-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.receipt-info-text strong {
-  color: var(--text-white);
-}
-
-.receipt-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  margin-top: 0.4rem;
-}
-
-.btn-approve {
-  background-color: var(--success);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.65rem;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.btn-reject {
-  background-color: var(--bg-card-subtle);
-  color: var(--danger);
-  border: 1px solid var(--danger);
-  border-radius: 8px;
-  padding: 0.65rem;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-/* ==========================================================
-   ESTILOS ESPECÍFICOS DEL MODAL DE PAGO QR
-   ========================================================== */
-
-/* Contenedor del código QR */
-.qr-wrapper {
-  background-color: #ffffff;
-  padding: 12px;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 1.2rem auto;
-  width: fit-content;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  position: relative;
-}
-
-#qr-image {
-  width: 100%;
-  max-width: 220px;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: contain;
-  display: block;
-}
-
-.qr-logo-badge {
-  display: none; /* Oculta la etiqueta de texto suelta que salía abajo */
-}
-
-.qr-tag {
-  background-color: rgba(255, 90, 31, 0.15);
-  color: var(--accent);
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-.modal-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin-top: 0.3rem;
-}
-
-/* Detalles del pago (Concepto y Monto) */
-.payment-details {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-}
-
-.payment-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.payment-row strong {
-  color: var(--text-white);
-  font-weight: 700;
-}
-
-.payment-row strong.highlight-price {
-  color: var(--accent);
-  font-size: 1.05rem;
-  font-weight: 800;
-}
-
-/* Área para adjuntar comprobante */
-.upload-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 1.2rem;
-}
-
-.upload-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background-color: var(--bg-card);
-  border: 1px dashed var(--accent);
-  border-radius: 12px;
-  padding: 0.9rem;
-  color: var(--text-white);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.upload-label:hover {
-  background-color: var(--bg-card-subtle);
-}
-
-.preview-wrapper {
-  position: relative;
-  width: 100%;
-  max-height: 140px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-}
-
-.preview-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.preview-wrapper .btn-remove {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Botones del Modal */
-.modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.btn-text-action {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  font-weight: 600;
-  padding: 0.6rem;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.btn-text-action:hover {
-  color: var(--text-white);
-}
-
-
-/* ==========================================================
    MODALES Y FORMULARIOS
    ========================================================== */
 .modal-overlay {
@@ -1321,4 +1144,123 @@ input:checked + .slider-round:before {
   font-size: 0.82rem;
   color: var(--text-muted);
   margin-bottom: 1rem;
+}
+
+/* ==========================================================
+   MODAL QR ESPECÍFICO
+   ========================================================== */
+.qr-wrapper {
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1.2rem auto;
+  width: fit-content;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+#qr-image {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  display: block;
+}
+
+.qr-logo-badge {
+  display: none;
+}
+
+.payment-details {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.payment-row strong {
+  color: var(--text-white);
+  font-weight: 700;
+}
+
+.payment-row strong.highlight-price {
+  color: var(--accent);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--bg-card);
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  padding: 0.9rem;
+  color: var(--text-white);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.preview-wrapper {
+  position: relative;
+  width: 100%;
+  max-height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.preview-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-wrapper .btn-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-text-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.6rem;
+  cursor: pointer;
 }
