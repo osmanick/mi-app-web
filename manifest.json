@@ -1,6 +1,6 @@
 {
-  "name": "Partidos La Paz - Reserva de Canchas",
-  "short_name": "Partidos",
+  "name": "Partidos La Paz",
+  "short_name": "Falta Uno",
   "description": "App para unirse a partidos y reservar canchas",
   "start_url": "./index.html",
   "scope": "./",
