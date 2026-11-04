@@ -1145,7 +1145,7 @@ function openQrModal() {
   // CONFIGURA AQUÍ TU QR PERSONALIZADO
   // ==========================================
   // Opción A: Archivo local (coloca tu archivo en la raíz o carpeta img)
-  qrImage.src = "./mi-qr.png"; 
+  qrImage.src = "https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png"; 
 
   // Opción B: Si tienes una URL directa de tu QR subido a Supabase o internet:
   // qrImage.src = "https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/venues/...";
