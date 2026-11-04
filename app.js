@@ -771,10 +771,26 @@ function updateSubscribeButton() {
 // 10. NAVEGACIÓN ENTRE VISTAS
 // ==========================================
 function switchScreen(targetScreen) {
-  [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((screen) => {
-    if (screen) screen.classList.remove("active");
+  const screens = [
+    viewRegister,
+    viewList,
+    viewDetail,
+    viewMessages,
+    viewProfile,
+    viewAdmin
+  ];
+
+  screens.forEach((screen) => {
+    if (screen) {
+      screen.classList.remove("active");
+      screen.style.display = "none"; // Oculta estrictamente cualquier otra vista
+    }
   });
-  if (targetScreen) targetScreen.classList.add("active");
+
+  if (targetScreen) {
+    targetScreen.classList.add("active");
+    targetScreen.style.display = "flex"; // Muestra únicamente la vista destino
+  }
 }
 
 function clearTabSelection() {
