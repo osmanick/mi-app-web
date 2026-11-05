@@ -987,15 +987,24 @@ input:checked + .slider-round:before {
   background-color: var(--accent);
 }
 
+/* Asegurar que las pestañas del perfil ocupen todo el ancho y no se apilen en horizontal */
 .profile-tab-content {
-  display: none;
+  display: none !important;
+  width: 100%;
   padding: 1.2rem;
   flex-direction: column;
   gap: 1rem;
+  box-sizing: border-box;
 }
 
 .profile-tab-content.active {
-  display: flex;
+  display: flex !important;
+}
+
+/* Evitar desbordes horizontales dentro de la vista de perfil */
+#view-profile {
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .form-group-section {
