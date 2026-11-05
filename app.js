@@ -7,7 +7,38 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==========================================
-// 2. ESTADOS GLOBALES
+// 2. REGISTRO DEL SERVICE WORKER (PWA)
+// ==========================================
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then((reg) => console.log("SW Activo:", reg.scope))
+      .catch((err) => console.error("Error SW:", err));
+  });
+}
+
+let deferredPrompt = null;
+const btnInstall = document.getElementById("btn-install");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (btnInstall) btnInstall.removeAttribute("hidden");
+});
+
+if (btnInstall) {
+  btnInstall.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    btnInstall.setAttribute("hidden", "");
+  });
+}
+
+// ==========================================
+// 3. ESTADOS GLOBALES
 // ==========================================
 let matches = [];
 let receipts = [];
@@ -21,7 +52,7 @@ let selectedMatch = null;
 let currentReceiptBase64 = null;
 
 // ==========================================
-// 3. REFERENCIAS DEL DOM
+// 4. REFERENCIAS DEL DOM
 // ==========================================
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
@@ -105,7 +136,7 @@ const listUpcomingMatches = document.getElementById("list-upcoming-matches");
 const messagesListContainer = document.getElementById("messages-list-container");
 
 // ==========================================
-// 4. CONTROL DE PANTALLAS
+// 5. CONTROL ESTRICTO DE PANTALLAS
 // ==========================================
 function switchScreen(targetScreen) {
   [viewRegister, viewList, viewDetail, viewMessages, viewProfile, viewAdmin].forEach((s) => {
@@ -121,7 +152,7 @@ function switchScreen(targetScreen) {
 }
 
 // ==========================================
-// 5. SESIÓN Y PERMISOS
+// 6. SESIÓN ROBUSTA Y PERMISOS
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
@@ -183,49 +214,80 @@ function applyRolePermissions() {
 }
 
 // ==========================================
-// 6. CARGA DE DATOS Y BILLETERA
+// 7. CARGA DE CANCHAS, PARTIDOS Y SALDOS
 // ==========================================
 async function fetchVenues() {
-  const { data } = await db.from("venues").select("*").order("name");
-  venuesList = data || [];
-  if (selectVenue) {
-    selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
-    venuesList.forEach((v) => {
-      const opt = document.createElement("option");
-      opt.value = v.id;
-      opt.textContent = `${v.name} (${v.sport})`;
-      selectVenue.appendChild(opt);
-    });
+  try {
+    const { data, error } = await db.from("venues").select("*").order("name");
+    if (error) throw error;
+    venuesList = data || [];
+
+    if (selectVenue) {
+      selectVenue.innerHTML = '<option value="">-- Selecciona una cancha --</option>';
+      venuesList.forEach((v) => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = `${v.name} (${v.sport})`;
+        selectVenue.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("Error al cargar sedes:", err);
   }
 }
 
+function formatSmartDateGroup(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  const targetDate = new Date(year, month - 1, day);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((targetDate - today) / oneDayMs);
+
+  const weekday = targetDate.toLocaleDateString("es-ES", { weekday: "long" });
+  const dayNum = targetDate.getDate();
+  const monthName = targetDate.toLocaleDateString("es-ES", { month: "long" });
+  const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+
+  if (diffDays === 0) return `Hoy · ${capWeekday} ${dayNum} de ${monthName}`;
+  if (diffDays === 1) return `Mañana · ${capWeekday} ${dayNum} de ${monthName}`;
+  return `${capWeekday} ${dayNum} de ${monthName}`;
+}
+
 async function fetchMatches() {
-  const { data } = await db
-    .from("matches")
-    .select("*")
-    .or("is_finished.eq.false,is_finished.is.null")
-    .order("id", { ascending: true });
+  try {
+    const { data, error } = await db
+      .from("matches")
+      .select("*")
+      .or("is_finished.eq.false,is_finished.is.null")
+      .order("id", { ascending: true });
 
-  matches = (data || []).map((m) => ({
-    id: m.id,
-    title: m.title,
-    dateGroup: m.date_group,
-    dateLong: m.date_long,
-    sport: m.sport,
-    time: m.time,
-    timeFull: m.time_full,
-    address: m.address,
-    price: Number(m.price),
-    currentPlayers: m.current_players || 0,
-    maxPlayers: m.max_players || 14,
-    image: m.image,
-    organizer: m.organizer,
-    isConfirmed: m.is_confirmed || false,
-    rawDate: m.date_long
-  }));
+    if (error) throw error;
 
-  renderMatches();
-  renderMyEvents();
+    matches = (data || []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      dateGroup: m.date_group,
+      dateLong: m.date_long,
+      sport: m.sport,
+      time: m.time,
+      timeFull: m.time_full,
+      address: m.address,
+      price: Number(m.price),
+      currentPlayers: m.current_players || 0,
+      maxPlayers: m.max_players || 14,
+      image: m.image,
+      organizer: m.organizer,
+      isConfirmed: m.is_confirmed || false,
+      rawDate: m.date_long
+    }));
+
+    renderMatches();
+    renderMyEvents();
+  } catch (err) {
+    console.error("Error al obtener partidos:", err);
+  }
 }
 
 async function fetchMyRegistrations() {
@@ -278,7 +340,57 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 7. RENDERIZADO DE PARTIDOS
+// 8. REALTIME, NOTIFICACIONES Y SONIDO
+// ==========================================
+function playNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioCtx = new AudioContextClass();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.35);
+  } catch (err) {
+    console.log("Audio pausado por el navegador");
+  }
+}
+
+db.channel("global-realtime")
+  .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, (payload) => {
+    fetchReceipts();
+    if (payload.eventType === "INSERT") {
+      playNotificationSound();
+      if (currentProfile?.role === "ORGANIZADOR") {
+        alert(`🔔 ¡Solicitud de recarga recibida de @${payload.new.username} por Bs. ${Number(payload.new.amount).toFixed(2)}!`);
+      }
+    }
+  })
+  .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => {
+    fetchMatches();
+  })
+  .on("postgres_changes", { event: "*", schema: "public", table: "match_registrations" }, () => {
+    fetchMatches();
+    fetchMyRegistrations();
+    if (selectedMatch) renderConfirmedPlayers(selectedMatch.id);
+  })
+  .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => {
+    fetchMyInvitations();
+  })
+  .subscribe();
+
+// ==========================================
+// 9. RENDERIZADO DE PARTIDOS
 // ==========================================
 function renderMatches() {
   if (!matchesContainer) return;
@@ -291,7 +403,7 @@ function renderMatches() {
   });
 
   if (filtered.length === 0) {
-    matchesContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:3rem 1rem;">No hay partidos activos.</div>`;
+    matchesContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:3rem 1rem;">No hay partidos activos en este momento.</div>`;
     return;
   }
 
@@ -344,7 +456,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// 8. DETALLE, INSCRIPCIÓN Y EDICIÓN
+// 10. DETALLE, INSCRIPCIÓN Y EDICIÓN
 // ==========================================
 async function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -392,7 +504,16 @@ async function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// Inscripción con descuento de saldo
+if (toggleMatchConfirmed) {
+  toggleMatchConfirmed.addEventListener("change", async (e) => {
+    if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") return;
+    const newStatus = e.target.checked;
+    selectedMatch.isConfirmed = newStatus;
+    await db.from("matches").update({ is_confirmed: newStatus }).eq("id", selectedMatch.id);
+    renderMatches();
+  });
+}
+
 btnSubscribe.onclick = async () => {
   if (!currentProfile) {
     alert("Inicia sesión para unirte.");
@@ -472,7 +593,6 @@ async function renderConfirmedPlayers(matchId) {
   });
 }
 
-// Finalizar partido
 if (btnFinishMatch) {
   btnFinishMatch.addEventListener("click", async () => {
     if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") return;
@@ -486,7 +606,6 @@ if (btnFinishMatch) {
   });
 }
 
-// Editar partido (Organizador)
 if (btnEditMatch) {
   btnEditMatch.addEventListener("click", () => {
     if (!selectedMatch) return;
@@ -515,10 +634,10 @@ if (formEditMatch) {
     let dateLong = selectedMatch.dateLong;
 
     if (rawDate) {
+      dateGroup = formatSmartDateGroup(rawDate);
       const [year, month, day] = rawDate.split("-").map(Number);
       const dateObj = new Date(year, month - 1, day);
       dateLong = dateObj.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      dateGroup = `Fecha · ${dateLong.charAt(0).toUpperCase() + dateLong.slice(1)}`;
     }
 
     const updates = {
@@ -533,14 +652,14 @@ if (formEditMatch) {
     await db.from("matches").update(updates).eq("id", selectedMatch.id);
     modalEditMatch.setAttribute("hidden", "");
     modalEditMatch.style.display = "none";
-    alert("Partido actualizado.");
+    alert("Partido actualizado correctamente.");
     fetchMatches();
     switchScreen(viewList);
   });
 }
 
 // ==========================================
-// 9. INVITACIONES A JUGADORES
+// 11. INVITACIONES DIRECTAS
 // ==========================================
 if (btnInvitePlayer) {
   btnInvitePlayer.addEventListener("click", () => {
@@ -577,7 +696,7 @@ if (btnSendInvitation) {
     modalInvite.setAttribute("hidden", "");
     modalInvite.style.display = "none";
     inputInviteUsername.value = "";
-    alert(`¡Invitación enviada a @${targetUser}! Le llegará en su pestaña Mensajes.`);
+    alert(`¡Invitación enviada a @${targetUser}!`);
   });
 }
 
@@ -620,7 +739,7 @@ function renderMessagesView() {
 window.acceptInvitation = async (invId, matchId, price) => {
   const userBalance = Number(currentProfile.balance || 0);
   if (userBalance < price) {
-    if (confirm(`Saldo insuficiente para aceptar (Tienes Bs. ${userBalance.toFixed(2)} y cuesta Bs. ${price.toFixed(2)}).\n\n¿Recargar ahora?`)) {
+    if (confirm(`Saldo insuficiente (Tienes Bs. ${userBalance.toFixed(2)} y cuesta Bs. ${price.toFixed(2)}).\n\n¿Recargar ahora?`)) {
       openTopupModal();
     }
     return;
@@ -634,7 +753,7 @@ window.acceptInvitation = async (invId, matchId, price) => {
   renderProfileView();
   fetchMyRegistrations();
   fetchMyInvitations();
-  alert("¡Invitación aceptada! Se agregó el partido a 'Mis eventos'.");
+  alert("¡Invitación aceptada! Se agregó a 'Mis eventos'.");
 };
 
 window.rejectInvitation = async (invId) => {
@@ -643,11 +762,105 @@ window.rejectInvitation = async (invId) => {
 };
 
 // ==========================================
-// 10. RECARGA DE SALDO CON QR
+// 12. PUBLICAR CANCHA (ORGANIZADOR)
+// ==========================================
+if (btnCreateMatchFab) {
+  btnCreateMatchFab.addEventListener("click", () => {
+    if (currentProfile?.role !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede publicar canchas.");
+      return;
+    }
+    fetchVenues();
+    if (modalCreateMatch) {
+      modalCreateMatch.removeAttribute("hidden");
+      modalCreateMatch.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseCreateModal) {
+  btnCloseCreateModal.addEventListener("click", () => {
+    if (modalCreateMatch) {
+      modalCreateMatch.setAttribute("hidden", "");
+      modalCreateMatch.style.display = "none";
+    }
+  });
+}
+
+if (formNewMatch) {
+  formNewMatch.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (currentProfile?.role !== "ORGANIZADOR") {
+      alert("No tienes permisos de organizador.");
+      return;
+    }
+
+    const venueId = selectVenue.value;
+    const selectedVenue = venuesList.find((v) => v.id == venueId);
+
+    if (!selectedVenue) {
+      alert("Por favor selecciona una cancha de la lista.");
+      return;
+    }
+
+    const rawDate = document.getElementById("input-match-date").value;
+    const timeFull = document.getElementById("input-match-time").value.trim();
+    const price = parseFloat(document.getElementById("input-match-price").value);
+    const maxPlayers = parseInt(document.getElementById("input-match-max").value);
+
+    const dateGroup = formatSmartDateGroup(rawDate);
+    const [year, month, day] = rawDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const dateLong = dateObj.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+
+    const newMatchPayload = {
+      title: selectedVenue.name,
+      sport: selectedVenue.sport || "Fútbol",
+      date_group: dateGroup,
+      date_long: dateLong,
+      time: timeFull.split("—")[0].split("-")[0].trim(),
+      time_full: timeFull,
+      price: price,
+      current_players: 0,
+      max_players: maxPlayers,
+      address: selectedVenue.address,
+      image: selectedVenue.image_url,
+      organizer: currentProfile.username || "Organizador",
+      is_confirmed: false,
+      is_finished: false
+    };
+
+    const { error } = await db.from("matches").insert([newMatchPayload]);
+
+    if (error) {
+      alert("Error al publicar partido: " + error.message);
+      return;
+    }
+
+    if (modalCreateMatch) {
+      modalCreateMatch.setAttribute("hidden", "");
+      modalCreateMatch.style.display = "none";
+    }
+    formNewMatch.reset();
+    alert("¡Partido habilitado con éxito!");
+    fetchMatches();
+  });
+}
+
+// ==========================================
+// 13. RECARGA DE SALDO CON QR
 // ==========================================
 function openTopupModal() {
-  modalQr.removeAttribute("hidden");
-  modalQr.style.display = "flex";
+  if (modalQr) {
+    modalQr.removeAttribute("hidden");
+    modalQr.style.display = "flex";
+  }
 }
 
 if (chipAddBalance) chipAddBalance.addEventListener("click", openTopupModal);
@@ -692,7 +905,7 @@ if (btnConfirmPayment) {
     btnConfirmPayment.disabled = true;
     btnConfirmPayment.textContent = "Enviando...";
 
-    await db.from("receipts").insert([{
+    const { error } = await db.from("receipts").insert([{
       match_id: 0,
       match_title: "Recarga de Billetera",
       sport: "Billetera",
@@ -707,13 +920,18 @@ if (btnConfirmPayment) {
 
     btnConfirmPayment.disabled = false;
     btnConfirmPayment.textContent = "Solicitar Acreditación";
+
+    if (error) {
+      alert("Error al enviar comprobante: " + error.message);
+      return;
+    }
+
     modalQr.setAttribute("hidden", "");
     modalQr.style.display = "none";
     alert("Comprobante enviado. El organizador acreditará el saldo a tu cuenta.");
   });
 }
 
-// Aprobación de recarga (Organizador)
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
   adminReceiptsList.innerHTML = "";
@@ -780,7 +998,7 @@ document.getElementById("btn-close-viewer")?.addEventListener("click", () => {
 });
 
 // ==========================================
-// 11. MIS EVENTOS (JUGADOR)
+// 14. MIS EVENTOS Y PERFIL (JUGADOR)
 // ==========================================
 function renderMyEvents() {
   if (!listUpcomingMatches) return;
@@ -814,7 +1032,6 @@ function renderMyEvents() {
   });
 }
 
-// Inversión de pestañas de Perfil
 if (btnTabEvents && btnTabAbout) {
   btnTabEvents.addEventListener("click", () => {
     btnTabAbout.classList.remove("active");
@@ -846,7 +1063,7 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 12. NAVEGACIÓN Y ARRANQUE
+// 15. NAVEGACIÓN Y ARRANQUE
 // ==========================================
 tabMatches.onclick = () => {
   [tabMatches, tabMessages, tabProfile].forEach((t) => t?.classList.remove("active"));
@@ -878,7 +1095,6 @@ tabProfile.onclick = () => {
 btnBack.onclick = () => { switchScreen(viewList); renderMatches(); };
 btnAdminBack.onclick = () => { switchScreen(viewList); renderMatches(); };
 
-// Auth submit & logout
 document.getElementById("form-login-user")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const u = document.getElementById("login-username").value.trim().toLowerCase();
@@ -906,6 +1122,22 @@ document.getElementById("btn-logout")?.addEventListener("click", () => {
     switchScreen(viewRegister);
   }
 });
+
+chipButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    chipButtons.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSportFilter = btn.dataset.sport;
+    renderMatches();
+  });
+});
+
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    currentSearchQuery = e.target.value.trim();
+    renderMatches();
+  });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   checkUserSession();
