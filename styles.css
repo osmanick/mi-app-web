@@ -715,6 +715,17 @@ input:checked + .slider-round:before {
   }
 }
 
+/* Fila de acciones del organizador (Editar y Finalizar) */
+.organizer-btns-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+#chip-add-balance:active {
+  transform: scale(0.96);
+}
+
 /* ==========================================================
    PANEL ORGANIZADOR / REVISIÓN DE PAGOS
    ========================================================== */
