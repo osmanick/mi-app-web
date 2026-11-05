@@ -1352,20 +1352,22 @@ btnAdminBack.addEventListener("click", () => {
 });
 
 if (btnTabAbout && btnTabEvents) {
-  btnTabAbout.addEventListener("click", () => {
+  btnTabAbout.onclick = () => {
     btnTabEvents.classList.remove("active");
     btnTabAbout.classList.add("active");
     tabEventsContent.classList.remove("active");
     tabAboutContent.classList.add("active");
-  });
+  };
 
-  btnTabEvents.addEventListener("click", () => {
+  btnTabEvents.onclick = () => {
     btnTabAbout.classList.remove("active");
     btnTabEvents.classList.add("active");
     tabAboutContent.classList.remove("active");
     tabEventsContent.classList.add("active");
-    renderMyActiveMatches(); // Refresca los partidos al pulsar la pestaña
-  });
+    if (typeof renderMyActiveMatches === "function") {
+      renderMyActiveMatches();
+    }
+  };
 }
 
 // Filtros y Buscador
