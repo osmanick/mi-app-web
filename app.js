@@ -138,10 +138,10 @@ const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
 const tabAboutContent = document.getElementById("profile-tab-about");
 const tabEventsContent = document.getElementById("profile-tab-events");
-const pillMyMatches = document.getElementById("pill-my-matches");
-const pillMyBookings = document.getElementById("pill-my-bookings");
-const eventsMatchesSub = document.getElementById("events-matches-subview");
-const eventsBookingsSub = document.getElementById("events-bookings-subview");
+//const pillMyMatches = document.getElementById("pill-my-matches");
+//const pillMyBookings = document.getElementById("pill-my-bookings");
+//const eventsMatchesSub = document.getElementById("events-matches-subview");
+//const eventsBookingsSub = document.getElementById("events-bookings-subview");
 
 // ==========================================
 // 5. NAVEGACIÓN Y AISLAMIENTO DE PANTALLAS
@@ -1365,22 +1365,6 @@ if (btnTabAbout && btnTabEvents) {
     tabAboutContent.classList.remove("active");
     tabEventsContent.classList.add("active");
     renderMyActiveMatches(); // Refresca los partidos al pulsar la pestaña
-  });
-}
-
-if (pillMyMatches && pillMyBookings) {
-  pillMyMatches.addEventListener("click", () => {
-    pillMyBookings.classList.remove("active");
-    pillMyMatches.classList.add("active");
-    eventsBookingsSub.style.display = "none";
-    eventsMatchesSub.style.display = "block";
-  });
-
-  pillMyBookings.addEventListener("click", () => {
-    pillMyMatches.classList.remove("active");
-    pillMyBookings.classList.add("active");
-    eventsMatchesSub.style.display = "none";
-    eventsBookingsSub.style.display = "block";
   });
 }
 

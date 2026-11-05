@@ -1059,27 +1059,6 @@ input:checked + .slider-round:before {
 /* ==========================================================
    ESTILOS CORREGIDOS: SUBPESTAÑA "MIS EVENTOS"
    ========================================================== */
-.events-pill-selector {
-  display: inline-flex;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 3px;
-  gap: 4px;
-  margin-bottom: 0.8rem;
-}
-
-.event-pill-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.45rem 0.85rem;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
 
 .event-pill-btn.active {
   background: var(--accent);

@@ -308,27 +308,21 @@
         <button id="btn-tab-about" class="profile-nav-btn">Sobre mí</button>
       </div>
 
-      <!-- Pestaña 1: Mis eventos (Activa por defecto) -->
+<!-- Pestaña 1: Mis eventos (Directo sin subpestañas) -->
       <div id="profile-tab-events" class="profile-tab-content active">
-        <div class="events-pill-selector">
-          <button id="pill-my-matches" class="event-pill-btn active">Mis Partidos</button>
-          <button id="pill-my-bookings" class="event-pill-btn">Mis Reservas</button>
+        <h4 class="subgroup-title">Próximos partidos</h4>
+        <div id="list-upcoming-matches" class="user-events-list">
+          <!-- Aquí se renderizan tus partidos activos automáticamente -->
         </div>
 
-        <div id="events-matches-subview">
-          <h4 class="subgroup-title">Próximos partidos</h4>
-          <div id="list-upcoming-matches" class="user-events-list">
-            <!-- Aquí se cargarán las tarjetas de los partidos donde participas -->
-          </div>
-
-          <h4 class="subgroup-title">Partidos terminados</h4>
-          <div id="list-finished-matches" class="user-events-list">
-            <div class="events-empty-box">
-              <div class="empty-icon-sm">✓</div>
-              <p>No tienes partidos terminados</p>
-            </div>
+        <h4 class="subgroup-title">Partidos terminados</h4>
+        <div id="list-finished-matches" class="user-events-list">
+          <div class="events-empty-box">
+            <div class="empty-icon-sm">✓</div>
+            <p>No tienes partidos terminados</p>
           </div>
         </div>
+      </div>
 
         <div id="events-bookings-subview" style="display: none;">
           <h4 class="subgroup-title">Próximas reservas</h4>
