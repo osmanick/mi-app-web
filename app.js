@@ -854,7 +854,7 @@ if (btnConfirmRecharge) {
       {
         type: "RECARGA",
         recharge_amount: rechargeAmount,
-        match_id: 0,
+        match_id: null,
         match_title: "Recarga de Billetera Móvil",
         sport: "Billetera",
         amount: rechargeAmount,
