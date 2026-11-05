@@ -474,20 +474,82 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 9. REALTIME
+// 9. REALTIME SIN RECARGAR PÁGINA
 // ==========================================
-db.channel("global-realtime")
-  .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
-  .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => fetchReceipts())
-  .on("postgres_changes", { event: "*", schema: "public", table: "venues" }, () => fetchVenues())
-  .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, (payload) => {
-    if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
-      currentProfile = payload.new;
-      renderProfileView();
-      applyRolePermissions();
+const realtimeChannel = db
+  .channel("sports-pwa-realtime")
+  // 1. Escuchar comprobantes y solicitudes de recarga
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "receipts" },
+    async (payload) => {
+      console.log("Cambio detectado en receipts:", payload.eventType);
+      await fetchReceipts(); // Recarga la lista en memoria y actualiza badges
+
+      // Si el usuario está viendo el panel de organizador, actualizar vista
+      if (viewAdmin && viewAdmin.classList.contains("active")) {
+        renderAdminPanel();
+      }
+
+      // Si está en el detalle de un partido, refrescar la lista de inscritos
+      if (selectedMatch) {
+        renderConfirmedPlayers(selectedMatch.id);
+        updateSubscribeButton();
+      }
+
+      // Reproducir sonido si entra una solicitud nueva
+      if (payload.eventType === "INSERT") {
+        playNotificationSound();
+      }
     }
-  })
-  .subscribe();
+  )
+  // 2. Escuchar cambios en partidos (cupos llenos, confirmaciones, etc.)
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "matches" },
+    async (payload) => {
+      console.log("Cambio detectado en matches:", payload.eventType);
+      await fetchMatches(); // Refresca matches y vuelve a ejecutar renderMatches()
+      if (selectedMatch) {
+        // Mantener actualizado el objeto del partido seleccionado
+        const updated = matches.find((m) => m.id === selectedMatch.id);
+        if (updated) {
+          selectedMatch = updated;
+          detailBadgeQuota.textContent = `${selectedMatch.currentPlayers}/${selectedMatch.maxPlayers} jugadores`;
+          updateSubscribeButton();
+        }
+      }
+    }
+  )
+  // 3. Escuchar cambios en perfiles (cuando el admin aprueba saldo de recarga)
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "profiles" },
+    (payload) => {
+      if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
+        const saldoAnterior = currentProfile.balance;
+        currentProfile = { ...currentProfile, ...payload.new };
+        renderProfileView(); // Actualiza el saldo visible en pantalla al instante
+
+        // Notificar al jugador si su saldo cambió
+        if (payload.new.balance !== saldoAnterior) {
+          playNotificationSound();
+          alert(`¡Tu billetera se ha actualizado! Saldo actual: Bs. ${Number(payload.new.balance).toFixed(2)}`);
+          if (viewDetail && viewDetail.classList.contains("active")) {
+            updateSubscribeButton();
+          }
+        }
+      }
+    }
+  )
+  .subscribe((status, err) => {
+    if (status === "SUBSCRIBED") {
+      console.log("Conectado con éxito a Supabase Realtime");
+    }
+    if (status === "CHANNEL_ERROR") {
+      console.error("Error en la conexión Realtime:", err);
+    }
+  });
 
 function updatePendingBadge() {
   if (!badgePending) return;
