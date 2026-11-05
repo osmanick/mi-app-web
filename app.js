@@ -654,7 +654,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// 11. DETALLE DEL PARTIDO & INSCRIPCIÓN CON BILLETERA
+// CONTROL DE DETALLE Y ACCIONES DE ORGANIZADOR
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -670,34 +670,102 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
-  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
+  // Comprobar rol de manera tolerante (ignora mayúsculas/minúsculas y espacios)
+  const userRole = (currentProfile?.role || "").toUpperCase().trim();
+  const isOrganizer = userRole === "ORGANIZADOR";
 
+  // Control estricto de visibilidad del Switch Confirmar
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
-      organizerConfirmBox.style.display = "flex";
+      organizerConfirmBox.style.setProperty("display", "flex", "important");
       toggleMatchConfirmed.disabled = false;
-      toggleMatchConfirmed.checked = !!selectedMatch.isConfirmed;
+      toggleMatchConfirmed.checked = Boolean(selectedMatch.isConfirmed);
     } else {
       organizerConfirmBox.setAttribute("hidden", "");
-      organizerConfirmBox.style.display = "none";
+      organizerConfirmBox.style.setProperty("display", "none", "important");
       toggleMatchConfirmed.disabled = true;
     }
   }
 
+  // Control estricto de visibilidad del Botón Finalizar
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
-      organizerFinishBox.style.display = "block";
+      organizerFinishBox.style.setProperty("display", "block", "important");
     } else {
       organizerFinishBox.setAttribute("hidden", "");
-      organizerFinishBox.style.display = "none";
+      organizerFinishBox.style.setProperty("display", "none", "important");
     }
   }
 
   renderConfirmedPlayers(selectedMatch.id);
   updateSubscribeButton();
   switchScreen(viewDetail);
+}
+
+// 1. SWITCH: MARCAR PARTIDO CONFIRMADO
+if (toggleMatchConfirmed) {
+  toggleMatchConfirmed.onchange = async (e) => {
+    const userRole = (currentProfile?.role || "").toUpperCase().trim();
+    if (!selectedMatch || userRole !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede modificar el estado.");
+      e.target.checked = !e.target.checked;
+      return;
+    }
+
+    const newConfirmedValue = e.target.checked;
+    selectedMatch.isConfirmed = newConfirmedValue;
+
+    const { error } = await db
+      .from("matches")
+      .update({ is_confirmed: newConfirmedValue })
+      .eq("id", selectedMatch.id);
+
+    if (error) {
+      alert("Error al actualizar estado en Supabase: " + error.message);
+      // Revertir switch si hubo error
+      selectedMatch.isConfirmed = !newConfirmedValue;
+      toggleMatchConfirmed.checked = !newConfirmedValue;
+      return;
+    }
+
+    renderMatches();
+  };
+}
+
+// 2. BOTÓN: FINALIZAR Y QUITAR PARTIDO
+if (btnFinishMatch) {
+  btnFinishMatch.onclick = async () => {
+    const userRole = (currentProfile?.role || "").toUpperCase().trim();
+    if (!selectedMatch || userRole !== "ORGANIZADOR") {
+      alert("Acceso denegado: solo el Organizador puede finalizar partidos.");
+      return;
+    }
+
+    const seguro = confirm(`¿Estás seguro de finalizar y retirar el partido en "${selectedMatch.title}"?`);
+    if (!seguro) return;
+
+    btnFinishMatch.disabled = true;
+    btnFinishMatch.textContent = "Finalizando encuentro...";
+
+    const { error } = await db
+      .from("matches")
+      .update({ is_finished: true })
+      .eq("id", selectedMatch.id);
+
+    btnFinishMatch.disabled = false;
+    btnFinishMatch.innerHTML = "🏁 Finalizar y Quitar Partido";
+
+    if (error) {
+      alert("Error al dar de baja el partido: " + error.message);
+      return;
+    }
+
+    alert("El partido ha finalizado y ha sido retirado de la cartelera.");
+    switchScreen(viewList);
+    fetchMatches();
+  };
 }
 
 function updateSubscribeButton() {

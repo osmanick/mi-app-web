@@ -1333,6 +1333,19 @@ input:checked + .slider-round:before {
   margin-top: 2px;
 }
 
+/* Ocultación blindada para controles de organizador */
+#organizer-confirm-box[hidden],
+#organizer-finish-box[hidden],
+.organizer-switch-card[hidden] {
+  display: none !important;
+}
+
+/* Estado activo del botón finalizar */
+#btn-finish-match:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
 
 /* ==========================================================
    MODAL QR ESPECÍFICO
