@@ -33,6 +33,10 @@ body {
   min-height: 100vh;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* Contenedor móvil */
 .app-viewport {
   width: 100%;
@@ -45,7 +49,7 @@ body {
   flex-direction: column;
 }
 
-/* Pantallas individuales (Aislamiento Total para evitar superposiciones) */
+/* Pantallas individuales (Aislamiento Total) */
 .view-screen {
   display: none !important;
   flex-direction: column;
@@ -642,7 +646,7 @@ input:checked + .slider-round:before {
 
 /* ==========================================================
    BOTONES
-   ========================================================== */
+   ========================================================= */
 .btn-primary-action {
   width: 100%;
   background-color: var(--accent);
@@ -681,10 +685,7 @@ input:checked + .slider-round:before {
   margin-top: 1rem;
 }
 
-[hidden] {
-  display: none !important;
-}
-
+/* Botón Flotante Organizador con Ocultación Estricta */
 .fab-organizer {
   position: fixed;
   bottom: calc(var(--bottom-bar-height) + 18px);
@@ -704,7 +705,6 @@ input:checked + .slider-round:before {
   z-index: 999;
 }
 
-/* Regla explícita para cuando esté oculto */
 .fab-organizer[hidden] {
   display: none !important;
 }
@@ -713,17 +713,6 @@ input:checked + .slider-round:before {
   .fab-organizer {
     right: 1.2rem;
   }
-}
-
-/* Fila de acciones del organizador (Editar y Finalizar) */
-.organizer-btns-row {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.4rem;
-}
-
-#chip-add-balance:active {
-  transform: scale(0.96);
 }
 
 /* ==========================================================
@@ -888,6 +877,15 @@ input:checked + .slider-round:before {
   padding: 1.2rem 1.2rem 0.5rem 1.2rem;
 }
 
+.icon-plain-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .profile-hero-section {
   display: flex;
   align-items: center;
@@ -1049,6 +1047,70 @@ input:checked + .slider-round:before {
   color: var(--text-white);
 }
 
+.field-edit-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ==========================================================
+   ESTILOS CORREGIDOS: SUBPESTAÑA "MIS EVENTOS"
+   ========================================================== */
+.events-pill-selector {
+  display: inline-flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 0.8rem;
+}
+
+.event-pill-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.event-pill-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.subgroup-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0.9rem 0 0.5rem 0;
+}
+
+.events-empty-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty-icon-sm {
+  font-size: 1.4rem;
+}
+
 /* ==========================================================
    MODALES Y FORMULARIOS
    ========================================================== */
@@ -1166,6 +1228,56 @@ input:checked + .slider-round:before {
   margin-bottom: 1rem;
 }
 
+/* Modal Canjear / Credenciales */
+.redeem-card {
+  width: 90%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.4rem;
+  margin: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.modal-title-clean {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.modal-subtitle-clean {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.redeem-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.btn-redeem-cancel {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+
+.btn-redeem-confirm {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+}
+
 /* ==========================================================
    MODAL QR ESPECÍFICO
    ========================================================== */
@@ -1189,10 +1301,6 @@ input:checked + .slider-round:before {
   aspect-ratio: 1 / 1;
   object-fit: contain;
   display: block;
-}
-
-.qr-logo-badge {
-  display: none;
 }
 
 .payment-details {
