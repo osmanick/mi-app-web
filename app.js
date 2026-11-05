@@ -38,7 +38,7 @@ if (btnInstall) {
 }
 
 // ==========================================
-// 3. ESTADOS Y VARIABLES GLOBALES
+// 3. ESTADOS GLOBALES
 // ==========================================
 let matches = [];
 let receipts = [];
@@ -47,10 +47,10 @@ let currentProfile = null;
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
-let currentReceiptBase64 = null;
+let currentRechargeBase64 = null;
 
 // ==========================================
-// 4. REFERENCIAS DEL DOM
+// 4. REFERENCIAS DOM
 // ==========================================
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
@@ -73,8 +73,6 @@ const searchInput = document.getElementById("search-input");
 const chipButtons = document.querySelectorAll(".chip-item");
 const btnBack = document.getElementById("btn-back");
 const btnAdminBack = document.getElementById("btn-admin-back");
-const btnShare = document.getElementById("btn-share");
-const btnInvite = document.getElementById("btn-invite");
 const btnSubscribe = document.getElementById("btn-subscribe");
 
 // Pestañas inferiores
@@ -102,19 +100,20 @@ const toggleMatchConfirmed = document.getElementById("toggle-match-confirmed");
 const organizerFinishBox = document.getElementById("organizer-finish-box");
 const btnFinishMatch = document.getElementById("btn-finish-match");
 
-// Modal QR y Comprobante
-const modalQr = document.getElementById("modal-qr");
-const qrImage = document.getElementById("qr-image");
-const modalConcept = document.getElementById("modal-concept");
-const modalPrice = document.getElementById("modal-price");
-const btnCloseModal = document.getElementById("btn-close-modal");
-const btnCancelPayment = document.getElementById("btn-cancel-payment");
-const btnConfirmPayment = document.getElementById("btn-confirm-payment");
-const receiptInput = document.getElementById("receipt-input");
-const previewWrapper = document.getElementById("preview-wrapper");
-const receiptPreview = document.getElementById("receipt-preview");
-const btnRemoveReceipt = document.getElementById("btn-remove-receipt");
-const uploadLabelText = document.getElementById("upload-label-text");
+// Modal Billetera / Recarga
+const modalRecharge = document.getElementById("modal-recharge");
+const rechargeAlertMsg = document.getElementById("recharge-alert-msg");
+const inputRechargeAmount = document.getElementById("input-recharge-amount");
+const rechargeQrImage = document.getElementById("recharge-qr-image");
+const rechargeReceiptInput = document.getElementById("recharge-receipt-input");
+const rechargePreviewWrapper = document.getElementById("recharge-preview-wrapper");
+const rechargeReceiptPreview = document.getElementById("recharge-receipt-preview");
+const btnRemoveRechargeReceipt = document.getElementById("btn-remove-recharge-receipt");
+const rechargeUploadText = document.getElementById("recharge-upload-text");
+const btnConfirmRecharge = document.getElementById("btn-confirm-recharge");
+const btnCancelRecharge = document.getElementById("btn-cancel-recharge");
+const btnCloseRechargeModal = document.getElementById("btn-close-recharge-modal");
+const btnOpenDirectRecharge = document.getElementById("btn-open-direct-recharge");
 
 // Panel Admin
 const adminReceiptsList = document.getElementById("admin-receipts-list");
@@ -126,13 +125,6 @@ const btnCloseViewer = document.getElementById("btn-close-viewer");
 const btnAdminLogout = document.getElementById("btn-admin-logout");
 const btnAdminLogoutTop = document.getElementById("btn-admin-logout-top");
 
-// Modal Canjear Promo
-const modalRedeem = document.getElementById("modal-redeem");
-const btnOpenRedeem = document.getElementById("btn-open-redeem");
-const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
-const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
-const inputPromoCode = document.getElementById("input-promo-code");
-
 // Modal Crear Partido
 const btnCreateMatchFab = document.getElementById("btn-create-match-fab");
 const modalCreateMatch = document.getElementById("modal-create-match");
@@ -140,15 +132,7 @@ const btnCloseCreateModal = document.getElementById("btn-close-create-modal");
 const formNewMatch = document.getElementById("form-new-match");
 const selectVenue = document.getElementById("select-venue");
 
-// Modal Credenciales
-const modalSecurity = document.getElementById("modal-security");
-const btnOpenSecurityModal = document.getElementById("btn-open-security-modal");
-const btnCancelSecurity = document.getElementById("btn-cancel-security");
-const btnSaveSecurity = document.getElementById("btn-save-security");
-const inputEditUsername = document.getElementById("input-edit-username");
-const inputEditPassword = document.getElementById("input-edit-password");
-
-// Perfil y Avatar
+// Perfil
 const btnLogout = document.getElementById("btn-logout");
 const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
@@ -159,12 +143,8 @@ const pillMyBookings = document.getElementById("pill-my-bookings");
 const eventsMatchesSub = document.getElementById("events-matches-subview");
 const eventsBookingsSub = document.getElementById("events-bookings-subview");
 
-const btnChangeAvatar = document.getElementById("btn-change-avatar");
-const inputAvatarFile = document.getElementById("input-avatar-file");
-const profileAvatarImg = document.getElementById("profile-avatar-img");
-
 // ==========================================
-// 5. CONTROL ESTRICTO DE PANTALLAS
+// 5. NAVEGACIÓN Y AISLAMIENTO DE PANTALLAS
 // ==========================================
 function switchScreen(targetScreen) {
   const allScreens = [
@@ -190,7 +170,7 @@ function switchScreen(targetScreen) {
 }
 
 // ==========================================
-// 6. CARGA DE CANCHAS (VENUES)
+// 6. CARGA DE CANCHAS
 // ==========================================
 async function fetchVenues() {
   try {
@@ -208,12 +188,12 @@ async function fetchVenues() {
       selectVenue.appendChild(opt);
     });
   } catch (err) {
-    console.error("Error al cargar sedes:", err);
+    console.error("Error sedes:", err);
   }
 }
 
 // ==========================================
-// 7. SESIÓN ROBUSTA (PERSISTENTE)
+// 7. SESIÓN Y AUTENTICACIÓN
 // ==========================================
 async function checkUserSession() {
   const activeUserId = localStorage.getItem("app_active_user");
@@ -251,7 +231,7 @@ async function checkUserSession() {
     switchScreen(viewList);
 
   } catch (err) {
-    console.error("Error al restaurar sesión:", err);
+    console.error("Error al restaurar perfil:", err);
     switchScreen(viewList);
   }
 }
@@ -296,7 +276,7 @@ if (formLoginUser) {
     btnSubmit.textContent = "Entrar";
 
     if (error) {
-      alert("Error al conectar con la base de datos: " + error.message);
+      alert("Error al conectar: " + error.message);
       return;
     }
 
@@ -375,7 +355,7 @@ if (formRegisterUser) {
     fetchReceipts();
     fetchVenues();
 
-    alert(`¡Bienvenido ${firstName}! Tu cuenta ha sido creada.`);
+    alert(`¡Bienvenido ${firstName}! Tu billetera ha sido activada.`);
   });
 }
 
@@ -398,7 +378,7 @@ if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
 
 // ==========================================
-// 8. CONTROL ESTRICTO DE ROLES
+// 8. CONTROL DE ROLES & PERMISOS
 // ==========================================
 function applyRolePermissions() {
   const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
@@ -428,14 +408,13 @@ async function fetchMatches() {
     .or("is_finished.eq.false,is_finished.is.null");
 
   if (error) {
-    console.error("Error al obtener partidos:", error);
+    console.error("Error matches:", error);
     return;
   }
 
   const sortedData = (data || []).sort((a, b) => {
     const timeA = (a.time || "00:00").split("-")[0].trim();
     const timeB = (b.time || "00:00").split("-")[0].trim();
-    
     if (a.date_group === b.date_group) {
       return timeA.localeCompare(timeB);
     }
@@ -466,11 +445,13 @@ async function fetchMatches() {
 async function fetchReceipts() {
   const { data, error } = await db.from("receipts").select("*").order("id", { ascending: false });
   if (error) {
-    console.error("Error al obtener comprobantes:", error);
+    console.error("Error comprobantes:", error);
     return;
   }
   receipts = (data || []).map((r) => ({
     id: r.id,
+    type: r.type || "PARTIDO", // "RECARGA" o "PARTIDO"
+    rechargeAmount: Number(r.recharge_amount || r.amount || 0),
     matchId: r.match_id,
     matchTitle: r.match_title,
     sport: r.sport,
@@ -493,14 +474,11 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 9. REALTIME & AUDIO
+// 9. REALTIME
 // ==========================================
 db.channel("global-realtime")
   .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchMatches())
-  .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => {
-    fetchReceipts();
-    playNotificationSound();
-  })
+  .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => fetchReceipts())
   .on("postgres_changes", { event: "*", schema: "public", table: "venues" }, () => fetchVenues())
   .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, (payload) => {
     if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
@@ -510,30 +488,6 @@ db.channel("global-realtime")
     }
   })
   .subscribe();
-
-function playNotificationSound() {
-  try {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    const audioCtx = new AudioContextClass();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
-
-    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.35);
-  } catch (err) {
-    console.log("Audio pausado");
-  }
-}
 
 function updatePendingBadge() {
   if (!badgePending) return;
@@ -559,12 +513,8 @@ function renderMatches() {
   matchesContainer.innerHTML = "";
 
   const filtered = matches.filter((item) => {
-    const matchesSport =
-      currentSportFilter === "Todos" ||
-      item.sport.toLowerCase() === currentSportFilter.toLowerCase();
-    const matchesSearch =
-      item.title.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
-      item.address.toLowerCase().includes(currentSearchQuery.toLowerCase());
+    const matchesSport = currentSportFilter === "Todos" || item.sport.toLowerCase() === currentSportFilter.toLowerCase();
+    const matchesSearch = item.title.toLowerCase().includes(currentSearchQuery.toLowerCase()) || item.address.toLowerCase().includes(currentSearchQuery.toLowerCase());
     return matchesSport && matchesSearch;
   });
 
@@ -624,9 +574,6 @@ function renderMatches() {
           </div>
           <div class="match-footer">
             <span class="match-price">Bs ${match.price.toFixed(2)}</span>
-            <div class="match-footer-icons">
-              <svg class="players-icon-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-            </div>
             <div class="quota-indicator">
               <div class="progress-track">
                 <div class="progress-fill" style="width: ${percentage}%"></div>
@@ -644,6 +591,9 @@ function renderMatches() {
   }
 }
 
+// ==========================================
+// 11. DETALLE DEL PARTIDO & INSCRIPCIÓN CON BILLETERA
+// ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
   if (!selectedMatch) return;
@@ -688,64 +638,396 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-if (toggleMatchConfirmed) {
-  toggleMatchConfirmed.addEventListener("change", async (e) => {
-    if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") {
-      alert("Acceso denegado: solo el Organizador puede modificar el estado.");
-      e.target.checked = !e.target.checked;
-      return;
-    }
+function updateSubscribeButton() {
+  if (!selectedMatch) return;
+  const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
+  const userBalance = Number(currentProfile?.balance || 0);
 
-    const newStatus = e.target.checked;
-    selectedMatch.isConfirmed = newStatus;
+  // Comprobar si ya está inscrito
+  const alreadySubscribed = receipts.some(
+    (r) => r.matchId === selectedMatch.id && r.userId === currentProfile?.id && r.status === "Aprobado"
+  );
 
-    const { error } = await db
-      .from("matches")
-      .update({ is_confirmed: newStatus })
-      .eq("id", selectedMatch.id);
+  if (alreadySubscribed) {
+    btnSubscribe.textContent = "✓ Ya estás Inscrito";
+    btnSubscribe.style.backgroundColor = "var(--success)";
+    btnSubscribe.disabled = true;
+    return;
+  }
 
-    if (error) {
-      alert("Error al actualizar estado en Supabase: " + error.message);
-      toggleMatchConfirmed.checked = !newStatus;
-      selectedMatch.isConfirmed = !newStatus;
-      return;
-    }
-
-    renderMatches();
-  });
+  if (isFull) {
+    btnSubscribe.textContent = "Cupos Agotados";
+    btnSubscribe.style.backgroundColor = "#43454d";
+    btnSubscribe.disabled = true;
+  } else {
+    btnSubscribe.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
+    btnSubscribe.style.backgroundColor = "var(--accent)";
+    btnSubscribe.disabled = false;
+  }
 }
 
-if (btnFinishMatch) {
-  btnFinishMatch.addEventListener("click", async () => {
-    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") {
-      alert("Acceso denegado: solo el Organizador puede finalizar partidos.");
+// ==========================================
+// 12. FLUJO: INSCRIPCIÓN CON SALDO / ENVIAR A RECARGA
+// ==========================================
+if (btnSubscribe) {
+  btnSubscribe.onclick = async (e) => {
+    e.preventDefault();
+    if (!selectedMatch) return;
+
+    if (!currentProfile) {
+      alert("Por favor inicia sesión para inscribirte.");
+      switchScreen(viewRegister);
       return;
     }
 
-    if (confirm(`¿Deseas dar por concluido el encuentro en "${selectedMatch.title}" y quitarlo de la lista?`)) {
-      const { error } = await db
+    if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
+      alert("Lo sentimos, este partido ya no tiene cupos disponibles.");
+      return;
+    }
+
+    const price = Number(selectedMatch.price);
+    const balance = Number(currentProfile.balance || 0);
+
+    // 1. COMPROBAR SALDO SUFICIENTE
+    if (balance < price) {
+      const falta = (price - balance).toFixed(2);
+      // Enviar automáticamente al modal de recarga
+      openRechargeModal(`Saldo insuficiente para este partido (Te faltan Bs. ${falta}). Recarga saldo aquí para completar tu inscripción:`, Math.ceil(price - balance));
+      return;
+    }
+
+    // 2. SALDO SUFICIENTE: DESCONTAR DE LA BILLETERA
+    const confirmPay = confirm(`¿Deseas pagar Bs. ${price.toFixed(2)} con tu saldo disponible (Bs. ${balance.toFixed(2)}) para unirte al partido?`);
+    if (!confirmPay) return;
+
+    btnSubscribe.disabled = true;
+    btnSubscribe.textContent = "Procesando inscripción...";
+
+    try {
+      const nuevoSaldo = balance - price;
+
+      // Descontar saldo en profiles
+      const { error: balanceErr } = await db
+        .from("profiles")
+        .update({ balance: nuevoSaldo })
+        .eq("id", currentProfile.id);
+
+      if (balanceErr) throw balanceErr;
+
+      // Incrementar cupo en matches
+      const { error: matchErr } = await db
         .from("matches")
-        .update({ is_finished: true })
+        .update({ current_players: selectedMatch.currentPlayers + 1 })
         .eq("id", selectedMatch.id);
 
-      if (error) {
-        alert("Error al finalizar el partido: " + error.message);
-        return;
-      }
+      if (matchErr) throw matchErr;
 
-      alert("El partido ha finalizado y ha sido retirado de la cartelera.");
-      switchScreen(viewList);
-      fetchMatches();
+      // Guardar registro de inscripción aprobada
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      await db.from("receipts").insert([
+        {
+          type: "PARTIDO",
+          match_id: selectedMatch.id,
+          match_title: selectedMatch.title,
+          sport: selectedMatch.sport,
+          amount: price,
+          date: timeStr,
+          status: "Aprobado",
+          user_id: currentProfile.id,
+          username: currentProfile.username,
+          avatar_url: currentProfile.avatar_url,
+          receipt_image: "BILLETERA_SALDO"
+        }
+      ]);
+
+      // Actualizar estado local
+      currentProfile.balance = nuevoSaldo;
+      selectedMatch.currentPlayers += 1;
+
+      renderProfileView();
+      renderMatches();
+      renderConfirmedPlayers(selectedMatch.id);
+      updateSubscribeButton();
+
+      alert(`¡Inscripción exitosa!\nSe debitaron Bs. ${price.toFixed(2)} de tu billetera.\nNuevo saldo: Bs. ${nuevoSaldo.toFixed(2)}`);
+
+    } catch (err) {
+      console.error("Error en inscripción:", err);
+      alert("Hubo un problema al procesar el pago: " + err.message);
+      updateSubscribeButton();
+    }
+  };
+}
+
+// ==========================================
+// 13. MODAL DE RECARGA DE SALDO (BILLETERA)
+// ==========================================
+function resetRechargeInputs() {
+  currentRechargeBase64 = null;
+  if (rechargeReceiptInput) rechargeReceiptInput.value = "";
+  if (rechargeReceiptPreview) rechargeReceiptPreview.src = "";
+  if (rechargePreviewWrapper) rechargePreviewWrapper.setAttribute("hidden", "");
+  if (rechargeUploadText) rechargeUploadText.textContent = "Adjuntar captura de la recarga";
+}
+
+function openRechargeModal(customMessage = null, defaultAmount = 50) {
+  if (!modalRecharge) return;
+  resetRechargeInputs();
+
+  if (rechargeAlertMsg) {
+    rechargeAlertMsg.textContent = customMessage || "Transfiere desde tu banco mediante QR para abonar saldo a tu cuenta.";
+  }
+
+  if (inputRechargeAmount) {
+    inputRechargeAmount.value = defaultAmount >= 10 ? defaultAmount : 20;
+  }
+
+  modalRecharge.removeAttribute("hidden");
+  modalRecharge.style.display = "flex";
+}
+
+function closeRechargeModal() {
+  if (modalRecharge) {
+    modalRecharge.setAttribute("hidden", "");
+    modalRecharge.style.display = "none";
+  }
+  resetRechargeInputs();
+}
+
+if (btnOpenDirectRecharge) {
+  btnOpenDirectRecharge.addEventListener("click", () => {
+    openRechargeModal("Recarga saldo a tu billetera para tener fondos listos para tus próximos partidos.", 50);
+  });
+}
+
+if (btnCloseRechargeModal) btnCloseRechargeModal.addEventListener("click", closeRechargeModal);
+if (btnCancelRecharge) btnCancelRecharge.addEventListener("click", closeRechargeModal);
+
+if (rechargeReceiptInput) {
+  rechargeReceiptInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      alert("El comprobante debe pesar menos de 4 MB.");
+      resetRechargeInputs();
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      currentRechargeBase64 = event.target.result;
+      rechargeReceiptPreview.src = currentRechargeBase64;
+      rechargePreviewWrapper.removeAttribute("hidden");
+      rechargeUploadText.textContent = "Comprobante cargado (Toca para cambiar)";
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+if (btnRemoveRechargeReceipt) btnRemoveRechargeReceipt.addEventListener("click", resetRechargeInputs);
+
+// Enviar solicitud de recarga al Organizador
+if (btnConfirmRecharge) {
+  btnConfirmRecharge.addEventListener("click", async () => {
+    const rechargeAmount = parseFloat(inputRechargeAmount.value);
+
+    if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
+      alert("Por favor ingresa un monto válido a recargar.");
+      return;
+    }
+
+    if (!currentRechargeBase64) {
+      alert("Por favor adjunta la captura del pago de tu transferencia.");
+      return;
+    }
+
+    btnConfirmRecharge.disabled = true;
+    btnConfirmRecharge.textContent = "Enviando solicitud...";
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    const { error } = await db.from("receipts").insert([
+      {
+        type: "RECARGA",
+        recharge_amount: rechargeAmount,
+        match_id: 0,
+        match_title: "Recarga de Billetera Móvil",
+        sport: "Billetera",
+        amount: rechargeAmount,
+        date: timeStr,
+        status: "Pendiente",
+        receipt_image: currentRechargeBase64,
+        user_id: currentProfile ? currentProfile.id : "user_anon",
+        username: currentProfile ? currentProfile.username : "Jugador",
+        avatar_url: currentProfile ? currentProfile.avatar_url : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
+      }
+    ]);
+
+    btnConfirmRecharge.disabled = false;
+    btnConfirmRecharge.textContent = "Solicitar Recarga de Saldo";
+
+    if (error) {
+      alert("Error al enviar la recarga: " + error.message);
+      return;
+    }
+
+    closeRechargeModal();
+    alert(`¡Solicitud de recarga enviada!\nEl organizador verificará tu comprobante de Bs. ${rechargeAmount.toFixed(2)} y acreditará los fondos a tu cuenta.`);
+    fetchReceipts();
+  });
+}
+
+// ==========================================
+// 14. PANEL ORGANIZADOR (APROBAR RECARGAS Y PAGOS)
+// ==========================================
+function renderAdminPanel() {
+  if (!adminReceiptsList) return;
+  adminReceiptsList.innerHTML = "";
+
+  const pendingCount = receipts.filter((r) => r.status === "Pendiente").length;
+  adminPendingCount.textContent = pendingCount;
+
+  if (receipts.length === 0) {
+    adminReceiptsList.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+        No hay solicitudes registradas aún.
+      </div>`;
+    return;
+  }
+
+  receipts.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "receipt-card";
+
+    let statusClass = "status-pending";
+    if (item.status === "Aprobado") statusClass = "status-approved";
+    if (item.status === "Rechazado") statusClass = "status-rejected";
+
+    const isRecharge = item.type === "RECARGA";
+
+    card.innerHTML = `
+      <div class="receipt-header">
+        <div>
+          <span class="receipt-match-title">${item.matchTitle}</span>
+          ${isRecharge ? `<span style="background: rgba(52,199,89,0.15); color: var(--success); font-size: 0.65rem; font-weight:800; padding:2px 6px; border-radius:4px; margin-left:6px;">RECARGA SALDO</span>` : ""}
+        </div>
+        <span class="receipt-status-tag ${statusClass}">${item.status}</span>
+      </div>
+
+      <div class="receipt-body-layout">
+        ${item.receiptImage === "BILLETERA_SALDO" ? `
+          <div style="width:70px; height:70px; border-radius:10px; background:var(--bg-card-subtle); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">💳</div>
+        ` : `
+          <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
+        `}
+        <div class="receipt-info-text">
+          <span><strong>Jugador:</strong> @${item.username}</span>
+          <span><strong>Monto:</strong> Bs. ${Number(item.amount).toFixed(2)}</span>
+          <span><strong>Hora:</strong> ${item.date}</span>
+        </div>
+      </div>
+
+      ${item.status === "Pendiente" ? `
+        <div class="receipt-actions">
+          <button class="btn-approve" onclick="approveReceipt(${item.id})">✓ Aprobar Recarga</button>
+          <button class="btn-reject" onclick="rejectReceipt(${item.id})">✕ Rechazar</button>
+        </div>
+      ` : ""}
+    `;
+
+    const thumb = card.querySelector(".receipt-thumb-admin");
+    if (thumb) {
+      thumb.addEventListener("click", () => openImageViewer(item.receiptImage));
+    }
+
+    adminReceiptsList.appendChild(card);
+  });
+}
+
+window.approveReceipt = async function (receiptId) {
+  const receipt = receipts.find((r) => r.id === receiptId);
+  if (!receipt) return;
+
+  // SI ES UNA RECARGA DE SALDO -> SUMAR AL BALANCE DEL JUGADOR
+  if (receipt.type === "RECARGA") {
+    const { data: prof, error: pErr } = await db
+      .from("profiles")
+      .select("balance")
+      .eq("id", receipt.userId)
+      .single();
+
+    if (pErr) {
+      alert("Error al cargar perfil del jugador: " + pErr.message);
+      return;
+    }
+
+    const balanceActual = Number(prof.balance || 0);
+    const nuevoBalance = balanceActual + Number(receipt.amount);
+
+    const { error: upErr } = await db
+      .from("profiles")
+      .update({ balance: nuevoBalance })
+      .eq("id", receipt.userId);
+
+    if (upErr) {
+      alert("Error al acreditar saldo: " + upErr.message);
+      return;
+    }
+
+    await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
+    alert(`Recarga aprobada con éxito.\nSe abonaron Bs. ${Number(receipt.amount).toFixed(2)} al jugador @${receipt.username}.\nNuevo saldo del usuario: Bs. ${nuevoBalance.toFixed(2)}`);
+    fetchReceipts();
+    return;
+  }
+
+  // SI ES INSCRIPCIÓN DIRECTA (FALLBACK)
+  await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
+  alert("Comprobante aprobado.");
+  fetchReceipts();
+};
+
+window.rejectReceipt = async function (receiptId) {
+  if (confirm("¿Estás seguro de rechazar este comprobante?")) {
+    await db.from("receipts").update({ status: "Rechazado" }).eq("id", receiptId);
+    fetchReceipts();
+  }
+};
+
+function openImageViewer(imageSrc) {
+  viewerFullImage.src = imageSrc;
+  modalImageViewer.removeAttribute("hidden");
+  modalImageViewer.style.display = "flex";
+}
+
+if (btnCloseViewer) {
+  btnCloseViewer.addEventListener("click", () => {
+    modalImageViewer.setAttribute("hidden", "");
+    modalImageViewer.style.display = "none";
+  });
+}
+
+if (btnClearReceipts) {
+  btnClearReceipts.addEventListener("click", async () => {
+    if (confirm("¿Deseas vaciar el historial de comprobantes?")) {
+      await db.from("receipts").delete().neq("id", 0);
+      fetchReceipts();
     }
   });
 }
 
+// ==========================================
+// 15. DETALLE DE JUGADORES CONFIRMADOS
+// ==========================================
 function renderConfirmedPlayers(matchId) {
   if (!detailPlayersList || !selectedMatch) return;
   detailPlayersList.innerHTML = "";
 
   const approvedUsers = receipts.filter(
-    (r) => r.matchId === matchId && r.status === "Aprobado"
+    (r) => r.matchId === matchId && r.status === "Aprobado" && r.type === "PARTIDO"
   );
 
   detailPlayersRatio.textContent = `${approvedUsers.length}-${selectedMatch.maxPlayers}`;
@@ -753,7 +1035,7 @@ function renderConfirmedPlayers(matchId) {
   if (approvedUsers.length === 0) {
     detailPlayersList.innerHTML = `
       <div style="color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0;">
-        Aún no hay jugadores confirmados. ¡Sé el primero en unirte!
+        Aún no hay jugadores confirmados. ¡Inscríbete con tu saldo disponible!
       </div>`;
     return;
   }
@@ -775,151 +1057,9 @@ function renderConfirmedPlayers(matchId) {
   });
 }
 
-function updateSubscribeButton() {
-  if (!selectedMatch) return;
-  const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
-  if (isFull) {
-    btnSubscribe.textContent = "Cupos Agotados";
-    btnSubscribe.style.backgroundColor = "#43454d";
-    btnSubscribe.disabled = true;
-  } else {
-    btnSubscribe.textContent = `Inscribirme Bs. ${selectedMatch.price.toFixed(0)}`;
-    btnSubscribe.style.backgroundColor = "var(--accent)";
-    btnSubscribe.disabled = false;
-  }
-}
-
 // ==========================================
-// 11. NAVEGACIÓN ENTRE VISTAS
+// 16. PERFIL DEL JUGADOR
 // ==========================================
-function clearTabSelection() {
-  [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
-    if (t) t.classList.remove("active");
-  });
-}
-
-tabMatches.addEventListener("click", () => {
-  clearTabSelection();
-  tabMatches.classList.add("active");
-  switchScreen(viewList);
-  renderMatches();
-});
-
-tabMessages.addEventListener("click", () => {
-  clearTabSelection();
-  tabMessages.classList.add("active");
-  switchScreen(viewMessages);
-});
-
-tabProfile.addEventListener("click", () => {
-  clearTabSelection();
-  tabProfile.classList.add("active");
-
-  if (currentProfile && currentProfile.role === "ORGANIZADOR") {
-    renderAdminPanel();
-    switchScreen(viewAdmin);
-  } else {
-    renderProfileView();
-    switchScreen(viewProfile);
-  }
-});
-
-btnBack.addEventListener("click", () => {
-  switchScreen(viewList);
-  renderMatches();
-});
-
-btnAdminBack.addEventListener("click", () => {
-  switchScreen(viewList);
-  clearTabSelection();
-  tabMatches.classList.add("active");
-  renderMatches();
-});
-
-if (btnTabAbout && btnTabEvents) {
-  btnTabAbout.addEventListener("click", () => {
-    btnTabEvents.classList.remove("active");
-    btnTabAbout.classList.add("active");
-    tabEventsContent.classList.remove("active");
-    tabAboutContent.classList.add("active");
-  });
-
-  btnTabEvents.addEventListener("click", () => {
-    btnTabAbout.classList.remove("active");
-    btnTabEvents.classList.add("active");
-    tabAboutContent.classList.remove("active");
-    tabEventsContent.classList.add("active");
-  });
-}
-
-if (pillMyMatches && pillMyBookings) {
-  pillMyMatches.addEventListener("click", () => {
-    pillMyBookings.classList.remove("active");
-    pillMyMatches.classList.add("active");
-    eventsBookingsSub.style.display = "none";
-    eventsMatchesSub.style.display = "block";
-  });
-
-  pillMyBookings.addEventListener("click", () => {
-    pillMyMatches.classList.remove("active");
-    pillMyBookings.classList.add("active");
-    eventsMatchesSub.style.display = "none";
-    eventsBookingsSub.style.display = "block";
-  });
-}
-
-// ==========================================
-// 12. MODAL: MODIFICAR CREDENCIALES
-// ==========================================
-function openSecurityModal() {
-  if (!currentProfile) return;
-  inputEditUsername.value = currentProfile.username || "";
-  inputEditPassword.value = "";
-  modalSecurity.removeAttribute("hidden");
-  modalSecurity.style.display = "flex";
-}
-
-if (btnOpenSecurityModal) btnOpenSecurityModal.addEventListener("click", openSecurityModal);
-
-if (btnCancelSecurity) {
-  btnCancelSecurity.addEventListener("click", () => {
-    modalSecurity.setAttribute("hidden", "");
-    modalSecurity.style.display = "none";
-  });
-}
-
-if (btnSaveSecurity) {
-  btnSaveSecurity.addEventListener("click", async () => {
-    if (!currentProfile) return;
-
-    const newUsername = inputEditUsername.value.trim().toLowerCase();
-    const newPassword = inputEditPassword.value.trim();
-
-    if (!newUsername) {
-      alert("El username no puede estar vacío.");
-      return;
-    }
-
-    const updates = { username: newUsername };
-    if (newPassword) updates.password = newPassword;
-
-    const { error } = await db.from("profiles").update(updates).eq("id", currentProfile.id);
-
-    if (error) {
-      alert("Error al actualizar: " + error.message);
-      return;
-    }
-
-    currentProfile.username = newUsername;
-    if (newPassword) currentProfile.password = newPassword;
-
-    modalSecurity.setAttribute("hidden", "");
-    modalSecurity.style.display = "none";
-    renderProfileView();
-    alert("¡Credenciales actualizadas exitosamente!");
-  });
-}
-
 function renderProfileView() {
   if (!currentProfile) return;
 
@@ -970,117 +1110,7 @@ function renderProfileView() {
 }
 
 // ==========================================
-// 13. REDIMENSIONAR AVATAR Y STORAGE
-// ==========================================
-function resizeAndCompressImage(file, maxSize = 300, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-
-        const minDimension = Math.min(img.width, img.height);
-        const startX = (img.width - minDimension) / 2;
-        const startY = (img.height - minDimension) / 2;
-
-        ctx.drawImage(
-          img,
-          startX,
-          startY,
-          minDimension,
-          minDimension,
-          0,
-          0,
-          maxSize,
-          maxSize
-        );
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Error al procesar la imagen"));
-            }
-          },
-          "image/webp",
-          quality
-        );
-      };
-
-      img.onerror = (err) => reject(err);
-    };
-
-    reader.onerror = (err) => reject(err);
-  });
-}
-
-if (btnChangeAvatar && inputAvatarFile) {
-  btnChangeAvatar.addEventListener("click", () => {
-    inputAvatarFile.click();
-  });
-
-  inputAvatarFile.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file || !currentProfile) return;
-
-    btnChangeAvatar.textContent = "⏳";
-    btnChangeAvatar.disabled = true;
-
-    try {
-      const compressedBlob = await resizeAndCompressImage(file, 300, 0.82);
-      const fileName = `${currentProfile.id}_${Date.now()}.webp`;
-      const filePath = `profiles/${fileName}`;
-
-      const { error: uploadError } = await db.storage
-        .from("avatars")
-        .upload(filePath, compressedBlob, {
-          contentType: "image/webp",
-          cacheControl: "31536000",
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = db.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      const publicAvatarUrl = urlData.publicUrl;
-
-      const { error: dbError } = await db
-        .from("profiles")
-        .update({ avatar_url: publicAvatarUrl })
-        .eq("id", currentProfile.id);
-
-      if (dbError) throw dbError;
-
-      currentProfile.avatar_url = publicAvatarUrl;
-      if (profileAvatarImg) profileAvatarImg.src = publicAvatarUrl;
-
-      alert("¡Foto de perfil actualizada con éxito!");
-    } catch (err) {
-      console.error("Error al subir avatar:", err);
-      alert("Hubo un error al actualizar la foto: " + err.message);
-    } finally {
-      btnChangeAvatar.textContent = "+";
-      btnChangeAvatar.disabled = false;
-      inputAvatarFile.value = "";
-    }
-  });
-}
-
-// ==========================================
-// 14. PUBLICAR CANCHA (ORGANIZADOR)
+// 17. CREAR PARTIDO (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -1166,274 +1196,85 @@ if (formNewMatch) {
 }
 
 // ==========================================
-// 15. PAGO QR & COMPROBANTE
+// 18. NAVEGACIÓN ENTRE TABS
 // ==========================================
-function resetReceiptInput() {
-  currentReceiptBase64 = null;
-  if (receiptInput) receiptInput.value = "";
-  if (receiptPreview) receiptPreview.src = "";
-  if (previewWrapper) previewWrapper.setAttribute("hidden", "");
-  if (uploadLabelText) uploadLabelText.textContent = "Adjuntar captura del pago";
-}
-
-function openQrModal() {
-  if (!selectedMatch || !modalQr) return;
-  resetReceiptInput();
-
-  modalConcept.textContent = `${selectedMatch.sport} - ${selectedMatch.title}`;
-  modalPrice.textContent = `Bs. ${selectedMatch.price.toFixed(2)}`;
-
-  // Código QR local o URL
-  qrImage.src = "./mi-qr.png";
-
-  modalQr.removeAttribute("hidden");
-  modalQr.style.display = "flex";
-}
-
-function closeQrModal() {
-  if (modalQr) {
-    modalQr.setAttribute("hidden", "");
-    modalQr.style.display = "none";
-  }
-  resetReceiptInput();
-}
-
-if (receiptInput) {
-  receiptInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 4 * 1024 * 1024) {
-      alert("El comprobante debe pesar menos de 4 MB.");
-      resetReceiptInput();
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      currentReceiptBase64 = event.target.result;
-      receiptPreview.src = currentReceiptBase64;
-      previewWrapper.removeAttribute("hidden");
-      uploadLabelText.textContent = "Cambiar imagen seleccionada";
-    };
-    reader.readAsDataURL(file);
+function clearTabSelection() {
+  [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
+    if (t) t.classList.remove("active");
   });
 }
 
-if (btnRemoveReceipt) btnRemoveReceipt.addEventListener("click", resetReceiptInput);
+tabMatches.addEventListener("click", () => {
+  clearTabSelection();
+  tabMatches.classList.add("active");
+  switchScreen(viewList);
+  renderMatches();
+});
 
-if (btnSubscribe) {
-  btnSubscribe.onclick = (e) => {
-    e.preventDefault();
-    if (!selectedMatch) return;
-    if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
-      alert("Lo sentimos, este partido ya no tiene cupos disponibles.");
-      return;
-    }
-    openQrModal();
-  };
-}
+tabMessages.addEventListener("click", () => {
+  clearTabSelection();
+  tabMessages.classList.add("active");
+  switchScreen(viewMessages);
+});
 
-if (btnCloseModal) btnCloseModal.addEventListener("click", closeQrModal);
-if (btnCancelPayment) btnCancelPayment.addEventListener("click", closeQrModal);
+tabProfile.addEventListener("click", () => {
+  clearTabSelection();
+  tabProfile.classList.add("active");
 
-if (btnConfirmPayment) {
-  btnConfirmPayment.addEventListener("click", async () => {
-    if (!selectedMatch) return;
-
-    if (!currentReceiptBase64) {
-      alert("Por favor adjunta la captura de tu transferencia.");
-      return;
-    }
-
-    const now = new Date();
-    const formattedTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    btnConfirmPayment.disabled = true;
-    btnConfirmPayment.textContent = "Enviando comprobante...";
-
-    const { error } = await db.from("receipts").insert([
-      {
-        match_id: selectedMatch.id,
-        match_title: selectedMatch.title,
-        sport: selectedMatch.sport,
-        amount: selectedMatch.price,
-        date: formattedTime,
-        status: "Pendiente",
-        receipt_image: currentReceiptBase64,
-        user_id: currentProfile ? currentProfile.id : "user_anon",
-        username: currentProfile ? currentProfile.username : "Jugador",
-        avatar_url: currentProfile ? currentProfile.avatar_url : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
-      }
-    ]);
-
-    btnConfirmPayment.disabled = false;
-    btnConfirmPayment.textContent = "Confirmar Inscripción";
-
-    if (error) {
-      alert("Error al enviar comprobante: " + error.message);
-      return;
-    }
-
-    closeQrModal();
-    alert(`¡Comprobante enviado!\nEl organizador revisará tu transferencia de Bs. ${selectedMatch.price.toFixed(2)}.`);
-  });
-}
-
-// ==========================================
-// 16. PANEL ADMIN (ORGANIZADOR)
-// ==========================================
-function renderAdminPanel() {
-  if (!adminReceiptsList) return;
-  adminReceiptsList.innerHTML = "";
-
-  const pendingCount = receipts.filter((r) => r.status === "Pendiente").length;
-  adminPendingCount.textContent = pendingCount;
-
-  if (receipts.length === 0) {
-    adminReceiptsList.innerHTML = `
-      <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
-        No hay comprobantes registrados aún.
-      </div>`;
-    return;
-  }
-
-  receipts.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = "receipt-card";
-
-    let statusClass = "status-pending";
-    if (item.status === "Aprobado") statusClass = "status-approved";
-    if (item.status === "Rechazado") statusClass = "status-rejected";
-
-    card.innerHTML = `
-      <div class="receipt-header">
-        <span class="receipt-match-title">${item.matchTitle}</span>
-        <span class="receipt-status-tag ${statusClass}">${item.status}</span>
-      </div>
-
-      <div class="receipt-body-layout">
-        <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
-        <div class="receipt-info-text">
-          <span><strong>Jugador:</strong> @${item.username}</span>
-          <span><strong>Deporte:</strong> ${item.sport}</span>
-          <span><strong>Monto:</strong> Bs. ${Number(item.amount).toFixed(2)}</span>
-          <span><strong>Hora:</strong> ${item.date}</span>
-        </div>
-      </div>
-
-      ${item.status === "Pendiente" ? `
-        <div class="receipt-actions">
-          <button class="btn-approve" onclick="approveReceipt(${item.id})">✓ Aprobar</button>
-          <button class="btn-reject" onclick="rejectReceipt(${item.id})">✕ Rechazar</button>
-        </div>
-      ` : ""}
-    `;
-
-    const thumb = card.querySelector(".receipt-thumb-admin");
-    thumb.addEventListener("click", () => openImageViewer(item.receiptImage));
-
-    adminReceiptsList.appendChild(card);
-  });
-}
-
-window.approveReceipt = async function (receiptId) {
-  const receipt = receipts.find((r) => r.id === receiptId);
-  if (!receipt) return;
-
-  const match = matches.find((m) => m.id === receipt.matchId);
-  if (match) {
-    if (match.currentPlayers >= match.maxPlayers) {
-      alert("No se puede aprobar: la cancha ya llenó todos sus cupos.");
-      return;
-    }
-    await db.from("matches").update({ current_players: match.currentPlayers + 1 }).eq("id", match.id);
-  }
-
-  if (receipt.userId) {
-    const { data: prof } = await db.from("profiles").select("matches_played").eq("id", receipt.userId).single();
-    if (prof) {
-      await db.from("profiles").update({ matches_played: (prof.matches_played || 0) + 1 }).eq("id", receipt.userId);
-    }
-  }
-
-  await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
-  alert("Inscripción aprobada exitosamente.");
-};
-
-window.rejectReceipt = async function (receiptId) {
-  if (confirm("¿Estás seguro de rechazar este comprobante?")) {
-    await db.from("receipts").update({ status: "Rechazado" }).eq("id", receiptId);
-  }
-};
-
-function openImageViewer(imageSrc) {
-  viewerFullImage.src = imageSrc;
-  modalImageViewer.removeAttribute("hidden");
-  modalImageViewer.style.display = "flex";
-}
-
-if (btnCloseViewer) {
-  btnCloseViewer.addEventListener("click", () => {
-    modalImageViewer.setAttribute("hidden", "");
-    modalImageViewer.style.display = "none";
-  });
-}
-
-if (btnClearReceipts) {
-  btnClearReceipts.addEventListener("click", async () => {
-    if (confirm("¿Deseas vaciar el historial de comprobantes?")) {
-      await db.from("receipts").delete().neq("id", 0);
-      fetchReceipts();
-    }
-  });
-}
-
-// Canjear Promo
-if (btnOpenRedeem) {
-  btnOpenRedeem.addEventListener("click", () => {
-    modalRedeem.removeAttribute("hidden");
-    modalRedeem.style.display = "flex";
-    inputPromoCode.value = "";
-  });
-}
-
-if (btnCancelRedeem) {
-  btnCancelRedeem.addEventListener("click", () => {
-    modalRedeem.setAttribute("hidden", "");
-    modalRedeem.style.display = "none";
-  });
-}
-
-if (btnConfirmRedeem) {
-  btnConfirmRedeem.addEventListener("click", async () => {
-    const code = inputPromoCode.value.trim().toUpperCase();
-    if (!code) {
-      alert("Por favor ingresa un código.");
-      return;
-    }
-
-    let bonus = 0;
-    if (code === "PROMO20" || code === "FUTBOL20") bonus = 20.00;
-    else if (code === "BIENVENIDO") bonus = 10.00;
-    else {
-      alert("Código no válido o expirado.");
-      return;
-    }
-
-    currentProfile.promo_balance = Number(currentProfile.promo_balance || 0) + bonus;
-    await db.from("profiles").update({ promo_balance: currentProfile.promo_balance }).eq("id", currentProfile.id);
-
-    modalRedeem.setAttribute("hidden", "");
-    modalRedeem.style.display = "none";
+  if (currentProfile && currentProfile.role === "ORGANIZADOR") {
+    renderAdminPanel();
+    switchScreen(viewAdmin);
+  } else {
     renderProfileView();
-    alert(`¡Felicidades! Se sumaron Bs. ${bonus.toFixed(2)} de saldo promocional.`);
+    switchScreen(viewProfile);
+  }
+});
+
+btnBack.addEventListener("click", () => {
+  switchScreen(viewList);
+  renderMatches();
+});
+
+btnAdminBack.addEventListener("click", () => {
+  switchScreen(viewList);
+  clearTabSelection();
+  tabMatches.classList.add("active");
+  renderMatches();
+});
+
+if (btnTabAbout && btnTabEvents) {
+  btnTabAbout.addEventListener("click", () => {
+    btnTabEvents.classList.remove("active");
+    btnTabAbout.classList.add("active");
+    tabEventsContent.classList.remove("active");
+    tabAboutContent.classList.add("active");
+  });
+
+  btnTabEvents.addEventListener("click", () => {
+    btnTabAbout.classList.remove("active");
+    btnTabEvents.classList.add("active");
+    tabAboutContent.classList.remove("active");
+    tabEventsContent.classList.add("active");
   });
 }
 
-// ==========================================
-// 17. FILTROS Y ARRANQUE
-// ==========================================
+if (pillMyMatches && pillMyBookings) {
+  pillMyMatches.addEventListener("click", () => {
+    pillMyBookings.classList.remove("active");
+    pillMyMatches.classList.add("active");
+    eventsBookingsSub.style.display = "none";
+    eventsMatchesSub.style.display = "block";
+  });
+
+  pillMyBookings.addEventListener("click", () => {
+    pillMyMatches.classList.remove("active");
+    pillMyBookings.classList.add("active");
+    eventsMatchesSub.style.display = "none";
+    eventsBookingsSub.style.display = "block";
+  });
+}
+
+// Filtros y Buscador
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     chipButtons.forEach((b) => b.classList.remove("active"));

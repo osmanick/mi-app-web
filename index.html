@@ -288,21 +288,22 @@
           <div class="matches-played-badge">
             ⚽ <span id="profile-matches-count">0</span> Partidos Jugados
           </div>
+          
           <div class="balance-chips-row">
-            <div class="balance-chip">
-              <span class="chip-currency-icon">Bs</span>
-              <span id="profile-balance">0.00</span> Saldo
-            </div>
-            <div class="balance-chip promo-chip">
-              <span class="chip-gift-icon">🎁</span>
-              <span id="profile-promo">0.00</span> Promo
-            </div>
-          </div>
+  <div class="balance-chip" id="btn-open-direct-recharge" style="cursor: pointer;" title="Toca para recargar">
+    <span class="chip-currency-icon">Bs</span>
+    <span id="profile-balance">0.00</span> Saldo <span style="color: var(--accent); font-weight: 800;">+</span>
+  </div>
+  <div class="balance-chip promo-chip">
+    <span class="chip-gift-icon">🎁</span>
+    <span id="profile-promo">0.00</span> Promo
+  </div>
+</div>
         </div>
       </div>
 
       <div class="profile-tabs-nav">
-        <button id="btn-tab-about" class="profile-nav-btn active">Sobre mí</button>
+        <button id<div class="balance-chips-row">="btn-tab-about" class="profile-nav-btn active">Sobre mí</button>
         <button id="btn-tab-events" class="profile-nav-btn">Mis eventos</button>
       </div>
 
@@ -555,52 +556,46 @@
       </div>
     </div>
 
-    <!-- Modal Pago QR Simple & Comprobante -->
-    <div id="modal-qr" class="modal-overlay" hidden>
+    <!-- Modal Billetera: Recargar Saldo con QR -->
+    <div id="modal-recharge" class="modal-overlay" hidden>
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-box">
-            <span class="qr-tag">PAGO RÁPIDO</span>
-            <h3>QR Simple Bolivia</h3>
+            <span class="qr-tag">BILLETERA MÓVIL</span>
+            <h3>Recargar Saldo</h3>
           </div>
-          <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+          <button id="btn-close-recharge-modal" class="modal-close-btn">&times;</button>
         </div>
 
         <div class="modal-body">
-          <p class="modal-desc">Escanea desde tu app bancaria (BCP, BNB, Banco Unión, GanaMóvil, etc.)</p>
+          <p class="modal-desc" id="recharge-alert-msg">Transfiere desde tu banco mediante QR para abonar saldo a tu cuenta.</p>
 
-          <div class="qr-wrapper">
-            <img id="qr-image" src="./mi-qr.png" alt="Código QR Simple">
+          <div class="form-input-group" style="margin-top: 0.8rem;">
+            <label>Monto a recargar (Bs.)</label>
+            <input type="number" id="input-recharge-amount" min="10" step="5" value="50" placeholder="50">
           </div>
 
-          <div class="payment-details">
-            <div class="payment-row">
-              <span>Concepto:</span>
-              <strong id="modal-concept">Cancha</strong>
-            </div>
-            <div class="payment-row">
-              <span>Total a pagar:</span>
-              <strong class="highlight-price" id="modal-price">Bs. 0.00</strong>
-            </div>
+          <div class="qr-wrapper">
+            <img id="recharge-qr-image" src="./mi-qr.png" alt="Código QR Simple">
           </div>
 
           <div class="upload-section">
-            <label for="receipt-input" class="upload-label">
+            <label for="recharge-receipt-input" class="upload-label">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
-              <span id="upload-label-text">Adjuntar captura del pago</span>
+              <span id="recharge-upload-text">Adjuntar captura de la recarga</span>
             </label>
-            <input type="file" id="receipt-input" accept="image/*" style="display: none;">
+            <input type="file" id="recharge-receipt-input" accept="image/*" style="display: none;">
 
-            <div id="preview-wrapper" class="preview-wrapper" hidden>
-              <img id="receipt-preview" src="" alt="Comprobante">
-              <button id="btn-remove-receipt" type="button" class="btn-remove" title="Quitar">&times;</button>
+            <div id="recharge-preview-wrapper" class="preview-wrapper" hidden>
+              <img id="recharge-receipt-preview" src="" alt="Comprobante">
+              <button id="btn-remove-recharge-receipt" type="button" class="btn-remove" title="Quitar">&times;</button>
             </div>
           </div>
         </div>
 
         <div class="modal-actions">
-          <button id="btn-confirm-payment" class="btn-primary-action">Confirmar Inscripción</button>
-          <button id="btn-cancel-payment" class="btn-text-action">Cancelar</button>
+          <button id="btn-confirm-recharge" class="btn-primary-action">Solicitar Recarga de Saldo</button>
+          <button id="btn-cancel-recharge" class="btn-text-action">Cancelar</button>
         </div>
       </div>
     </div>
