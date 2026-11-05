@@ -1278,6 +1278,74 @@ input:checked + .slider-round:before {
   cursor: pointer;
 }
 
+.user-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-event-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: flex;
+  gap: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s;
+}
+
+.user-event-card:active {
+  transform: scale(0.98);
+}
+
+.user-event-card:hover {
+  border-color: rgba(255, 90, 31, 0.4);
+}
+
+.user-event-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.user-event-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.user-event-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.user-event-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-event-status {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--success);
+  background: rgba(52, 199, 89, 0.15);
+  padding: 2px 6px;
+  border-radius: 5px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+
 /* ==========================================================
    MODAL QR ESPECÍFICO
    ========================================================== */

@@ -1169,6 +1169,9 @@ function renderProfileView() {
 
   const fUser = document.getElementById("field-username");
   if (fUser) fUser.textContent = currentProfile.username || "-";
+
+  renderMyActiveMatches();
+  
 }
 
 // ==========================================
@@ -1257,6 +1260,50 @@ if (formNewMatch) {
   });
 }
 
+function renderMyActiveMatches() {
+  const container = document.getElementById("list-upcoming-matches");
+  if (!container || !currentProfile) return;
+
+  // Filtrar los comprobantes/inscripciones aprobadas del usuario actual en partidos
+  const myApprovedReceipts = receipts.filter(
+    (r) => r.userId === currentProfile.id && r.status === "Aprobado" && r.type === "PARTIDO"
+  );
+
+  // Obtener los partidos activos que coincidan con esos comprobantes
+  const myMatches = matches.filter((m) =>
+    myApprovedReceipts.some((r) => r.matchId === m.id) && !m.isFinished
+  );
+
+  if (myMatches.length === 0) {
+    container.innerHTML = `
+      <div class="events-empty-box">
+        <div class="empty-icon-sm">⚽</div>
+        <p>No estás inscrito en ningún partido próximo</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  myMatches.forEach((match) => {
+    const card = document.createElement("div");
+    card.className = "user-event-card";
+    card.onclick = () => showDetail(match.id); // Al tocar la tarjeta te lleva al detalle del partido
+
+    card.innerHTML = `
+      <img class="user-event-thumb" src="${match.image}" alt="${match.title}">
+      <div class="user-event-info">
+        <span class="user-event-title">${match.title}</span>
+        <span class="user-event-meta">📅 ${match.dateLong}</span>
+        <span class="user-event-meta">🕐 ${match.time} hs · ${match.sport}</span>
+        <span class="user-event-status">✓ Inscrito</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+
+
 // ==========================================
 // 18. NAVEGACIÓN ENTRE TABS
 // ==========================================
@@ -1317,6 +1364,7 @@ if (btnTabAbout && btnTabEvents) {
     btnTabEvents.classList.add("active");
     tabAboutContent.classList.remove("active");
     tabEventsContent.classList.add("active");
+    renderMyActiveMatches(); // Refresca los partidos al pulsar la pestaña
   });
 }
 

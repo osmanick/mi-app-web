@@ -302,13 +302,55 @@
         </div>
       </div>
 
+<!-- Pestañas del Perfil: Primero Mis eventos, luego Sobre mí -->
       <div class="profile-tabs-nav">
-        <button id<div class="balance-chips-row">="btn-tab-about" class="profile-nav-btn active">Sobre mí</button>
-        <button id="btn-tab-events" class="profile-nav-btn">Mis eventos</button>
+        <button id="btn-tab-events" class="profile-nav-btn active">Mis eventos</button>
+        <button id="btn-tab-about" class="profile-nav-btn">Sobre mí</button>
       </div>
 
-      <!-- Pestaña 1: Sobre mí -->
-      <div id="profile-tab-about" class="profile-tab-content active">
+      <!-- Pestaña 1: Mis eventos (Activa por defecto) -->
+      <div id="profile-tab-events" class="profile-tab-content active">
+        <div class="events-pill-selector">
+          <button id="pill-my-matches" class="event-pill-btn active">Mis Partidos</button>
+          <button id="pill-my-bookings" class="event-pill-btn">Mis Reservas</button>
+        </div>
+
+        <div id="events-matches-subview">
+          <h4 class="subgroup-title">Próximos partidos</h4>
+          <div id="list-upcoming-matches" class="user-events-list">
+            <!-- Aquí se cargarán las tarjetas de los partidos donde participas -->
+          </div>
+
+          <h4 class="subgroup-title">Partidos terminados</h4>
+          <div id="list-finished-matches" class="user-events-list">
+            <div class="events-empty-box">
+              <div class="empty-icon-sm">✓</div>
+              <p>No tienes partidos terminados</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="events-bookings-subview" style="display: none;">
+          <h4 class="subgroup-title">Próximas reservas</h4>
+          <div id="list-upcoming-bookings" class="user-events-list">
+            <div class="events-empty-box">
+              <div class="empty-icon-sm">📅</div>
+              <p>No tienes reservas próximas</p>
+            </div>
+          </div>
+
+          <h4 class="subgroup-title">Reservas terminadas</h4>
+          <div id="list-finished-bookings" class="user-events-list">
+            <div class="events-empty-box">
+              <div class="empty-icon-sm">✓</div>
+              <p>No tienes reservas terminadas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña 2: Sobre mí -->
+      <div id="profile-tab-about" class="profile-tab-content">
         <div class="form-group-section">
           <span class="group-section-title">INFORMACIÓN PERSONAL</span>
 
