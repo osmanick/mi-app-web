@@ -1340,19 +1340,22 @@ input:checked + .slider-round:before {
 .qr-wrapper {
   background-color: #ffffff;
   padding: 12px;
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  margin: 1.2rem auto;
+  align-items: center;
+  margin: 1rem auto;
   width: fit-content;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-#qr-image {
-  width: 100%;
-  max-width: 200px;
+/* Aplica tanto para el id viejo como para el nuevo de recarga */
+#recharge-qr-image,
+#qr-image,
+.qr-wrapper img {
+  width: 190px;
+  max-width: 60vw;
   height: auto;
   aspect-ratio: 1 / 1;
   object-fit: contain;
