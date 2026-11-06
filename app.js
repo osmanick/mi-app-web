@@ -1495,8 +1495,8 @@ function renderProfileView() {
   const balanceElem = document.getElementById("profile-balance");
   if (balanceElem) balanceElem.textContent = Number(currentProfile.balance || 0).toFixed(2);
 
-  const promoElem = document.getElementById("profile-promo");
-  if (promoElem) promoElem.textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
+  //const promoElem = document.getElementById("profile-promo");
+  //if (promoElem) promoElem.textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
 
   const avatarElem = document.getElementById("profile-avatar-img");
   if (avatarElem && currentProfile.avatar_url) avatarElem.src = currentProfile.avatar_url;
