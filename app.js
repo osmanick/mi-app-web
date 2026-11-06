@@ -995,16 +995,29 @@ if (inputSearchPlayer) {
             <span class="player-role-tag">${user.first_name || ""} ${user.last_name || ""}</span>
           </div>
         </div>
-        <button class="btn-send-invitation" onclick="sendInvitation('${user.id}', '${user.username}')">Invitar</button>
+        <button class="btn-send-invitation" data-id="${user.id}" data-user="${user.username}">Invitar</button>
       `;
+
+      card.querySelector(".btn-send-invitation").onclick = function () {
+        const uId = this.getAttribute("data-id");
+        const uName = this.getAttribute("data-user");
+        sendInvitation(uId, uName);
+      };
+
       searchPlayersResults.appendChild(card);
     });
   });
 }
 
-// CORREGIDO: Mapeo exacto con las columnas reales de la tabla 'invitations'
+// CORREGIDO: Mapeo exacto con las columnas de 'invitations' y validación estricta
 window.sendInvitation = async function (playerId, playerUsername) {
   if (!selectedMatch) return;
+
+  const targetUsername = String(playerUsername || "").trim();
+  if (!targetUsername) {
+    alert("Error: No se pudo identificar el nombre de usuario del jugador.");
+    return;
+  }
 
   const senderUsername = currentProfile?.username || "osman_m";
 
@@ -1014,8 +1027,8 @@ window.sendInvitation = async function (playerId, playerUsername) {
     sport: selectedMatch.sport || "Fútbol",
     from_username: senderUsername,
     organizer_username: senderUsername,
-    to_username: playerUsername,
-    player_username: playerUsername,
+    to_username: targetUsername,
+    player_username: targetUsername,
     player_id: playerId,
     status: "Pendiente"
   };
@@ -1027,7 +1040,7 @@ window.sendInvitation = async function (playerId, playerUsername) {
     return;
   }
 
-  alert(`¡Invitación enviada con éxito a @${playerUsername}!\nLe aparecerá en su pestaña de Mensajes.`);
+  alert(`¡Invitación enviada con éxito a @${targetUsername}!\nLe aparecerá en su pestaña de Mensajes.`);
   if (modalInvitePlayer) {
     modalInvitePlayer.setAttribute("hidden", "");
     modalInvitePlayer.style.display = "none";
