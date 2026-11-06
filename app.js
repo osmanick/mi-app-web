@@ -245,6 +245,86 @@ async function checkUserSession() {
   }
 }
 
+// ==========================================
+// CONTROL DE CAMBIO DE CONTRASEÑA (JUGADOR)
+// ==========================================
+const modalSecurity = document.getElementById("modal-security");
+const btnOpenSecurityModal = document.getElementById("btn-open-security-modal");
+const btnCancelSecurity = document.getElementById("btn-cancel-security");
+const btnSaveSecurity = document.getElementById("btn-save-security");
+const inputEditPassword = document.getElementById("input-edit-password");
+const inputConfirmEditPassword = document.getElementById("input-confirm-edit-password");
+
+window.openSecurityModal = function () {
+  if (modalSecurity) {
+    if (inputEditPassword) inputEditPassword.value = "";
+    if (inputConfirmEditPassword) inputConfirmEditPassword.value = "";
+    modalSecurity.removeAttribute("hidden");
+    modalSecurity.style.display = "flex";
+  }
+};
+
+if (btnOpenSecurityModal) {
+  btnOpenSecurityModal.addEventListener("click", window.openSecurityModal);
+}
+
+if (btnCancelSecurity) {
+  btnCancelSecurity.addEventListener("click", () => {
+    if (modalSecurity) {
+      modalSecurity.setAttribute("hidden", "");
+      modalSecurity.style.display = "none";
+    }
+  });
+}
+
+if (btnSaveSecurity) {
+  btnSaveSecurity.addEventListener("click", async () => {
+    if (!currentProfile) return;
+
+    const newPass = inputEditPassword ? inputEditPassword.value.trim() : "";
+    const confirmPass = inputConfirmEditPassword ? inputConfirmEditPassword.value.trim() : "";
+
+    if (!newPass) {
+      alert("Por favor ingresa la nueva contraseña.");
+      return;
+    }
+
+    if (newPass.length < 4) {
+      alert("La contraseña debe tener al menos 4 caracteres.");
+      return;
+    }
+
+    if (newPass !== confirmPass) {
+      alert("Las contraseñas no coinciden. Por favor verifica.");
+      return;
+    }
+
+    btnSaveSecurity.disabled = true;
+    btnSaveSecurity.textContent = "Actualizando...";
+
+    const { error } = await db
+      .from("profiles")
+      .update({ password: newPass })
+      .eq("id", currentProfile.id);
+
+    btnSaveSecurity.disabled = false;
+    btnSaveSecurity.textContent = "Guardar";
+
+    if (error) {
+      alert("Error al actualizar la contraseña: " + error.message);
+      return;
+    }
+
+    currentProfile.password = newPass;
+    alert("¡Contraseña actualizada con éxito!");
+
+    if (modalSecurity) {
+      modalSecurity.setAttribute("hidden", "");
+      modalSecurity.style.display = "none";
+    }
+  });
+}
+
 if (tabAuthLogin && tabAuthRegister) {
   tabAuthLogin.addEventListener("click", () => {
     tabAuthRegister.classList.remove("active");
@@ -318,12 +398,20 @@ if (formRegisterUser) {
     const lastName = document.getElementById("reg-lastname").value.trim();
     const phone = document.getElementById("reg-phone").value.trim();
     const birthDate = document.getElementById("reg-birth").value;
-    const skill = document.getElementById("reg-skill").value;
-    const city = document.getElementById("reg-city").value.trim();
-    const nationality = document.getElementById("reg-nationality").value.trim();
     const email = document.getElementById("reg-email").value.trim();
     const username = document.getElementById("reg-username").value.trim().toLowerCase();
     const password = document.getElementById("reg-password").value.trim();
+    const confirmPassword = document.getElementById("reg-confirm-password").value.trim();
+
+    if (password !== confirmPassword) {
+      alert("Las contraseñas no coinciden. Por favor verifica.");
+      return;
+    }
+
+    if (password.length < 4) {
+      alert("La contraseña debe tener al menos 4 caracteres.");
+      return;
+    }
 
     const newUserId = "user_" + Date.now();
 
@@ -333,9 +421,9 @@ if (formRegisterUser) {
       last_name: lastName,
       phone: phone,
       birth_date: birthDate,
-      skill_level: skill,
-      city: city,
-      nationality: nationality,
+      skill_level: "Principiante",
+      city: "La Paz",
+      nationality: "Bolivia",
       email: email,
       username: username,
       password: password,
@@ -1516,17 +1604,17 @@ function renderProfileView() {
   const fSkill = document.getElementById("field-skill");
   if (fSkill) fSkill.textContent = currentProfile.skill_level || "-";
 
-  const fNat = document.getElementById("field-nationality");
-  if (fNat) fNat.textContent = currentProfile.nationality || "-";
+  //const fNat = document.getElementById("field-nationality");
+  //if (fNat) fNat.textContent = currentProfile.nationality || "-";
 
-  const fCity = document.getElementById("field-city");
-  if (fCity) fCity.textContent = currentProfile.city || "-";
+  //const fCity = document.getElementById("field-city");
+  //if (fCity) fCity.textContent = currentProfile.city || "-";
 
   const fEmail = document.getElementById("field-email");
   if (fEmail) fEmail.textContent = currentProfile.email || "-";
 
-  const fPlan = document.getElementById("field-plan");
-  if (fPlan) fPlan.textContent = currentProfile.plan || "FREE";
+  //const fPlan = document.getElementById("field-plan");
+ //if (fPlan) fPlan.textContent = currentProfile.plan || "FREE";
 
   const fUser = document.getElementById("field-username");
   if (fUser) fUser.textContent = currentProfile.username || "-";
