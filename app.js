@@ -902,6 +902,13 @@ if (btnSubscribe) {
         }
       ]);
 
+      await db.from("match_registrations").insert([
+        {
+          match_id: selectedMatch.id,
+          user_id: currentProfile.id
+        }
+      ]);
+
       currentProfile.balance = nuevoSaldo;
       selectedMatch.currentPlayers += 1;
 
@@ -995,31 +1002,32 @@ if (inputSearchPlayer) {
   });
 }
 
-// CORREGIDO: Se envía tanto organizer_username como from_username para evitar errores NOT NULL en Supabase
+// CORREGIDO: Mapeo exacto con las columnas reales de la tabla 'invitations'
 window.sendInvitation = async function (playerId, playerUsername) {
   if (!selectedMatch) return;
 
-  const orgName = currentProfile?.username || "Organizador";
+  const senderUsername = currentProfile?.username || "osman_m";
 
-  const { error } = await db.from("invitations").insert([
-    {
-      match_id: selectedMatch.id,
-      match_title: selectedMatch.title,
-      sport: selectedMatch.sport,
-      organizer_username: orgName,
-      from_username: orgName,
-      player_id: playerId,
-      player_username: playerUsername,
-      status: "Pendiente"
-    }
-  ]);
+  const payload = {
+    match_id: selectedMatch.id,
+    match_title: selectedMatch.title,
+    sport: selectedMatch.sport || "Fútbol",
+    from_username: senderUsername,
+    organizer_username: senderUsername,
+    to_username: playerUsername,
+    player_username: playerUsername,
+    player_id: playerId,
+    status: "Pendiente"
+  };
+
+  const { error } = await db.from("invitations").insert([payload]);
 
   if (error) {
     alert("Error al enviar invitación: " + error.message);
     return;
   }
 
-  alert(`¡Invitación enviada a @${playerUsername}!\nLe llegará una notificación a su pestaña de Mensajes.`);
+  alert(`¡Invitación enviada con éxito a @${playerUsername}!\nLe aparecerá en su pestaña de Mensajes.`);
   if (modalInvitePlayer) {
     modalInvitePlayer.setAttribute("hidden", "");
     modalInvitePlayer.style.display = "none";
@@ -1035,7 +1043,7 @@ async function fetchInvitations() {
   const { data, error } = await db
     .from("invitations")
     .select("*")
-    .eq("player_id", currentProfile.id)
+    .or(`to_username.eq.${currentProfile.username},player_username.eq.${currentProfile.username},player_id.eq.${currentProfile.id}`)
     .order("id", { ascending: false });
 
   if (!error) {
@@ -1061,16 +1069,19 @@ function renderInvitations() {
   messagesContainer.innerHTML = "";
 
   pending.forEach((inv) => {
-    const sender = inv.organizer_username || inv.from_username || "Organizador";
+    const sender = inv.from_username || inv.organizer_username || "Organizador";
+    const title = inv.match_title || "Partido";
+    const sport = inv.sport || "Deporte";
+
     const card = document.createElement("div");
     card.className = "invitation-card";
     card.innerHTML = `
       <div class="invitation-card-header">
-        <span class="invitation-title">⚽ ${inv.match_title}</span>
+        <span class="invitation-title">⚽ ${title}</span>
         <span class="invitation-badge-tag">INVITACIÓN</span>
       </div>
       <p class="invitation-desc">
-        El organizador <strong>@${sender}</strong> te invitó a unirte a este partido de <strong>${inv.sport}</strong> sin ningún costo de inscripción.
+        El organizador <strong>@${sender}</strong> te invitó a unirte a este partido de <strong>${sport}</strong> sin ningún costo de inscripción.
       </p>
       <div class="invitation-actions">
         <button class="btn-inv-accept" onclick="respondInvitation(${inv.id}, true)">✓ Aceptar</button>
@@ -1103,19 +1114,22 @@ window.respondInvitation = async function (invitationId, accept) {
   }
 
   if (match.current_players >= match.max_players) {
-    alert("Lo sentimos, los cupos para este partido ya se completaron.");
+    alert("Lo sentimos, este partido ya completó sus cupos.");
     await db.from("invitations").update({ status: "Rechazada" }).eq("id", invitationId);
     fetchInvitations();
     return;
   }
 
+  // 1. Marcar invitación como Aceptada
   await db.from("invitations").update({ status: "Aceptada" }).eq("id", invitationId);
 
+  // 2. Incrementar cupo en matches
   await db
     .from("matches")
     .update({ current_players: match.current_players + 1 })
     .eq("id", match.id);
 
+  // 3. Crear comprobante de cortesía por invitación (monto 0)
   const now = new Date();
   const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -1135,12 +1149,22 @@ window.respondInvitation = async function (invitationId, accept) {
     }
   ]);
 
+  // 4. Registrar en match_registrations si existe en el backend
+  await db.from("match_registrations").insert([
+    {
+      match_id: match.id,
+      user_id: currentProfile.id
+    }
+  ]);
+
+  // 5. Incrementar contador de partidos jugados del perfil
+  const nuevoMatchesPlayed = (currentProfile.matches_played || 0) + 1;
   await db
     .from("profiles")
-    .update({ matches_played: (currentProfile.matches_played || 0) + 1 })
+    .update({ matches_played: nuevoMatchesPlayed })
     .eq("id", currentProfile.id);
 
-  currentProfile.matches_played = (currentProfile.matches_played || 0) + 1;
+  currentProfile.matches_played = nuevoMatchesPlayed;
 
   alert(`¡Te has unido con éxito al partido en ${match.title}! Ya estás en la lista sin costo alguno.`);
   await fetchInvitations();
