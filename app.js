@@ -43,6 +43,7 @@ if (btnInstall) {
 let matches = [];
 let receipts = [];
 let venuesList = [];
+let myInvitations = [];
 let currentProfile = null;
 let currentSportFilter = "Todos";
 let currentSearchQuery = "";
@@ -74,6 +75,7 @@ const chipButtons = document.querySelectorAll(".chip-item");
 const btnBack = document.getElementById("btn-back");
 const btnAdminBack = document.getElementById("btn-admin-back");
 const btnSubscribe = document.getElementById("btn-subscribe");
+const btnAddPlayer = document.getElementById("btn-add-player");
 
 // Pestañas inferiores
 const tabMatches = document.getElementById("tab-matches");
@@ -115,6 +117,16 @@ const btnCancelRecharge = document.getElementById("btn-cancel-recharge");
 const btnCloseRechargeModal = document.getElementById("btn-close-recharge-modal");
 const btnOpenDirectRecharge = document.getElementById("btn-open-direct-recharge");
 
+// Modal Invitar Jugador (Organizador)
+const modalInvitePlayer = document.getElementById("modal-invite-player");
+const btnCloseInviteModal = document.getElementById("btn-close-invite-modal");
+const inputSearchPlayer = document.getElementById("input-search-player");
+const searchPlayersResults = document.getElementById("search-players-results");
+
+// Mensajes e Invitaciones
+const messagesContainer = document.getElementById("messages-container");
+const messagesEmptyState = document.getElementById("messages-empty-state");
+
 // Panel Admin
 const adminReceiptsList = document.getElementById("admin-receipts-list");
 const adminPendingCount = document.getElementById("admin-pending-count");
@@ -138,10 +150,6 @@ const btnTabAbout = document.getElementById("btn-tab-about");
 const btnTabEvents = document.getElementById("btn-tab-events");
 const tabAboutContent = document.getElementById("profile-tab-about");
 const tabEventsContent = document.getElementById("profile-tab-events");
-//const pillMyMatches = document.getElementById("pill-my-matches");
-//const pillMyBookings = document.getElementById("pill-my-bookings");
-//const eventsMatchesSub = document.getElementById("events-matches-subview");
-//const eventsBookingsSub = document.getElementById("events-bookings-subview");
 
 // ==========================================
 // 5. NAVEGACIÓN Y AISLAMIENTO DE PANTALLAS
@@ -222,6 +230,7 @@ async function checkUserSession() {
       localStorage.setItem("app_active_user", user.id);
       applyRolePermissions();
       renderProfileView();
+      fetchInvitations();
 
       if (currentProfile.role === "ORGANIZADOR") {
         renderAdminPanel();
@@ -291,6 +300,7 @@ if (formLoginUser) {
     if (bottomBar) bottomBar.style.display = "flex";
     applyRolePermissions();
     renderProfileView();
+    fetchInvitations();
     switchScreen(viewList);
     fetchMatches();
     fetchReceipts();
@@ -350,6 +360,7 @@ if (formRegisterUser) {
     if (bottomBar) bottomBar.style.display = "flex";
     applyRolePermissions();
     renderProfileView();
+    fetchInvitations();
     switchScreen(viewList);
     fetchMatches();
     fetchReceipts();
@@ -450,7 +461,7 @@ async function fetchReceipts() {
   }
   receipts = (data || []).map((r) => ({
     id: r.id,
-    type: r.type || "PARTIDO", // "RECARGA" o "PARTIDO"
+    type: r.type || "PARTIDO",
     rechargeAmount: Number(r.recharge_amount || r.amount || 0),
     matchId: r.match_id,
     matchTitle: r.match_title,
@@ -478,40 +489,32 @@ async function fetchReceipts() {
 // ==========================================
 const realtimeChannel = db
   .channel("sports-pwa-realtime")
-  // 1. Escuchar comprobantes y solicitudes de recarga
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "receipts" },
     async (payload) => {
-      console.log("Cambio detectado en receipts:", payload.eventType);
-      await fetchReceipts(); // Recarga la lista en memoria y actualiza badges
+      await fetchReceipts();
 
-      // Si el usuario está viendo el panel de organizador, actualizar vista
       if (viewAdmin && viewAdmin.classList.contains("active")) {
         renderAdminPanel();
       }
 
-      // Si está en el detalle de un partido, refrescar la lista de inscritos
       if (selectedMatch) {
         renderConfirmedPlayers(selectedMatch.id);
         updateSubscribeButton();
       }
 
-      // Reproducir sonido si entra una solicitud nueva
       if (payload.eventType === "INSERT") {
         playNotificationSound();
       }
     }
   )
-  // 2. Escuchar cambios en partidos (cupos llenos, confirmaciones, etc.)
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "matches" },
-    async (payload) => {
-      console.log("Cambio detectado en matches:", payload.eventType);
-      await fetchMatches(); // Refresca matches y vuelve a ejecutar renderMatches()
+    async () => {
+      await fetchMatches();
       if (selectedMatch) {
-        // Mantener actualizado el objeto del partido seleccionado
         const updated = matches.find((m) => m.id === selectedMatch.id);
         if (updated) {
           selectedMatch = updated;
@@ -521,7 +524,13 @@ const realtimeChannel = db
       }
     }
   )
-  // 3. Escuchar cambios en perfiles (cuando el admin aprueba saldo de recarga)
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "invitations" },
+    () => {
+      fetchInvitations();
+    }
+  )
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "profiles" },
@@ -529,9 +538,8 @@ const realtimeChannel = db
       if (currentProfile && payload.new && payload.new.id === currentProfile.id) {
         const saldoAnterior = currentProfile.balance;
         currentProfile = { ...currentProfile, ...payload.new };
-        renderProfileView(); // Actualiza el saldo visible en pantalla al instante
+        renderProfileView();
 
-        // Notificar al jugador si su saldo cambió
         if (payload.new.balance !== saldoAnterior) {
           playNotificationSound();
           alert(`¡Tu billetera se ha actualizado! Saldo actual: Bs. ${Number(payload.new.balance).toFixed(2)}`);
@@ -654,7 +662,7 @@ function renderMatches() {
 }
 
 // ==========================================
-// CONTROL DE DETALLE Y ACCIONES DE ORGANIZADOR
+// 11. DETALLE DEL PARTIDO & ACCIONES
 // ==========================================
 function showDetail(id) {
   selectedMatch = matches.find((m) => m.id === id);
@@ -670,11 +678,9 @@ function showDetail(id) {
   detailAddress.textContent = selectedMatch.address;
   detailMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMatch.address + ", La Paz")}`;
 
-  // Comprobar rol de manera tolerante (ignora mayúsculas/minúsculas y espacios)
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
 
-  // Control estricto de visibilidad del Switch Confirmar
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
       organizerConfirmBox.removeAttribute("hidden");
@@ -688,7 +694,6 @@ function showDetail(id) {
     }
   }
 
-  // Control estricto de visibilidad del Botón Finalizar
   if (organizerFinishBox) {
     if (isOrganizer) {
       organizerFinishBox.removeAttribute("hidden");
@@ -704,7 +709,6 @@ function showDetail(id) {
   switchScreen(viewDetail);
 }
 
-// 1. SWITCH: MARCAR PARTIDO CONFIRMADO
 if (toggleMatchConfirmed) {
   toggleMatchConfirmed.onchange = async (e) => {
     const userRole = (currentProfile?.role || "").toUpperCase().trim();
@@ -724,7 +728,6 @@ if (toggleMatchConfirmed) {
 
     if (error) {
       alert("Error al actualizar estado en Supabase: " + error.message);
-      // Revertir switch si hubo error
       selectedMatch.isConfirmed = !newConfirmedValue;
       toggleMatchConfirmed.checked = !newConfirmedValue;
       return;
@@ -734,7 +737,6 @@ if (toggleMatchConfirmed) {
   };
 }
 
-// 2. BOTÓN: FINALIZAR Y QUITAR PARTIDO
 if (btnFinishMatch) {
   btnFinishMatch.onclick = async () => {
     const userRole = (currentProfile?.role || "").toUpperCase().trim();
@@ -770,34 +772,63 @@ if (btnFinishMatch) {
 
 function updateSubscribeButton() {
   if (!selectedMatch) return;
-  const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
-  const userBalance = Number(currentProfile?.balance || 0);
+  const isOrganizer = (currentProfile?.role || "").toUpperCase().trim() === "ORGANIZADOR";
 
-  // Comprobar si ya está inscrito
-  const alreadySubscribed = receipts.some(
-    (r) => r.matchId === selectedMatch.id && r.userId === currentProfile?.id && r.status === "Aprobado"
-  );
+  // ROL ORGANIZADOR: MOSTRAR BOTÓN AÑADIR JUGADOR
+  if (isOrganizer) {
+    if (btnSubscribe) {
+      btnSubscribe.setAttribute("hidden", "");
+      btnSubscribe.style.setProperty("display", "none", "important");
+    }
 
-  if (alreadySubscribed) {
-    btnSubscribe.textContent = "✓ Ya estás Inscrito";
-    btnSubscribe.style.backgroundColor = "var(--success)";
-    btnSubscribe.disabled = true;
+    if (btnAddPlayer) {
+      btnAddPlayer.removeAttribute("hidden");
+      btnAddPlayer.style.setProperty("display", "block", "important");
+      const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
+      btnAddPlayer.disabled = isFull;
+      btnAddPlayer.textContent = isFull ? "Cupos Agotados" : "+ Añadir Jugador";
+    }
     return;
   }
 
-  if (isFull) {
-    btnSubscribe.textContent = "Cupos Agotados";
-    btnSubscribe.style.backgroundColor = "#43454d";
-    btnSubscribe.disabled = true;
-  } else {
-    btnSubscribe.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
-    btnSubscribe.style.backgroundColor = "var(--accent)";
-    btnSubscribe.disabled = false;
+  // ROL JUGADOR: MOSTRAR BOTÓN DE PAGO CON SALDO
+  if (btnAddPlayer) {
+    btnAddPlayer.setAttribute("hidden", "");
+    btnAddPlayer.style.setProperty("display", "none", "important");
+  }
+
+  if (btnSubscribe) {
+    btnSubscribe.removeAttribute("hidden");
+    btnSubscribe.style.setProperty("display", "block", "important");
+
+    const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
+    const userBalance = Number(currentProfile?.balance || 0);
+
+    const alreadySubscribed = receipts.some(
+      (r) => r.matchId === selectedMatch.id && r.userId === currentProfile?.id && r.status === "Aprobado"
+    );
+
+    if (alreadySubscribed) {
+      btnSubscribe.textContent = "✓ Ya estás Inscrito";
+      btnSubscribe.style.backgroundColor = "var(--success)";
+      btnSubscribe.disabled = true;
+      return;
+    }
+
+    if (isFull) {
+      btnSubscribe.textContent = "Cupos Agotados";
+      btnSubscribe.style.backgroundColor = "#43454d";
+      btnSubscribe.disabled = true;
+    } else {
+      btnSubscribe.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
+      btnSubscribe.style.backgroundColor = "var(--accent)";
+      btnSubscribe.disabled = false;
+    }
   }
 }
 
 // ==========================================
-// 12. FLUJO: INSCRIPCIÓN CON SALDO / ENVIAR A RECARGA
+// 12. INSCRIPCIÓN CON SALDO (JUGADOR)
 // ==========================================
 if (btnSubscribe) {
   btnSubscribe.onclick = async (e) => {
@@ -818,15 +849,12 @@ if (btnSubscribe) {
     const price = Number(selectedMatch.price);
     const balance = Number(currentProfile.balance || 0);
 
-    // 1. COMPROBAR SALDO SUFICIENTE
     if (balance < price) {
       const falta = (price - balance).toFixed(2);
-      // Enviar automáticamente al modal de recarga
       openRechargeModal(`Saldo insuficiente para este partido (Te faltan Bs. ${falta}). Recarga saldo aquí para completar tu inscripción:`, Math.ceil(price - balance));
       return;
     }
 
-    // 2. SALDO SUFICIENTE: DESCONTAR DE LA BILLETERA
     const confirmPay = confirm(`¿Deseas pagar Bs. ${price.toFixed(2)} con tu saldo disponible (Bs. ${balance.toFixed(2)}) para unirte al partido?`);
     if (!confirmPay) return;
 
@@ -836,7 +864,6 @@ if (btnSubscribe) {
     try {
       const nuevoSaldo = balance - price;
 
-      // Descontar saldo en profiles
       const { error: balanceErr } = await db
         .from("profiles")
         .update({ balance: nuevoSaldo })
@@ -844,7 +871,6 @@ if (btnSubscribe) {
 
       if (balanceErr) throw balanceErr;
 
-      // Incrementar cupo en matches
       const { error: matchErr } = await db
         .from("matches")
         .update({ current_players: selectedMatch.currentPlayers + 1 })
@@ -852,7 +878,6 @@ if (btnSubscribe) {
 
       if (matchErr) throw matchErr;
 
-      // Guardar registro de inscripción aprobada
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -872,7 +897,6 @@ if (btnSubscribe) {
         }
       ]);
 
-      // Actualizar estado local
       currentProfile.balance = nuevoSaldo;
       selectedMatch.currentPlayers += 1;
 
@@ -892,7 +916,230 @@ if (btnSubscribe) {
 }
 
 // ==========================================
-// 13. MODAL DE RECARGA DE SALDO (BILLETERA)
+// 13. MODAL Y BÚSQUEDA: AÑADIR JUGADOR (ORGANIZADOR)
+// ==========================================
+if (btnAddPlayer) {
+  btnAddPlayer.addEventListener("click", () => {
+    if (!selectedMatch) return;
+    if (inputSearchPlayer) inputSearchPlayer.value = "";
+    if (searchPlayersResults) {
+      searchPlayersResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">Escribe el username del jugador para invitarlo.</p>`;
+    }
+    if (modalInvitePlayer) {
+      modalInvitePlayer.removeAttribute("hidden");
+      modalInvitePlayer.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseInviteModal) {
+  btnCloseInviteModal.addEventListener("click", () => {
+    if (modalInvitePlayer) {
+      modalInvitePlayer.setAttribute("hidden", "");
+      modalInvitePlayer.style.display = "none";
+    }
+  });
+}
+
+if (inputSearchPlayer) {
+  inputSearchPlayer.addEventListener("input", async (e) => {
+    const query = e.target.value.trim().toLowerCase();
+    if (query.length < 2) {
+      searchPlayersResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">Ingresa al menos 2 caracteres...</p>`;
+      return;
+    }
+
+    const { data: users, error } = await db
+      .from("profiles")
+      .select("id, username, first_name, last_name, avatar_url, role")
+      .ilike("username", `%${query}%`)
+      .limit(8);
+
+    if (error || !users || users.length === 0) {
+      searchPlayersResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">No se encontraron jugadores.</p>`;
+      return;
+    }
+
+    const enrolledUserIds = receipts
+      .filter((r) => r.matchId === selectedMatch.id && r.status === "Aprobado")
+      .map((r) => r.userId);
+
+    const availableUsers = users.filter((u) => !enrolledUserIds.includes(u.id));
+
+    if (availableUsers.length === 0) {
+      searchPlayersResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">Los jugadores encontrados ya están inscritos en este partido.</p>`;
+      return;
+    }
+
+    searchPlayersResults.innerHTML = "";
+    availableUsers.forEach((user) => {
+      const card = document.createElement("div");
+      card.className = "player-card-item";
+      card.innerHTML = `
+        <div class="player-meta-wrap">
+          <img class="player-thumb-avatar" src="${user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'}" alt="${user.username}">
+          <div class="player-names-col">
+            <span class="player-name-val">@${user.username}</span>
+            <span class="player-role-tag">${user.first_name || ""} ${user.last_name || ""}</span>
+          </div>
+        </div>
+        <button class="btn-send-invitation" onclick="sendInvitation('${user.id}', '${user.username}')">Invitar</button>
+      `;
+      searchPlayersResults.appendChild(card);
+    });
+  });
+}
+
+window.sendInvitation = async function (playerId, playerUsername) {
+  if (!selectedMatch) return;
+
+  const { error } = await db.from("invitations").insert([
+    {
+      match_id: selectedMatch.id,
+      match_title: selectedMatch.title,
+      sport: selectedMatch.sport,
+      organizer_username: currentProfile?.username || "Organizador",
+      player_id: playerId,
+      player_username: playerUsername,
+      status: "Pendiente"
+    }
+  ]);
+
+  if (error) {
+    alert("Error al enviar invitación: " + error.message);
+    return;
+  }
+
+  alert(`¡Invitación enviada a @${playerUsername}!\nLe llegará una notificación a su pestaña de Mensajes.`);
+  if (modalInvitePlayer) {
+    modalInvitePlayer.setAttribute("hidden", "");
+    modalInvitePlayer.style.display = "none";
+  }
+};
+
+// ==========================================
+// 14. BANDEJA DE MENSAJES E INVITACIONES (JUGADOR)
+// ==========================================
+async function fetchInvitations() {
+  if (!currentProfile) return;
+
+  const { data, error } = await db
+    .from("invitations")
+    .select("*")
+    .eq("player_id", currentProfile.id)
+    .order("id", { ascending: false });
+
+  if (!error) {
+    myInvitations = data || [];
+    renderInvitations();
+  }
+}
+
+function renderInvitations() {
+  if (!messagesContainer || !messagesEmptyState) return;
+
+  const pending = myInvitations.filter((inv) => inv.status === "Pendiente");
+
+  if (pending.length === 0) {
+    messagesContainer.innerHTML = "";
+    messagesEmptyState.removeAttribute("hidden");
+    messagesEmptyState.style.display = "flex";
+    return;
+  }
+
+  messagesEmptyState.setAttribute("hidden", "");
+  messagesEmptyState.style.display = "none";
+  messagesContainer.innerHTML = "";
+
+  pending.forEach((inv) => {
+    const card = document.createElement("div");
+    card.className = "invitation-card";
+    card.innerHTML = `
+      <div class="invitation-card-header">
+        <span class="invitation-title">⚽ ${inv.match_title}</span>
+        <span class="invitation-badge-tag">INVITACIÓN</span>
+      </div>
+      <p class="invitation-desc">
+        El organizador <strong>@${inv.organizer_username}</strong> te invitó a unirte a este partido de <strong>${inv.sport}</strong> sin ningún costo de inscripción.
+      </p>
+      <div class="invitation-actions">
+        <button class="btn-inv-accept" onclick="respondInvitation(${inv.id}, true)">✓ Aceptar</button>
+        <button class="btn-inv-reject" onclick="respondInvitation(${inv.id}, false)">✕ Rechazar</button>
+      </div>
+    `;
+    messagesContainer.appendChild(card);
+  });
+}
+
+window.respondInvitation = async function (invitationId, accept) {
+  const inv = myInvitations.find((i) => i.id === invitationId);
+  if (!inv) return;
+
+  if (!accept) {
+    await db.from("invitations").update({ status: "Rechazada" }).eq("id", invitationId);
+    await fetchInvitations();
+    return;
+  }
+
+  const { data: match, error: mErr } = await db
+    .from("matches")
+    .select("*")
+    .eq("id", inv.match_id)
+    .single();
+
+  if (mErr || !match) {
+    alert("El partido ya no se encuentra disponible.");
+    return;
+  }
+
+  if (match.current_players >= match.max_players) {
+    alert("Lo sentimos, los cupos para este partido ya se completaron.");
+    await db.from("invitations").update({ status: "Rechazada" }).eq("id", invitationId);
+    fetchInvitations();
+    return;
+  }
+
+  await db.from("invitations").update({ status: "Aceptada" }).eq("id", invitationId);
+
+  await db
+    .from("matches")
+    .update({ current_players: match.current_players + 1 })
+    .eq("id", match.id);
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+  await db.from("receipts").insert([
+    {
+      type: "PARTIDO",
+      match_id: match.id,
+      match_title: match.title,
+      sport: match.sport,
+      amount: 0,
+      date: timeStr,
+      status: "Aprobado",
+      user_id: currentProfile.id,
+      username: currentProfile.username,
+      avatar_url: currentProfile.avatar_url,
+      receipt_image: "INVITACION_ORGANIZADOR"
+    }
+  ]);
+
+  await db
+    .from("profiles")
+    .update({ matches_played: (currentProfile.matches_played || 0) + 1 })
+    .eq("id", currentProfile.id);
+
+  currentProfile.matches_played = (currentProfile.matches_played || 0) + 1;
+
+  alert(`¡Te has unido con éxito al partido en ${match.title}! Ya estás en la lista sin costo alguno.`);
+  await fetchInvitations();
+  await fetchMatches();
+  renderProfileView();
+};
+
+// ==========================================
+// 15. MODAL DE RECARGA DE SALDO (BILLETERA)
 // ==========================================
 function resetRechargeInputs() {
   currentRechargeBase64 = null;
@@ -959,7 +1206,6 @@ if (rechargeReceiptInput) {
 
 if (btnRemoveRechargeReceipt) btnRemoveRechargeReceipt.addEventListener("click", resetRechargeInputs);
 
-// Enviar solicitud de recarga al Organizador
 if (btnConfirmRecharge) {
   btnConfirmRecharge.addEventListener("click", async () => {
     const rechargeAmount = parseFloat(inputRechargeAmount.value);
@@ -1012,7 +1258,7 @@ if (btnConfirmRecharge) {
 }
 
 // ==========================================
-// 14. PANEL ORGANIZADOR (APROBAR RECARGAS Y PAGOS)
+// 16. PANEL ORGANIZADOR (APROBAR RECARGAS Y PAGOS)
 // ==========================================
 function renderAdminPanel() {
   if (!adminReceiptsList) return;
@@ -1049,8 +1295,10 @@ function renderAdminPanel() {
       </div>
 
       <div class="receipt-body-layout">
-        ${item.receiptImage === "BILLETERA_SALDO" ? `
-          <div style="width:70px; height:70px; border-radius:10px; background:var(--bg-card-subtle); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">💳</div>
+        ${item.receiptImage === "BILLETERA_SALDO" || item.receiptImage === "INVITACION_ORGANIZADOR" ? `
+          <div style="width:70px; height:70px; border-radius:10px; background:var(--bg-card-subtle); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+            ${item.receiptImage === "INVITACION_ORGANIZADOR" ? "🎟️" : "💳"}
+          </div>
         ` : `
           <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
         `}
@@ -1082,7 +1330,6 @@ window.approveReceipt = async function (receiptId) {
   const receipt = receipts.find((r) => r.id === receiptId);
   if (!receipt) return;
 
-  // SI ES UNA RECARGA DE SALDO -> SUMAR AL BALANCE DEL JUGADOR
   if (receipt.type === "RECARGA") {
     const { data: prof, error: pErr } = await db
       .from("profiles")
@@ -1114,7 +1361,6 @@ window.approveReceipt = async function (receiptId) {
     return;
   }
 
-  // SI ES INSCRIPCIÓN DIRECTA (FALLBACK)
   await db.from("receipts").update({ status: "Aprobado" }).eq("id", receiptId);
   alert("Comprobante aprobado.");
   fetchReceipts();
@@ -1150,7 +1396,7 @@ if (btnClearReceipts) {
 }
 
 // ==========================================
-// 15. DETALLE DE JUGADORES CONFIRMADOS
+// 17. DETALLE DE JUGADORES CONFIRMADOS
 // ==========================================
 function renderConfirmedPlayers(matchId) {
   if (!detailPlayersList || !selectedMatch) return;
@@ -1188,7 +1434,7 @@ function renderConfirmedPlayers(matchId) {
 }
 
 // ==========================================
-// 16. PERFIL DEL JUGADOR
+// 18. PERFIL DEL JUGADOR
 // ==========================================
 function renderProfileView() {
   if (!currentProfile) return;
@@ -1239,11 +1485,50 @@ function renderProfileView() {
   if (fUser) fUser.textContent = currentProfile.username || "-";
 
   renderMyActiveMatches();
-  
+}
+
+function renderMyActiveMatches() {
+  const container = document.getElementById("list-upcoming-matches");
+  if (!container || !currentProfile) return;
+
+  const myApprovedReceipts = receipts.filter(
+    (r) => r.userId === currentProfile.id && r.status === "Aprobado" && r.type === "PARTIDO"
+  );
+
+  const myMatches = matches.filter((m) =>
+    myApprovedReceipts.some((r) => r.matchId === m.id) && !m.isFinished
+  );
+
+  if (myMatches.length === 0) {
+    container.innerHTML = `
+      <div class="events-empty-box">
+        <div class="empty-icon-sm">⚽</div>
+        <p>No estás inscrito en ningún partido próximo</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  myMatches.forEach((match) => {
+    const card = document.createElement("div");
+    card.className = "user-event-card";
+    card.onclick = () => showDetail(match.id);
+
+    card.innerHTML = `
+      <img class="user-event-thumb" src="${match.image}" alt="${match.title}">
+      <div class="user-event-info">
+        <span class="user-event-title">${match.title}</span>
+        <span class="user-event-meta">📅 ${match.dateLong}</span>
+        <span class="user-event-meta">🕐 ${match.time} hs · ${match.sport}</span>
+        <span class="user-event-status">✓ Inscrito</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 // ==========================================
-// 17. CREAR PARTIDO (ORGANIZADOR)
+// 19. CREAR PARTIDO (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
   btnCreateMatchFab.addEventListener("click", () => {
@@ -1328,52 +1613,8 @@ if (formNewMatch) {
   });
 }
 
-function renderMyActiveMatches() {
-  const container = document.getElementById("list-upcoming-matches");
-  if (!container || !currentProfile) return;
-
-  // Filtrar los comprobantes/inscripciones aprobadas del usuario actual en partidos
-  const myApprovedReceipts = receipts.filter(
-    (r) => r.userId === currentProfile.id && r.status === "Aprobado" && r.type === "PARTIDO"
-  );
-
-  // Obtener los partidos activos que coincidan con esos comprobantes
-  const myMatches = matches.filter((m) =>
-    myApprovedReceipts.some((r) => r.matchId === m.id) && !m.isFinished
-  );
-
-  if (myMatches.length === 0) {
-    container.innerHTML = `
-      <div class="events-empty-box">
-        <div class="empty-icon-sm">⚽</div>
-        <p>No estás inscrito en ningún partido próximo</p>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = "";
-  myMatches.forEach((match) => {
-    const card = document.createElement("div");
-    card.className = "user-event-card";
-    card.onclick = () => showDetail(match.id); // Al tocar la tarjeta te lleva al detalle del partido
-
-    card.innerHTML = `
-      <img class="user-event-thumb" src="${match.image}" alt="${match.title}">
-      <div class="user-event-info">
-        <span class="user-event-title">${match.title}</span>
-        <span class="user-event-meta">📅 ${match.dateLong}</span>
-        <span class="user-event-meta">🕐 ${match.time} hs · ${match.sport}</span>
-        <span class="user-event-status">✓ Inscrito</span>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-
-
 // ==========================================
-// 18. NAVEGACIÓN ENTRE TABS
+// 20. NAVEGACIÓN ENTRE TABS
 // ==========================================
 function clearTabSelection() {
   [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
@@ -1392,6 +1633,7 @@ tabMessages.addEventListener("click", () => {
   clearTabSelection();
   tabMessages.classList.add("active");
   switchScreen(viewMessages);
+  fetchInvitations();
 });
 
 tabProfile.addEventListener("click", () => {
@@ -1438,7 +1680,6 @@ if (btnTabAbout && btnTabEvents) {
   };
 }
 
-// Filtros y Buscador
 chipButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     chipButtons.forEach((b) => b.classList.remove("active"));

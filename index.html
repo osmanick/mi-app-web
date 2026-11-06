@@ -243,8 +243,14 @@
       </div>
 
       <footer class="bottom-action-bar">
+        <!-- Botón para JUGADOR -->
         <button id="btn-subscribe" class="btn-primary-action">
           Inscribirme
+        </button>
+
+        <!-- Botón exclusivo para ORGANIZADOR -->
+        <button id="btn-add-player" class="btn-primary-action" hidden style="display: none; background-color: var(--accent);">
+          + Añadir Jugador
         </button>
       </footer>
     </section>
@@ -252,18 +258,23 @@
     <!-- ================= VISTA 3: MENSAJES ================= -->
     <section id="view-messages" class="view-screen">
       <header class="top-nav center-title">
-        <h1 class="screen-title">Mensajes</h1>
+        <h1 class="screen-title">Mensajes e Invitaciones</h1>
       </header>
-      <div class="empty-state-container">
+      
+      <div id="messages-container" style="padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.85rem;">
+        <!-- Aquí se cargan dinámicamente las tarjetas de invitaciones -->
+      </div>
+
+      <div id="messages-empty-state" class="empty-state-container" hidden>
         <div class="empty-icon-circle">
           <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
         <h3 class="empty-title">Sin mensajes</h3>
-        <p class="empty-subtitle">Tus conversaciones de partidos y chats aparecerán aquí.</p>
+        <p class="empty-subtitle">Las invitaciones de organizadores y partidos aparecerán aquí.</p>
       </div>
     </section>
 
-  <!-- ================= VISTA 4: PERFIL DEL JUGADOR ================= -->
+    <!-- ================= VISTA 4: PERFIL DEL JUGADOR ================= -->
     <section id="view-profile" class="view-screen">
       <header class="profile-top-bar">
         <h1 class="screen-title">Perfil</h1>
@@ -307,7 +318,7 @@
         <button id="btn-tab-about" class="profile-nav-btn">Sobre mí</button>
       </div>
 
-      <!-- Pestaña 1: Mis eventos (Activa al inicio, carga directa sin subpestañas) -->
+      <!-- Pestaña 1: Mis eventos -->
       <div id="profile-tab-events" class="profile-tab-content active">
         <h4 class="subgroup-title">Próximos partidos</h4>
         <div id="list-upcoming-matches" class="user-events-list"></div>
@@ -452,6 +463,31 @@
 
     <!-- ================= MODALES ================= -->
 
+    <!-- Modal: Buscar y Añadir Jugador (Organizador) -->
+    <div id="modal-invite-player" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <span class="qr-tag">ORGANIZADOR</span>
+            <h3>Invitar Jugador</h3>
+          </div>
+          <button id="btn-close-invite-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">Busca a un jugador por su username para sumarlo a este partido sin descontarle saldo.</p>
+
+          <div class="search-input-wrapper" style="margin: 0.8rem 0;">
+            <input type="text" id="input-search-player" placeholder="Ej. carlos_10" autocomplete="off">
+          </div>
+
+          <div id="search-players-results" class="players-cards-container" style="max-height: 250px; overflow-y: auto; gap: 0.6rem;">
+            <!-- Resultados de búsqueda -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Editar Credenciales -->
     <div id="modal-security" class="modal-overlay" hidden>
       <div class="redeem-card">
@@ -554,11 +590,11 @@
           </div>
 
           <div class="qr-wrapper">
-  <img id="recharge-qr-image" 
-       src="https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png" 
-       alt="Código QR Simple" 
-       style="width: 190px; max-width: 100%; height: auto; display: block; aspect-ratio: 1/1; object-fit: contain;">
-</div>
+            <img id="recharge-qr-image" 
+                 src="https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png" 
+                 alt="Código QR Simple" 
+                 style="width: 190px; max-width: 100%; height: auto; display: block; aspect-ratio: 1/1; object-fit: contain;">
+          </div>
 
           <div class="upload-section">
             <label for="recharge-receipt-input" class="upload-label">

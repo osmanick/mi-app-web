@@ -1346,6 +1346,84 @@ input:checked + .slider-round:before {
   opacity: 0.85;
 }
 
+/* Tarjetas de Invitación en la pestaña Mensajes */
+.invitation-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.invitation-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invitation-badge-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(255, 90, 31, 0.15);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.invitation-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.invitation-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.invitation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.btn-inv-accept {
+  background-color: var(--success);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-inv-reject {
+  background-color: var(--bg-card-subtle);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 0.6rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-send-invitation {
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 
 /* ==========================================================
    MODAL QR ESPECÍFICO
