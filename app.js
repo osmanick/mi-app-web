@@ -772,34 +772,39 @@ if (btnFinishMatch) {
 
 function updateSubscribeButton() {
   if (!selectedMatch) return;
-  const isOrganizer = (currentProfile?.role || "").toUpperCase().trim() === "ORGANIZADOR";
 
-  // ROL ORGANIZADOR: MOSTRAR BOTÓN AÑADIR JUGADOR
+  const btnSub = document.getElementById("btn-subscribe");
+  const btnAdd = document.getElementById("btn-add-player");
+
+  const userRole = (currentProfile?.role || "").toUpperCase().trim();
+  const isOrganizer = userRole === "ORGANIZADOR";
+
+  // CASO 1: ES ORGANIZADOR -> Ocultar "Pagar" y Mostrar "+ Añadir Jugador"
   if (isOrganizer) {
-    if (btnSubscribe) {
-      btnSubscribe.setAttribute("hidden", "");
-      btnSubscribe.style.setProperty("display", "none", "important");
+    if (btnSub) {
+      btnSub.setAttribute("hidden", "");
+      btnSub.style.setProperty("display", "none", "important");
     }
 
-    if (btnAddPlayer) {
-      btnAddPlayer.removeAttribute("hidden");
-      btnAddPlayer.style.setProperty("display", "block", "important");
+    if (btnAdd) {
+      btnAdd.removeAttribute("hidden");
+      btnAdd.style.setProperty("display", "block", "important");
       const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
-      btnAddPlayer.disabled = isFull;
-      btnAddPlayer.textContent = isFull ? "Cupos Agotados" : "+ Añadir Jugador";
+      btnAdd.disabled = isFull;
+      btnAdd.textContent = isFull ? "Cupos Agotados" : "+ Añadir Jugador";
     }
     return;
   }
 
-  // ROL JUGADOR: MOSTRAR BOTÓN DE PAGO CON SALDO
-  if (btnAddPlayer) {
-    btnAddPlayer.setAttribute("hidden", "");
-    btnAddPlayer.style.setProperty("display", "none", "important");
+  // CASO 2: ES JUGADOR -> Ocultar "+ Añadir Jugador" y Mostrar "Pagar"
+  if (btnAdd) {
+    btnAdd.setAttribute("hidden", "");
+    btnAdd.style.setProperty("display", "none", "important");
   }
 
-  if (btnSubscribe) {
-    btnSubscribe.removeAttribute("hidden");
-    btnSubscribe.style.setProperty("display", "block", "important");
+  if (btnSub) {
+    btnSub.removeAttribute("hidden");
+    btnSub.style.setProperty("display", "block", "important");
 
     const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
     const userBalance = Number(currentProfile?.balance || 0);
@@ -809,20 +814,20 @@ function updateSubscribeButton() {
     );
 
     if (alreadySubscribed) {
-      btnSubscribe.textContent = "✓ Ya estás Inscrito";
-      btnSubscribe.style.backgroundColor = "var(--success)";
-      btnSubscribe.disabled = true;
+      btnSub.textContent = "✓ Ya estás Inscrito";
+      btnSub.style.backgroundColor = "var(--success)";
+      btnSub.disabled = true;
       return;
     }
 
     if (isFull) {
-      btnSubscribe.textContent = "Cupos Agotados";
-      btnSubscribe.style.backgroundColor = "#43454d";
-      btnSubscribe.disabled = true;
+      btnSub.textContent = "Cupos Agotados";
+      btnSub.style.backgroundColor = "#43454d";
+      btnSub.disabled = true;
     } else {
-      btnSubscribe.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
-      btnSubscribe.style.backgroundColor = "var(--accent)";
-      btnSubscribe.disabled = false;
+      btnSub.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
+      btnSub.style.backgroundColor = "var(--accent)";
+      btnSub.disabled = false;
     }
   }
 }

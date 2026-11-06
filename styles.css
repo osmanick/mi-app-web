@@ -1424,6 +1424,24 @@ input:checked + .slider-round:before {
   cursor: pointer;
 }
 
+/* Asegurar que [hidden] siempre prevalezca sobre botones primarios */
+.bottom-action-bar button[hidden] {
+  display: none !important;
+}
+
+/* Estilo explícito para el botón Añadir Jugador */
+#btn-add-player {
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.95rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
 
 /* ==========================================================
    MODAL QR ESPECÍFICO
