@@ -779,7 +779,7 @@ function updateSubscribeButton() {
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
 
-  // CASO 1: ES ORGANIZADOR -> Ocultar "Pagar" y Mostrar "+ Añadir Jugador"
+  // ROL ORGANIZADOR: MOSTRAR BOTÓN AÑADIR JUGADOR
   if (isOrganizer) {
     if (btnSub) {
       btnSub.setAttribute("hidden", "");
@@ -796,7 +796,7 @@ function updateSubscribeButton() {
     return;
   }
 
-  // CASO 2: ES JUGADOR -> Ocultar "+ Añadir Jugador" y Mostrar "Pagar"
+  // ROL JUGADOR: MOSTRAR BOTÓN DE PAGO CON SALDO
   if (btnAdd) {
     btnAdd.setAttribute("hidden", "");
     btnAdd.style.setProperty("display", "none", "important");
@@ -995,15 +995,19 @@ if (inputSearchPlayer) {
   });
 }
 
+// CORREGIDO: Se envía tanto organizer_username como from_username para evitar errores NOT NULL en Supabase
 window.sendInvitation = async function (playerId, playerUsername) {
   if (!selectedMatch) return;
+
+  const orgName = currentProfile?.username || "Organizador";
 
   const { error } = await db.from("invitations").insert([
     {
       match_id: selectedMatch.id,
       match_title: selectedMatch.title,
       sport: selectedMatch.sport,
-      organizer_username: currentProfile?.username || "Organizador",
+      organizer_username: orgName,
+      from_username: orgName,
       player_id: playerId,
       player_username: playerUsername,
       status: "Pendiente"
@@ -1057,6 +1061,7 @@ function renderInvitations() {
   messagesContainer.innerHTML = "";
 
   pending.forEach((inv) => {
+    const sender = inv.organizer_username || inv.from_username || "Organizador";
     const card = document.createElement("div");
     card.className = "invitation-card";
     card.innerHTML = `
@@ -1065,7 +1070,7 @@ function renderInvitations() {
         <span class="invitation-badge-tag">INVITACIÓN</span>
       </div>
       <p class="invitation-desc">
-        El organizador <strong>@${inv.organizer_username}</strong> te invitó a unirte a este partido de <strong>${inv.sport}</strong> sin ningún costo de inscripción.
+        El organizador <strong>@${sender}</strong> te invitó a unirte a este partido de <strong>${inv.sport}</strong> sin ningún costo de inscripción.
       </p>
       <div class="invitation-actions">
         <button class="btn-inv-accept" onclick="respondInvitation(${inv.id}, true)">✓ Aceptar</button>
