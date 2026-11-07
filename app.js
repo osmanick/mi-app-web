@@ -1743,6 +1743,59 @@ function renderMyActiveMatches() {
 }
 
 // ==========================================
+// CONTROL DEL BOTÓN ATRÁS (CONFIRMACIÓN DE SALIDA)
+// ==========================================
+let isExitingApp = false;
+
+// Crear un estado inicial en el historial para interceptar el botón atrás
+window.history.pushState({ appRoot: true }, "");
+
+window.addEventListener("popstate", () => {
+  if (isExitingApp) return;
+
+  // 1. Si hay algún modal abierto, cerrarlo en lugar de salir
+  const openModals = document.querySelectorAll(".modal-overlay:not([hidden])");
+  let modalWasClosed = false;
+  openModals.forEach((modal) => {
+    if (modal.style.display !== "none") {
+      modal.setAttribute("hidden", "");
+      modal.style.display = "none";
+      modalWasClosed = true;
+    }
+  });
+
+  if (modalWasClosed) {
+    window.history.pushState({ appRoot: true }, "");
+    return;
+  }
+
+  // 2. Si está en una vista secundaria, volver a la cartelera de Partidos
+  const isDetail = viewDetail && viewDetail.classList.contains("active");
+  const isMessages = viewMessages && viewMessages.classList.contains("active");
+  const isProfile = viewProfile && viewProfile.classList.contains("active");
+  const isAdmin = viewAdmin && viewAdmin.classList.contains("active");
+
+  if (isDetail || isMessages || isProfile || isAdmin) {
+    if (typeof clearTabSelection === "function") clearTabSelection();
+    if (tabMatches) tabMatches.classList.add("active");
+    switchScreen(viewList);
+    if (typeof renderMatches === "function") renderMatches();
+    window.history.pushState({ appRoot: true }, "");
+    return;
+  }
+
+  // 3. Si ya está en la pantalla principal (Partidos o Inicio)
+  const salir = confirm("¿Deseas salir de la aplicación?");
+  if (salir) {
+    isExitingApp = true;
+    window.history.back();
+  } else {
+    // Si cancela, restituir la trampa en el historial
+    window.history.pushState({ appRoot: true }, "");
+  }
+});
+
+// ==========================================
 // 19. CREAR PARTIDO (ORGANIZADOR)
 // ==========================================
 if (btnCreateMatchFab) {
