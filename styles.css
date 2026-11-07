@@ -25,26 +25,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-body {
+/* Fijar ventana completa para evitar scroll/rebote nativo del móvil */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
   background-color: #000000;
   color: var(--text-white);
   font-family: var(--font-family);
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  margin: 0;
-  overflow-x: hidden;
 }
 
 /* ==========================================================================
-   VIEWPORT MÓVIL PWA
+   VIEWPORT MÓVIL PWA (CONTENEDOR FIJO)
    ========================================================================== */
 .app-viewport {
   width: 100%;
   max-width: 440px;
+  height: 100dvh;
   height: 100vh;
-  max-height: 920px;
+  max-height: 100vh;
   background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
@@ -61,16 +67,18 @@ body {
 }
 
 /* ==========================================================================
-   PANTALLAS / VISTAS
+   PANTALLAS / VISTAS (SCROLL INTERNO INDEPENDIENTE)
    ========================================================================== */
 .view-screen {
   display: none;
   flex: 1;
   flex-direction: column;
   overflow-y: auto;
-  padding-bottom: 70px;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 74px; /* Espacio para que el contenido no quede oculto tras la barra estática */
   position: relative;
   width: 100%;
+  height: 100%;
 }
 
 .view-screen.active {
@@ -78,7 +86,7 @@ body {
 }
 
 /* ==========================================================================
-   VISTA 0: ACCESO (LOGIN / REGISTRO) - CORREGIDO
+   VISTA 0: ACCESO (LOGIN / REGISTRO)
    ========================================================================== */
 #view-register {
   padding: 1.2rem;
@@ -143,9 +151,10 @@ body {
 }
 
 /* ==========================================================================
-   BARRA SUPERIOR (HEADER)
+   BARRAS SUPERIORES ESTÁTICAS (HEADERS FIJOS AL SCROLL)
    ========================================================================== */
-.top-nav {
+.top-nav,
+.profile-top-bar {
   padding: 0.9rem 1.2rem;
   display: flex;
   align-items: center;
@@ -153,7 +162,8 @@ body {
   background-color: var(--bg-app);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 40;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .top-nav.center-title {
@@ -185,13 +195,17 @@ body {
 }
 
 /* ==========================================================================
-   BUSCADOR Y FILTROS
+   BUSCADOR Y FILTROS ESTÁTICOS
    ========================================================================== */
 .search-container {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.4rem 1.2rem;
+  padding: 0.6rem 1.2rem;
+  position: sticky;
+  top: 51px;
+  background-color: var(--bg-app);
+  z-index: 39;
 }
 
 .search-input-wrapper {
@@ -203,6 +217,7 @@ body {
   border-radius: var(--radius-md);
   padding: 0.6rem 0.9rem;
   position: relative;
+  min-width: 0;
 }
 
 .search-input-wrapper input {
@@ -221,8 +236,13 @@ body {
 .chips-container {
   display: flex;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem 0.8rem;
+  padding: 0.4rem 1.2rem 0.75rem;
   overflow-x: auto;
+  position: sticky;
+  top: 104px;
+  background-color: var(--bg-app);
+  z-index: 38;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .chip-item {
@@ -248,7 +268,7 @@ body {
    LISTA DE PARTIDOS Y TARJETAS
    ========================================================================== */
 .matches-content {
-  padding: 0.5rem 1.2rem 2rem;
+  padding: 0.8rem 1.2rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -323,6 +343,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .match-title {
@@ -670,7 +691,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   VISTA 3: MENSAJES E INVITACIONES (CORREGIDO)
+   VISTA 3: MENSAJES E INVITACIONES
    ========================================================================== */
 #view-messages {
   flex-direction: column;
@@ -685,7 +706,7 @@ input:checked + .slider-round:before {
   gap: 0.85rem;
 }
 
-/* Estado vacío centrado */
+/* Estado vacío perfectamente centrado */
 .empty-state-container {
   display: flex;
   flex-direction: column;
@@ -814,18 +835,11 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   VISTA 4: PERFIL DEL JUGADOR (CORREGIDO SIN DESBORDES)
+   VISTA 4: PERFIL DEL JUGADOR
    ========================================================================== */
 #view-profile {
   width: 100%;
   overflow-x: hidden;
-}
-
-.profile-top-bar {
-  padding: 0.9rem 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .profile-header-actions {
@@ -1005,6 +1019,7 @@ input:checked + .slider-round:before {
   flex-direction: column;
   justify-content: center;
   gap: 3px;
+  min-width: 0;
 }
 
 .user-event-title {
@@ -1058,10 +1073,6 @@ input:checked + .slider-round:before {
   gap: 0.8rem;
 }
 
-.field-item.highlight-editable {
-  justify-content: space-between;
-}
-
 .field-icon-box {
   width: 32px;
   height: 32px;
@@ -1075,6 +1086,7 @@ input:checked + .slider-round:before {
 
 .field-details {
   flex: 1;
+  min-width: 0;
 }
 
 .field-label {
@@ -1088,14 +1100,6 @@ input:checked + .slider-round:before {
   font-size: 0.85rem;
   font-weight: 600;
   margin-top: 1px;
-}
-
-.field-edit-btn {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 1rem;
-  cursor: pointer;
 }
 
 .btn-full-orange {
@@ -1250,7 +1254,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   MODALES Y RECARGA
+   MODALES Y FORMULARIOS (CONTROL DE ANCHO ESTRICTO)
    ========================================================================== */
 .modal-overlay {
   position: absolute;
@@ -1281,6 +1285,7 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  box-sizing: border-box;
 }
 
 .modal-header {
@@ -1465,20 +1470,25 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   BARRA DE NAVEGACIÓN INFERIOR
+   BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */
 .bottom-nav-tabs {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 62px;
+  height: 64px;
   background-color: var(--bg-app);
   border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  z-index: 30;
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav-tabs[style*="display: none"] {
+  display: none !important;
 }
 
 .nav-tab {

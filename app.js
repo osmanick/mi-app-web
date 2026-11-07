@@ -1568,6 +1568,86 @@ function renderConfirmedPlayers(matchId) {
   });
 }
 
+// Función para convertir fechas en español (ej. "sábado, 7 de noviembre de 2026") a timestamp numérico
+function getMatchTimestamp(match) {
+  const timeStr = (match.time || "00:00").split("-")[0].trim();
+  let hh = 0, mm = 0;
+  if (timeStr.includes(":")) {
+    const parts = timeStr.split(":");
+    hh = parseInt(parts[0], 10) || 0;
+    mm = parseInt(parts[1], 10) || 0;
+  } else if (!isNaN(parseInt(timeStr, 10))) {
+    hh = parseInt(timeStr, 10);
+  }
+
+  const monthsMap = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
+  };
+
+  const textToParse = (match.date_long || match.date_group || "").toLowerCase().replace(/[,·]/g, " ");
+  const tokens = textToParse.split(/\s+/);
+  let day = null, month = null, year = 2026;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (monthsMap[t] !== undefined) {
+      month = monthsMap[t];
+      if (i > 0 && /^\d+$/.test(tokens[i - 1])) {
+        day = parseInt(tokens[i - 1], 10);
+      } else if (i > 1 && tokens[i - 1] === "de" && /^\d+$/.test(tokens[i - 2])) {
+        day = parseInt(tokens[i - 2], 10);
+      }
+    }
+    if (/^20\d\d$/.test(t)) {
+      year = parseInt(t, 10);
+    }
+  }
+
+  if (day !== null && month !== null) {
+    return new Date(year, month, day, hh, mm).getTime();
+  }
+  return match.id || 0;
+}
+
+// Carga y ordenamiento cronológico: del más próximo al más lejano
+async function fetchMatches() {
+  const { data, error } = await db
+    .from("matches")
+    .select("*")
+    .or("is_finished.eq.false,is_finished.is.null");
+
+  if (error) {
+    console.error("Error matches:", error);
+    return;
+  }
+
+  // Ordenar de menor timestamp (fecha más cercana hoy) a mayor timestamp (fecha más lejana)
+  const sortedData = (data || []).sort((a, b) => {
+    return getMatchTimestamp(a) - getMatchTimestamp(b);
+  });
+
+  matches = sortedData.map((m) => ({
+    id: m.id,
+    title: m.title,
+    dateGroup: m.date_group,
+    dateLong: m.date_long,
+    sport: m.sport,
+    time: m.time,
+    timeFull: m.time_full,
+    address: m.address,
+    price: Number(m.price),
+    currentPlayers: m.current_players,
+    maxPlayers: m.max_players,
+    image: m.image,
+    organizer: m.organizer,
+    isConfirmed: m.is_confirmed || false,
+    isFinished: m.is_finished || false
+  }));
+
+  renderMatches();
+}
+
 // ==========================================
 // 18. PERFIL DEL JUGADOR
 // ==========================================
