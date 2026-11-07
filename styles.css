@@ -1320,6 +1320,8 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .form-input-group label {
@@ -1328,7 +1330,11 @@ input:checked + .slider-round:before {
   color: var(--text-muted);
 }
 
-.form-input-group input, .form-select {
+.form-input-group input, 
+.form-select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background-color: var(--bg-card-subtle);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -1342,6 +1348,11 @@ input:checked + .slider-round:before {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  width: 100%;
+}
+
+.form-row-2 > * {
+  min-width: 0;
 }
 
 /* Contenedor y dimensiones QR */
