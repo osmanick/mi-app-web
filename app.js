@@ -1912,41 +1912,41 @@ if (searchInput) {
 }
 
 // ==========================================
-// CONTROL DEL BOTÓN ATRÁS CON MODAL NATIVO PWA
+// CONTROL ROBUSTO DEL BOTÓN ATRÁS (PWA)
 // ==========================================
 const modalConfirmExit = document.getElementById("modal-confirm-exit");
 const btnCancelExitApp = document.getElementById("btn-cancel-exit-app");
 const btnConfirmExitApp = document.getElementById("btn-confirm-exit-app");
 let isExiting = false;
 
-function pushTrap() {
-  window.history.pushState({ appPage: "active" }, "", window.location.href);
+function ensureHistoryTrap() {
+  if (!window.history.state || window.history.state.trap !== true) {
+    window.history.pushState({ trap: true }, "", window.location.href);
+  }
 }
 
-// Inicializar la trampa de historial al cargar y en la primera interacción
-pushTrap();
-window.addEventListener("click", () => {
-  if (window.history.state?.appPage !== "active") {
-    pushTrap();
-  }
-}, { once: true });
+// 1. Armar trampa inmediata y ante cualquier contacto táctil inicial
+ensureHistoryTrap();
+['touchstart', 'pointerdown', 'click'].forEach((evtName) => {
+  window.addEventListener(evtName, () => ensureHistoryTrap(), { passive: true });
+});
 
-window.addEventListener("popstate", () => {
+window.addEventListener("popstate", (e) => {
   if (isExiting) return;
 
-  // 1. Si el modal de confirmación de salida ya está visible, cancelarlo
-  if (modalConfirmExit && modalConfirmExit.style.display !== "none" && !modalConfirmExit.hasAttribute("hidden")) {
+  // 1. Si el modal de confirmación ya estaba en pantalla, cerrarlo y renovar trampa
+  if (modalConfirmExit && modalConfirmExit.style.display === "flex") {
     modalConfirmExit.setAttribute("hidden", "");
     modalConfirmExit.style.display = "none";
-    pushTrap();
+    ensureHistoryTrap();
     return;
   }
 
-  // 2. Si hay cualquier otro modal abierto (invitar, crear partido, qr recarga, seguridad), cerrarlo
-  const openModals = document.querySelectorAll(".modal-overlay:not(#modal-confirm-exit):not([hidden])");
+  // 2. Si hay cualquier otro modal abierto (invitar, recarga, cancha, contraseña), cerrarlo
+  const openModals = document.querySelectorAll(".modal-overlay:not(#modal-confirm-exit)");
   let modalClosed = false;
   openModals.forEach((m) => {
-    if (m.style.display !== "none") {
+    if (!m.hasAttribute("hidden") && m.style.display !== "none") {
       m.setAttribute("hidden", "");
       m.style.display = "none";
       modalClosed = true;
@@ -1954,11 +1954,11 @@ window.addEventListener("popstate", () => {
   });
 
   if (modalClosed) {
-    pushTrap();
+    ensureHistoryTrap();
     return;
   }
 
-  // 3. Si el usuario está en pantallas secundarias (Detalle, Mensajes, Perfil, Admin), volver a la cartelera de Partidos
+  // 3. Si el usuario está en vistas secundarias, regresar a la cartelera de Partidos
   const inDetail = viewDetail && viewDetail.classList.contains("active");
   const inMessages = viewMessages && viewMessages.classList.contains("active");
   const inProfile = viewProfile && viewProfile.classList.contains("active");
@@ -1969,16 +1969,16 @@ window.addEventListener("popstate", () => {
     if (tabMatches) tabMatches.classList.add("active");
     switchScreen(viewList);
     if (typeof renderMatches === "function") renderMatches();
-    pushTrap();
+    ensureHistoryTrap();
     return;
   }
 
-  // 4. Si ya estamos en la pantalla principal (Partidos o Registro): Mostrar modal de confirmación
+  // 4. Si está en la pantalla principal: mostrar el modal visual y rearmar la trampa
   if (modalConfirmExit) {
     modalConfirmExit.removeAttribute("hidden");
     modalConfirmExit.style.display = "flex";
   }
-  pushTrap();
+  ensureHistoryTrap();
 });
 
 if (btnCancelExitApp) {
@@ -1987,6 +1987,7 @@ if (btnCancelExitApp) {
       modalConfirmExit.setAttribute("hidden", "");
       modalConfirmExit.style.display = "none";
     }
+    ensureHistoryTrap();
   });
 }
 
@@ -1997,7 +1998,7 @@ if (btnConfirmExitApp) {
       modalConfirmExit.setAttribute("hidden", "");
       modalConfirmExit.style.display = "none";
     }
-    // Salir hacia la pantalla de inicio o historial anterior del sistema
+    // Salida autorizada al sistema operativo
     window.history.go(-2);
     setTimeout(() => {
       window.close();
