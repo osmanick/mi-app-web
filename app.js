@@ -500,6 +500,49 @@ function applyRolePermissions() {
   updatePendingBadge();
 }
 
+// Función para convertir fechas en español (ej. "sábado, 7 de noviembre de 2026") a timestamp numérico
+function getMatchTimestamp(match) {
+  const timeStr = (match.time || "00:00").split("-")[0].trim();
+  let hh = 0, mm = 0;
+  if (timeStr.includes(":")) {
+    const parts = timeStr.split(":");
+    hh = parseInt(parts[0], 10) || 0;
+    mm = parseInt(parts[1], 10) || 0;
+  } else if (!isNaN(parseInt(timeStr, 10))) {
+    hh = parseInt(timeStr, 10);
+  }
+
+  const monthsMap = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
+  };
+
+  const textToParse = (match.date_long || match.date_group || "").toLowerCase().replace(/[,·]/g, " ");
+  const tokens = textToParse.split(/\s+/);
+  let day = null, month = null, year = 2026;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (monthsMap[t] !== undefined) {
+      month = monthsMap[t];
+      if (i > 0 && /^\d+$/.test(tokens[i - 1])) {
+        day = parseInt(tokens[i - 1], 10);
+      } else if (i > 1 && tokens[i - 1] === "de" && /^\d+$/.test(tokens[i - 2])) {
+        day = parseInt(tokens[i - 2], 10);
+      }
+    }
+    if (/^20\d\d$/.test(t)) {
+      year = parseInt(t, 10);
+    }
+  }
+
+  if (day !== null && month !== null) {
+    return new Date(year, month, day, hh, mm).getTime();
+  }
+  return match.id || 0;
+}
+
+// Carga y ordenamiento cronológico: del más próximo al más lejano
 async function fetchMatches() {
   const { data, error } = await db
     .from("matches")
@@ -511,13 +554,9 @@ async function fetchMatches() {
     return;
   }
 
+  // Ordenar de menor timestamp (fecha más cercana hoy) a mayor timestamp (fecha más lejana)
   const sortedData = (data || []).sort((a, b) => {
-    const timeA = (a.time || "00:00").split("-")[0].trim();
-    const timeB = (b.time || "00:00").split("-")[0].trim();
-    if (a.date_group === b.date_group) {
-      return timeA.localeCompare(timeB);
-    }
-    return (a.id || 0) - (b.id || 0);
+    return getMatchTimestamp(a) - getMatchTimestamp(b);
   });
 
   matches = sortedData.map((m) => ({
@@ -719,11 +758,11 @@ function renderMatches() {
           <div>
             <h4 class="match-title">${match.title}</h4>
             <div class="match-location">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#ff5a1f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5252a"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
               ${match.address.length > 34 ? match.address.substring(0, 34) + "..." : match.address}
             </div>
             <div class="match-sport">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#ff5a1f"><circle cx="12" cy="12" r="10"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5252a"><circle cx="12" cy="12" r="10"/></svg>
               ${match.sport}
             </div>
             <div class="match-time">
@@ -1568,86 +1607,6 @@ function renderConfirmedPlayers(matchId) {
   });
 }
 
-// Función para convertir fechas en español (ej. "sábado, 7 de noviembre de 2026") a timestamp numérico
-function getMatchTimestamp(match) {
-  const timeStr = (match.time || "00:00").split("-")[0].trim();
-  let hh = 0, mm = 0;
-  if (timeStr.includes(":")) {
-    const parts = timeStr.split(":");
-    hh = parseInt(parts[0], 10) || 0;
-    mm = parseInt(parts[1], 10) || 0;
-  } else if (!isNaN(parseInt(timeStr, 10))) {
-    hh = parseInt(timeStr, 10);
-  }
-
-  const monthsMap = {
-    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
-  };
-
-  const textToParse = (match.date_long || match.date_group || "").toLowerCase().replace(/[,·]/g, " ");
-  const tokens = textToParse.split(/\s+/);
-  let day = null, month = null, year = 2026;
-
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (monthsMap[t] !== undefined) {
-      month = monthsMap[t];
-      if (i > 0 && /^\d+$/.test(tokens[i - 1])) {
-        day = parseInt(tokens[i - 1], 10);
-      } else if (i > 1 && tokens[i - 1] === "de" && /^\d+$/.test(tokens[i - 2])) {
-        day = parseInt(tokens[i - 2], 10);
-      }
-    }
-    if (/^20\d\d$/.test(t)) {
-      year = parseInt(t, 10);
-    }
-  }
-
-  if (day !== null && month !== null) {
-    return new Date(year, month, day, hh, mm).getTime();
-  }
-  return match.id || 0;
-}
-
-// Carga y ordenamiento cronológico: del más próximo al más lejano
-async function fetchMatches() {
-  const { data, error } = await db
-    .from("matches")
-    .select("*")
-    .or("is_finished.eq.false,is_finished.is.null");
-
-  if (error) {
-    console.error("Error matches:", error);
-    return;
-  }
-
-  // Ordenar de menor timestamp (fecha más cercana hoy) a mayor timestamp (fecha más lejana)
-  const sortedData = (data || []).sort((a, b) => {
-    return getMatchTimestamp(a) - getMatchTimestamp(b);
-  });
-
-  matches = sortedData.map((m) => ({
-    id: m.id,
-    title: m.title,
-    dateGroup: m.date_group,
-    dateLong: m.date_long,
-    sport: m.sport,
-    time: m.time,
-    timeFull: m.time_full,
-    address: m.address,
-    price: Number(m.price),
-    currentPlayers: m.current_players,
-    maxPlayers: m.max_players,
-    image: m.image,
-    organizer: m.organizer,
-    isConfirmed: m.is_confirmed || false,
-    isFinished: m.is_finished || false
-  }));
-
-  renderMatches();
-}
-
 // ==========================================
 // 18. PERFIL DEL JUGADOR
 // ==========================================
@@ -1662,9 +1621,6 @@ function renderProfileView() {
 
   const balanceElem = document.getElementById("profile-balance");
   if (balanceElem) balanceElem.textContent = Number(currentProfile.balance || 0).toFixed(2);
-
-  //const promoElem = document.getElementById("profile-promo");
-  //if (promoElem) promoElem.textContent = Number(currentProfile.promo_balance || 0).toFixed(2);
 
   const avatarElem = document.getElementById("profile-avatar-img");
   if (avatarElem && currentProfile.avatar_url) avatarElem.src = currentProfile.avatar_url;
@@ -1684,17 +1640,8 @@ function renderProfileView() {
   const fSkill = document.getElementById("field-skill");
   if (fSkill) fSkill.textContent = currentProfile.skill_level || "-";
 
-  //const fNat = document.getElementById("field-nationality");
-  //if (fNat) fNat.textContent = currentProfile.nationality || "-";
-
-  //const fCity = document.getElementById("field-city");
-  //if (fCity) fCity.textContent = currentProfile.city || "-";
-
   const fEmail = document.getElementById("field-email");
   if (fEmail) fEmail.textContent = currentProfile.email || "-";
-
-  //const fPlan = document.getElementById("field-plan");
- //if (fPlan) fPlan.textContent = currentProfile.plan || "FREE";
 
   const fUser = document.getElementById("field-username");
   if (fUser) fUser.textContent = currentProfile.username || "-";
