@@ -24,16 +24,22 @@ const btnInstall = document.getElementById("btn-install");
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  if (btnInstall) btnInstall.removeAttribute("hidden");
+  if (btnInstall) {
+    btnInstall.removeAttribute("hidden");
+    btnInstall.style.display = "flex";
+  }
 });
 
 if (btnInstall) {
   btnInstall.addEventListener("click", async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    btnInstall.setAttribute("hidden", "");
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      deferredPrompt = null;
+      btnInstall.setAttribute("hidden", "");
+      btnInstall.style.display = "none";
+    }
   });
 }
 

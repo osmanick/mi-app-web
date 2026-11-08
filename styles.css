@@ -104,6 +104,37 @@ html, body {
   width: 100%;
 }
 
+/* Botón de instalación en la pantalla de bienvenida */
+.btn-install-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-install-auth:active {
+  transform: scale(0.98);
+}
+
+.btn-install-auth svg {
+  fill: var(--accent);
+}
+
+.btn-install-auth[hidden] {
+  display: none !important;
+}
+
 .auth-logo-img {
   width: 82px;
   height: 82px;
