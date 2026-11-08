@@ -95,6 +95,23 @@ html, body {
   width: 100%;
 }
 
+/* Contenedor y diseño del logo de bienvenida */
+.auth-logo-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.8rem 0 1.2rem 0;
+  width: 100%;
+}
+
+.auth-logo-img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
 .auth-tabs-container {
   display: flex;
   background-color: var(--bg-card);
