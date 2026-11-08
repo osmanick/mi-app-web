@@ -1779,7 +1779,7 @@ if (formNewMatch) {
 // 20. NAVEGACIÓN ENTRE TABS
 // ==========================================
 function clearTabSelection() {
-  [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
+  [tabMatches, tabMessages, tabProfile].forEach((t) => {
     if (t) t.classList.remove("active");
   });
 }

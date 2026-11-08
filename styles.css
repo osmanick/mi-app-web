@@ -1469,6 +1469,11 @@ input:checked + .slider-round:before {
   z-index: 25;
 }
 
+#tab-clubs,
+#tab-alerts {
+  display: none !important;
+}
+
 /* ==========================================================================
    BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */
