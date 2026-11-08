@@ -1964,6 +1964,100 @@ if (searchInput) {
   });
 }
 
+// ==========================================
+// CONTROL DEL BOTÓN ATRÁS CON MODAL NATIVO PWA
+// ==========================================
+const modalConfirmExit = document.getElementById("modal-confirm-exit");
+const btnCancelExitApp = document.getElementById("btn-cancel-exit-app");
+const btnConfirmExitApp = document.getElementById("btn-confirm-exit-app");
+let isExiting = false;
+
+function pushTrap() {
+  window.history.pushState({ appPage: "active" }, "", window.location.href);
+}
+
+// Inicializar la trampa de historial al cargar y en la primera interacción
+pushTrap();
+window.addEventListener("click", () => {
+  if (window.history.state?.appPage !== "active") {
+    pushTrap();
+  }
+}, { once: true });
+
+window.addEventListener("popstate", () => {
+  if (isExiting) return;
+
+  // 1. Si el modal de confirmación de salida ya está visible, cancelarlo
+  if (modalConfirmExit && modalConfirmExit.style.display !== "none" && !modalConfirmExit.hasAttribute("hidden")) {
+    modalConfirmExit.setAttribute("hidden", "");
+    modalConfirmExit.style.display = "none";
+    pushTrap();
+    return;
+  }
+
+  // 2. Si hay cualquier otro modal abierto (invitar, crear partido, qr recarga, seguridad), cerrarlo
+  const openModals = document.querySelectorAll(".modal-overlay:not(#modal-confirm-exit):not([hidden])");
+  let modalClosed = false;
+  openModals.forEach((m) => {
+    if (m.style.display !== "none") {
+      m.setAttribute("hidden", "");
+      m.style.display = "none";
+      modalClosed = true;
+    }
+  });
+
+  if (modalClosed) {
+    pushTrap();
+    return;
+  }
+
+  // 3. Si el usuario está en pantallas secundarias (Detalle, Mensajes, Perfil, Admin), volver a la cartelera de Partidos
+  const inDetail = viewDetail && viewDetail.classList.contains("active");
+  const inMessages = viewMessages && viewMessages.classList.contains("active");
+  const inProfile = viewProfile && viewProfile.classList.contains("active");
+  const inAdmin = viewAdmin && viewAdmin.classList.contains("active");
+
+  if (inDetail || inMessages || inProfile || inAdmin) {
+    if (typeof clearTabSelection === "function") clearTabSelection();
+    if (tabMatches) tabMatches.classList.add("active");
+    switchScreen(viewList);
+    if (typeof renderMatches === "function") renderMatches();
+    pushTrap();
+    return;
+  }
+
+  // 4. Si ya estamos en la pantalla principal (Partidos o Registro): Mostrar modal de confirmación
+  if (modalConfirmExit) {
+    modalConfirmExit.removeAttribute("hidden");
+    modalConfirmExit.style.display = "flex";
+  }
+  pushTrap();
+});
+
+if (btnCancelExitApp) {
+  btnCancelExitApp.addEventListener("click", () => {
+    if (modalConfirmExit) {
+      modalConfirmExit.setAttribute("hidden", "");
+      modalConfirmExit.style.display = "none";
+    }
+  });
+}
+
+if (btnConfirmExitApp) {
+  btnConfirmExitApp.addEventListener("click", () => {
+    isExiting = true;
+    if (modalConfirmExit) {
+      modalConfirmExit.setAttribute("hidden", "");
+      modalConfirmExit.style.display = "none";
+    }
+    // Salir hacia la pantalla de inicio o historial anterior del sistema
+    window.history.go(-2);
+    setTimeout(() => {
+      window.close();
+    }, 200);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   checkUserSession();
 });
