@@ -1802,6 +1802,7 @@ tabMessages.addEventListener("click", () => {
   tabMessages.classList.add("active");
   switchScreen(viewMessages);
   fetchInvitations();
+  fetchSupportThreads(); // <-- Añadir esta llamada
 });
 
 tabProfile.addEventListener("click", () => {
@@ -1862,6 +1863,334 @@ if (searchInput) {
     currentSearchQuery = e.target.value.trim();
     renderMatches();
   });
+}
+
+// ==========================================
+// MÓDULO DE SOPORTE Y CHAT EN VIVO
+// ==========================================
+let activeChatId = null;
+let currentChatData = null;
+
+const btnRequestSupport = document.getElementById("btn-request-support");
+const btnOrgNewChat = document.getElementById("btn-org-new-chat");
+const supportThreadsList = document.getElementById("support-threads-list");
+const modalChatRoom = document.getElementById("modal-chat-room");
+const btnCloseChat = document.getElementById("btn-close-chat");
+const chatRoomTitle = document.getElementById("chat-room-title");
+const chatRoleIndicator = document.getElementById("chat-role-indicator");
+const chatMessagesBox = document.getElementById("chat-messages-box");
+const formSendChat = document.getElementById("form-send-chat");
+const inputChatText = document.getElementById("input-chat-text");
+
+const modalOrgChat = document.getElementById("modal-org-chat");
+const btnCloseOrgChat = document.getElementById("btn-close-org-chat");
+const inputSearchChatPlayer = document.getElementById("input-search-chat-player");
+const searchChatPlayersResults = document.getElementById("search-chat-players-results");
+
+// 1. Mostrar botones según rol en applyRolePermissions()
+const origApplyRolePermissions = applyRolePermissions;
+applyRolePermissions = function () {
+  if (typeof origApplyRolePermissions === "function") origApplyRolePermissions();
+  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
+  if (btnRequestSupport) btnRequestSupport.style.display = isOrganizer ? "none" : "flex";
+  if (btnOrgNewChat) btnOrgNewChat.style.display = isOrganizer ? "flex" : "none";
+};
+
+// 2. Solicitar Soporte (Jugador)
+if (btnRequestSupport) {
+  btnRequestSupport.addEventListener("click", async () => {
+    if (!currentProfile) return;
+
+    // Verificar si ya tiene un chat activo o pendiente
+    const { data: existingChat } = await db
+      .from("support_chats")
+      .select("*")
+      .eq("player_id", currentProfile.id)
+      .in("status", ["PENDIENTE", "EN_CURSO"])
+      .maybeSingle();
+
+    if (existingChat) {
+      openChatRoom(existingChat.id);
+      return;
+    }
+
+    const { data: newChat, error } = await db
+      .from("support_chats")
+      .insert([{
+        player_id: currentProfile.id,
+        player_username: currentProfile.username,
+        status: "PENDIENTE",
+        subject: "Consulta de Jugador",
+        last_message: "Chat iniciado"
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      alert("Error al solicitar soporte: " + error.message);
+      return;
+    }
+
+    alert("¡Solicitud enviada! En cuanto un organizador tome tu consulta podrás chatear en tiempo real.");
+    fetchSupportThreads();
+    openChatRoom(newChat.id);
+  });
+}
+
+// 3. Cargar conversaciones en la pestaña Mensajes
+async function fetchSupportThreads() {
+  if (!currentProfile || !supportThreadsList) return;
+  const isOrganizer = currentProfile.role === "ORGANIZADOR";
+
+  let query = db.from("support_chats").select("*").order("updated_at", { ascending: false });
+
+  if (!isOrganizer) {
+    // El jugador solo ve sus chats
+    query = query.eq("player_id", currentProfile.id);
+  } else {
+    // El organizador ve los chats pendientes o los que él ha tomado/creado
+    query = query.or(`status.eq.PENDIENTE,organizer_id.eq.${currentProfile.id}`);
+  }
+
+  const { data: chats, error } = await query;
+  if (error || !chats) return;
+
+  supportThreadsList.innerHTML = "";
+  if (chats.length === 0) {
+    supportThreadsList.innerHTML = `<p style="font-size:0.78rem; color:var(--text-muted);">No hay consultas de soporte activas.</p>`;
+    return;
+  }
+
+  chats.forEach((chat) => {
+    const card = document.createElement("div");
+    card.className = "support-card-item";
+
+    const isPending = chat.status === "PENDIENTE";
+    let actionBtnHtml = "";
+
+    if (isOrganizer) {
+      if (isPending) {
+        actionBtnHtml = `<button class="support-btn-action" onclick="takeSupportChat(${chat.id})">Aceptar Chat</button>`;
+      } else {
+        actionBtnHtml = `<button class="support-btn-action" onclick="openChatRoom(${chat.id})">Abrir</button>`;
+      }
+    } else {
+      actionBtnHtml = `<button class="support-btn-action" onclick="openChatRoom(${chat.id})">${isPending ? "Esperando..." : "Abrir"}</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="support-card-info">
+        <span class="support-card-title">${isOrganizer ? "@" + chat.player_username : (chat.organizer_username ? "Org. @" + chat.organizer_username : "Organizador (Pendiente)")}</span>
+        <span class="support-card-msg">${chat.last_message || "Sin mensajes"}</span>
+      </div>
+      <div>${actionBtnHtml}</div>
+    `;
+    supportThreadsList.appendChild(card);
+  });
+}
+
+// 4. Organizador toma el chat
+window.takeSupportChat = async function (chatId) {
+  if (!currentProfile) return;
+  const { error } = await db
+    .from("support_chats")
+    .update({
+      organizer_id: currentProfile.id,
+      organizer_username: currentProfile.username,
+      status: "EN_CURSO"
+    })
+    .eq("id", chatId);
+
+  if (!error) {
+    fetchSupportThreads();
+    openChatRoom(chatId);
+  }
+};
+
+// 5. Abrir ventana de chat
+window.openChatRoom = async function (chatId) {
+  activeChatId = chatId;
+  const { data: chat } = await db.from("support_chats").select("*").eq("id", chatId).single();
+  if (!chat) return;
+
+  currentChatData = chat;
+  const isOrganizer = currentProfile.role === "ORGANIZADOR";
+
+  chatRoomTitle.textContent = isOrganizer ? `@${chat.player_username}` : (chat.organizer_username ? `Org. @${chat.organizer_username}` : "Esperando Organizador...");
+  chatRoleIndicator.textContent = chat.status === "PENDIENTE" ? "SOLICITUD PENDIENTE" : "SOPORTE ACTIVO";
+
+  if (modalChatRoom) {
+    modalChatRoom.removeAttribute("hidden");
+    modalChatRoom.style.display = "flex";
+  }
+
+  loadChatMessages(chatId);
+};
+
+// 6. Cargar mensajes
+async function loadChatMessages(chatId) {
+  if (!chatMessagesBox) return;
+  const { data: messages } = await db
+    .from("support_messages")
+    .select("*")
+    .eq("chat_id", chatId)
+    .order("id", { ascending: true });
+
+  chatMessagesBox.innerHTML = "";
+  (messages || []).forEach((m) => {
+    appendChatBubble(m);
+  });
+  chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+}
+
+function appendChatBubble(m) {
+  if (!chatMessagesBox) return;
+  const isMine = m.sender_id === currentProfile.id;
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble ${isMine ? "mine" : "theirs"}`;
+
+  const timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  bubble.innerHTML = `
+    <span class="chat-bubble-sender">${isMine ? "Tú" : "@" + m.sender_username}</span>
+    <span>${m.message}</span>
+    <span class="chat-bubble-time">${timeStr}</span>
+  `;
+  chatMessagesBox.appendChild(bubble);
+  chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+}
+
+// 7. Enviar Mensaje
+if (formSendChat) {
+  formSendChat.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!activeChatId || !currentProfile) return;
+
+    const text = inputChatText.value.trim();
+    if (!text) return;
+
+    inputChatText.value = "";
+
+    await db.from("support_messages").insert([{
+      chat_id: activeChatId,
+      sender_id: currentProfile.id,
+      sender_username: currentProfile.username,
+      sender_role: currentProfile.role,
+      message: text
+    }]);
+
+    await db.from("support_chats").update({
+      last_message: text,
+      updated_at: new Date().toISOString()
+    }).eq("id", activeChatId);
+  });
+}
+
+if (btnCloseChat) {
+  btnCloseChat.addEventListener("click", () => {
+    activeChatId = null;
+    modalChatRoom.setAttribute("hidden", "");
+    modalChatRoom.style.display = "none";
+    fetchSupportThreads();
+  });
+}
+
+// 8. Organizador inicia chat buscando username
+if (btnOrgNewChat) {
+  btnOrgNewChat.addEventListener("click", () => {
+    if (modalOrgChat) {
+      if (inputSearchChatPlayer) inputSearchChatPlayer.value = "";
+      if (searchChatPlayersResults) searchChatPlayersResults.innerHTML = `<p style="font-size:0.78rem; color:var(--text-muted); text-align:center; padding:1rem;">Ingresa el username del jugador...</p>`;
+      modalOrgChat.removeAttribute("hidden");
+      modalOrgChat.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseOrgChat) {
+  btnCloseOrgChat.addEventListener("click", () => {
+    modalOrgChat.setAttribute("hidden", "");
+    modalOrgChat.style.display = "none";
+  });
+}
+
+if (inputSearchChatPlayer) {
+  inputSearchChatPlayer.addEventListener("input", async (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (q.length < 2) return;
+
+    const { data: users } = await db
+      .from("profiles")
+      .select("id, username, first_name, last_name, avatar_url")
+      .eq("role", "JUGADOR")
+      .ilike("username", `%${q}%`)
+      .limit(6);
+
+    if (!users || users.length === 0) {
+      searchChatPlayersResults.innerHTML = `<p style="font-size:0.78rem; color:var(--text-muted); text-align:center; padding:1rem;">No se encontró al jugador.</p>`;
+      return;
+    }
+
+    searchChatPlayersResults.innerHTML = "";
+    users.forEach((u) => {
+      const row = document.createElement("div");
+      row.className = "player-card-item";
+      row.innerHTML = `
+        <div class="player-meta-wrap">
+          <img class="player-thumb-avatar" src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'}">
+          <div class="player-names-col">
+            <span class="player-name-val">@${u.username}</span>
+            <span class="player-role-tag">${u.first_name || ""} ${u.last_name || ""}</span>
+          </div>
+        </div>
+        <button class="btn-send-invitation" style="background-color: var(--accent);">Conversar</button>
+      `;
+      row.querySelector("button").onclick = async () => {
+        // Crear conversación o abrir existente
+        const { data: existing } = await db
+          .from("support_chats")
+          .select("*")
+          .eq("player_id", u.id)
+          .eq("organizer_id", currentProfile.id)
+          .maybeSingle();
+
+        modalOrgChat.setAttribute("hidden", "");
+        modalOrgChat.style.display = "none";
+
+        if (existing) {
+          openChatRoom(existing.id);
+        } else {
+          const { data: created } = await db.from("support_chats").insert([{
+            player_id: u.id,
+            player_username: u.username,
+            organizer_id: currentProfile.id,
+            organizer_username: currentProfile.username,
+            status: "EN_CURSO",
+            subject: "Aviso de Organizador",
+            last_message: "Chat iniciado por organizador"
+          }]).select().single();
+
+          if (created) openChatRoom(created.id);
+        }
+      };
+      searchChatPlayersResults.appendChild(row);
+    });
+  });
+}
+
+// 9. Conectar eventos en tiempo real al realtimeChannel existente
+if (realtimeChannel) {
+  realtimeChannel
+    .on("postgres_changes", { event: "*", schema: "public", table: "support_chats" }, () => {
+      fetchSupportThreads();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
+      if (activeChatId && payload.new.chat_id === activeChatId) {
+        appendChatBubble(payload.new);
+      } else {
+        fetchSupportThreads();
+      }
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {

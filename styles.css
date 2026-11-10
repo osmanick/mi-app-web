@@ -1522,6 +1522,149 @@ input:checked + .slider-round:before {
   display: none !important;
 }
 
+/* Botón de acceso a Soporte / Iniciar Chat */
+.btn-support-pill {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
+  padding: 0.45rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-support-pill:hover {
+  border-color: var(--accent);
+}
+
+/* Tarjetas de hilos de soporte */
+.support-card-item {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+.support-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.support-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-white);
+}
+.support-card-msg {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.support-btn-action {
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Ventana emergente del chat */
+.chat-room-card {
+  max-width: 420px;
+  height: 82vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem;
+  gap: 0.6rem;
+}
+.chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.5rem 0.2rem;
+}
+
+/* Burbujas de chat */
+.chat-bubble {
+  max-width: 80%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+}
+.chat-bubble.mine {
+  align-self: flex-end;
+  background-color: var(--accent);
+  color: #ffffff;
+  border-bottom-right-radius: 2px;
+}
+.chat-bubble.theirs {
+  align-self: flex-start;
+  background-color: var(--bg-card-subtle);
+  color: var(--text-white);
+  border-bottom-left-radius: 2px;
+}
+.chat-bubble-sender {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+.chat-bubble-time {
+  font-size: 0.6rem;
+  opacity: 0.7;
+  align-self: flex-end;
+  margin-top: 3px;
+}
+
+/* Input inferior de envío */
+.chat-input-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.6rem;
+}
+.chat-input-bar input {
+  flex: 1;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  font-size: 0.85rem;
+  outline: none;
+}
+.btn-send-chat-msg {
+  background-color: var(--accent);
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+
 /* ==========================================================================
    BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */
