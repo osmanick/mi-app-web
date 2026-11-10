@@ -157,6 +157,26 @@ const btnTabEvents = document.getElementById("btn-tab-events");
 const tabAboutContent = document.getElementById("profile-tab-about");
 const tabEventsContent = document.getElementById("profile-tab-events");
 
+// Elementos de Soporte y Chat
+const btnRequestSupport = document.getElementById("btn-request-support");
+const btnOrgNewChat = document.getElementById("btn-org-new-chat");
+const supportThreadsList = document.getElementById("support-threads-list");
+const modalChatRoom = document.getElementById("modal-chat-room");
+const btnCloseChat = document.getElementById("btn-close-chat");
+const chatRoomTitle = document.getElementById("chat-room-title");
+const chatRoleIndicator = document.getElementById("chat-role-indicator");
+const chatMessagesBox = document.getElementById("chat-messages-box");
+const formSendChat = document.getElementById("form-send-chat");
+const inputChatText = document.getElementById("input-chat-text");
+
+const modalOrgChat = document.getElementById("modal-org-chat");
+const btnCloseOrgChat = document.getElementById("btn-close-org-chat");
+const inputSearchChatPlayer = document.getElementById("input-search-chat-player");
+const searchChatPlayersResults = document.getElementById("search-chat-players-results");
+
+let activeChatId = null;
+let currentChatData = null;
+
 // ==========================================
 // 5. NAVEGACIÓN Y AISLAMIENTO DE PANTALLAS
 // ==========================================
@@ -503,6 +523,9 @@ function applyRolePermissions() {
     tabProfileLabel.textContent = isOrganizer ? "Organizador" : "Perfil";
   }
 
+  if (btnRequestSupport) btnRequestSupport.style.display = isOrganizer ? "none" : "flex";
+  if (btnOrgNewChat) btnOrgNewChat.style.display = isOrganizer ? "flex" : "none";
+
   updatePendingBadge();
 }
 
@@ -560,7 +583,6 @@ async function fetchMatches() {
     return;
   }
 
-  // Ordenar de menor timestamp (fecha más cercana hoy) a mayor timestamp (fecha más lejana)
   const sortedData = (data || []).sort((a, b) => {
     return getMatchTimestamp(a) - getMatchTimestamp(b);
   });
@@ -618,7 +640,7 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 9. REALTIME SIN RECARGAR PÁGINA
+// 9. REALTIME TOTAL (RECEIPTS, MATCHES, CHATS, MESSAGES)
 // ==========================================
 const realtimeChannel = db
   .channel("sports-pwa-realtime")
@@ -627,18 +649,12 @@ const realtimeChannel = db
     { event: "*", schema: "public", table: "receipts" },
     async (payload) => {
       await fetchReceipts();
-
       if (viewAdmin && viewAdmin.classList.contains("active")) {
         renderAdminPanel();
       }
-
       if (selectedMatch) {
         renderConfirmedPlayers(selectedMatch.id);
         updateSubscribeButton();
-      }
-
-      if (payload.eventType === "INSERT") {
-        playNotificationSound();
       }
     }
   )
@@ -674,7 +690,6 @@ const realtimeChannel = db
         renderProfileView();
 
         if (payload.new.balance !== saldoAnterior) {
-          playNotificationSound();
           alert(`¡Tu billetera se ha actualizado! Saldo actual: Bs. ${Number(payload.new.balance).toFixed(2)}`);
           if (viewDetail && viewDetail.classList.contains("active")) {
             updateSubscribeButton();
@@ -683,12 +698,37 @@ const realtimeChannel = db
       }
     }
   )
+  // LISTENERS DE SOPORTE DIRECTOS EN EL CANAL ANTES DE SUBSCRIBIR
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "support_chats" },
+    () => {
+      if (typeof fetchSupportThreads === "function") {
+        fetchSupportThreads();
+      }
+    }
+  )
+  .on(
+    "postgres_changes",
+    { event: "INSERT", schema: "public", table: "support_messages" },
+    (payload) => {
+      const newMsg = payload.new;
+      if (!newMsg) return;
+
+      if (activeChatId && Number(activeChatId) === Number(newMsg.chat_id)) {
+        appendChatBubble(newMsg);
+      }
+      if (typeof fetchSupportThreads === "function") {
+        fetchSupportThreads();
+      }
+    }
+  )
   .subscribe((status, err) => {
     if (status === "SUBSCRIBED") {
-      console.log("Conectado con éxito a Supabase Realtime");
+      console.log("Conectado con éxito a Supabase Realtime (Partidos, Recargas, Chat)");
     }
     if (status === "CHANNEL_ERROR") {
-      console.error("Error en la conexión Realtime:", err);
+      console.error("Error en conexión Realtime:", err);
     }
   });
 
@@ -912,7 +952,6 @@ function updateSubscribeButton() {
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
 
-  // ROL ORGANIZADOR: MOSTRAR BOTÓN AÑADIR JUGADOR
   if (isOrganizer) {
     if (btnSub) {
       btnSub.setAttribute("hidden", "");
@@ -929,7 +968,6 @@ function updateSubscribeButton() {
     return;
   }
 
-  // ROL JUGADOR: MOSTRAR BOTÓN DE PAGO CON SALDO
   if (btnAdd) {
     btnAdd.setAttribute("hidden", "");
     btnAdd.style.setProperty("display", "none", "important");
@@ -1142,7 +1180,6 @@ if (inputSearchPlayer) {
   });
 }
 
-// CORREGIDO: Mapeo exacto con las columnas de 'invitations' y validación estricta
 window.sendInvitation = async function (playerId, playerUsername) {
   if (!selectedMatch) return;
 
@@ -1266,16 +1303,13 @@ window.respondInvitation = async function (invitationId, accept) {
     return;
   }
 
-  // 1. Marcar invitación como Aceptada
   await db.from("invitations").update({ status: "Aceptada" }).eq("id", invitationId);
 
-  // 2. Incrementar cupo en matches
   await db
     .from("matches")
     .update({ current_players: match.current_players + 1 })
     .eq("id", match.id);
 
-  // 3. Crear comprobante de cortesía por invitación (monto 0)
   const now = new Date();
   const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -1295,7 +1329,6 @@ window.respondInvitation = async function (invitationId, accept) {
     }
   ]);
 
-  // 4. Registrar en match_registrations si existe en el backend
   await db.from("match_registrations").insert([
     {
       match_id: match.id,
@@ -1303,7 +1336,6 @@ window.respondInvitation = async function (invitationId, accept) {
     }
   ]);
 
-  // 5. Incrementar contador de partidos jugados del perfil
   const nuevoMatchesPlayed = (currentProfile.matches_played || 0) + 1;
   await db
     .from("profiles")
@@ -1802,7 +1834,7 @@ tabMessages.addEventListener("click", () => {
   tabMessages.classList.add("active");
   switchScreen(viewMessages);
   fetchInvitations();
-  fetchSupportThreads(); // <-- Añadir esta llamada
+  fetchSupportThreads();
 });
 
 tabProfile.addEventListener("click", () => {
@@ -1868,40 +1900,10 @@ if (searchInput) {
 // ==========================================
 // MÓDULO DE SOPORTE Y CHAT EN VIVO
 // ==========================================
-let activeChatId = null;
-let currentChatData = null;
-
-const btnRequestSupport = document.getElementById("btn-request-support");
-const btnOrgNewChat = document.getElementById("btn-org-new-chat");
-const supportThreadsList = document.getElementById("support-threads-list");
-const modalChatRoom = document.getElementById("modal-chat-room");
-const btnCloseChat = document.getElementById("btn-close-chat");
-const chatRoomTitle = document.getElementById("chat-room-title");
-const chatRoleIndicator = document.getElementById("chat-role-indicator");
-const chatMessagesBox = document.getElementById("chat-messages-box");
-const formSendChat = document.getElementById("form-send-chat");
-const inputChatText = document.getElementById("input-chat-text");
-
-const modalOrgChat = document.getElementById("modal-org-chat");
-const btnCloseOrgChat = document.getElementById("btn-close-org-chat");
-const inputSearchChatPlayer = document.getElementById("input-search-chat-player");
-const searchChatPlayersResults = document.getElementById("search-chat-players-results");
-
-// 1. Mostrar botones según rol en applyRolePermissions()
-const origApplyRolePermissions = applyRolePermissions;
-applyRolePermissions = function () {
-  if (typeof origApplyRolePermissions === "function") origApplyRolePermissions();
-  const isOrganizer = currentProfile && currentProfile.role === "ORGANIZADOR";
-  if (btnRequestSupport) btnRequestSupport.style.display = isOrganizer ? "none" : "flex";
-  if (btnOrgNewChat) btnOrgNewChat.style.display = isOrganizer ? "flex" : "none";
-};
-
-// 2. Solicitar Soporte (Jugador)
 if (btnRequestSupport) {
   btnRequestSupport.addEventListener("click", async () => {
     if (!currentProfile) return;
 
-    // Verificar si ya tiene un chat activo o pendiente
     const { data: existingChat } = await db
       .from("support_chats")
       .select("*")
@@ -1931,13 +1933,11 @@ if (btnRequestSupport) {
       return;
     }
 
-    alert("¡Solicitud enviada! En cuanto un organizador tome tu consulta podrás chatear en tiempo real.");
     fetchSupportThreads();
     openChatRoom(newChat.id);
   });
 }
 
-// 3. Cargar conversaciones en la pestaña Mensajes
 async function fetchSupportThreads() {
   if (!currentProfile || !supportThreadsList) return;
   const isOrganizer = currentProfile.role === "ORGANIZADOR";
@@ -1945,10 +1945,8 @@ async function fetchSupportThreads() {
   let query = db.from("support_chats").select("*").order("updated_at", { ascending: false });
 
   if (!isOrganizer) {
-    // El jugador solo ve sus chats
     query = query.eq("player_id", currentProfile.id);
   } else {
-    // El organizador ve los chats pendientes o los que él ha tomado/creado
     query = query.or(`status.eq.PENDIENTE,organizer_id.eq.${currentProfile.id}`);
   }
 
@@ -1989,7 +1987,6 @@ async function fetchSupportThreads() {
   });
 }
 
-// 4. Organizador toma el chat
 window.takeSupportChat = async function (chatId) {
   if (!currentProfile) return;
   const { error } = await db
@@ -2007,9 +2004,8 @@ window.takeSupportChat = async function (chatId) {
   }
 };
 
-// 5. Abrir ventana de chat
 window.openChatRoom = async function (chatId) {
-  activeChatId = chatId;
+  activeChatId = Number(chatId);
   const { data: chat } = await db.from("support_chats").select("*").eq("id", chatId).single();
   if (!chat) return;
 
@@ -2027,7 +2023,6 @@ window.openChatRoom = async function (chatId) {
   loadChatMessages(chatId);
 };
 
-// 6. Cargar mensajes
 async function loadChatMessages(chatId) {
   if (!chatMessagesBox) return;
   const { data: messages } = await db
@@ -2045,11 +2040,19 @@ async function loadChatMessages(chatId) {
 
 function appendChatBubble(m) {
   if (!chatMessagesBox) return;
+
+  if (m.id) {
+    const existing = chatMessagesBox.querySelector(`[data-msg-id="${m.id}"]`);
+    if (existing) return;
+  }
+
   const isMine = m.sender_id === currentProfile.id;
   const bubble = document.createElement("div");
   bubble.className = `chat-bubble ${isMine ? "mine" : "theirs"}`;
+  if (m.id) bubble.setAttribute("data-msg-id", m.id);
 
-  const timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const dateObj = m.created_at ? new Date(m.created_at) : new Date();
+  const timeStr = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   bubble.innerHTML = `
     <span class="chat-bubble-sender">${isMine ? "Tú" : "@" + m.sender_username}</span>
@@ -2060,7 +2063,7 @@ function appendChatBubble(m) {
   chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
 }
 
-// 7. Enviar Mensaje
+// Envío de mensaje con actualización inmediata local
 if (formSendChat) {
   formSendChat.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2071,13 +2074,28 @@ if (formSendChat) {
 
     inputChatText.value = "";
 
-    await db.from("support_messages").insert([{
+    // Pintar mensaje saliente de inmediato
+    appendChatBubble({
+      chat_id: activeChatId,
+      sender_id: currentProfile.id,
+      sender_username: currentProfile.username,
+      sender_role: currentProfile.role,
+      message: text,
+      created_at: new Date().toISOString()
+    });
+
+    const { error: msgErr } = await db.from("support_messages").insert([{
       chat_id: activeChatId,
       sender_id: currentProfile.id,
       sender_username: currentProfile.username,
       sender_role: currentProfile.role,
       message: text
     }]);
+
+    if (msgErr) {
+      console.error("Error al enviar mensaje:", msgErr);
+      return;
+    }
 
     await db.from("support_chats").update({
       last_message: text,
@@ -2095,7 +2113,6 @@ if (btnCloseChat) {
   });
 }
 
-// 8. Organizador inicia chat buscando username
 if (btnOrgNewChat) {
   btnOrgNewChat.addEventListener("click", () => {
     if (modalOrgChat) {
@@ -2146,7 +2163,6 @@ if (inputSearchChatPlayer) {
         <button class="btn-send-invitation" style="background-color: var(--accent);">Conversar</button>
       `;
       row.querySelector("button").onclick = async () => {
-        // Crear conversación o abrir existente
         const { data: existing } = await db
           .from("support_chats")
           .select("*")
@@ -2176,21 +2192,6 @@ if (inputSearchChatPlayer) {
       searchChatPlayersResults.appendChild(row);
     });
   });
-}
-
-// 9. Conectar eventos en tiempo real al realtimeChannel existente
-if (realtimeChannel) {
-  realtimeChannel
-    .on("postgres_changes", { event: "*", schema: "public", table: "support_chats" }, () => {
-      fetchSupportThreads();
-    })
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
-      if (activeChatId && payload.new.chat_id === activeChatId) {
-        appendChatBubble(payload.new);
-      } else {
-        fetchSupportThreads();
-      }
-    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
