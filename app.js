@@ -835,6 +835,249 @@ function renderMatches() {
 }
 
 // ==========================================
+// MÓDULO DE CÓDIGOS DE SALDO (ORGANIZADOR Y CANJE)
+// ==========================================
+const btnRechargeToRedeem = document.getElementById("btn-recharge-to-redeem");
+const modalRedeem = document.getElementById("modal-redeem");
+const btnOpenRedeem = document.getElementById("btn-open-redeem");
+const btnCancelRedeem = document.getElementById("btn-cancel-redeem");
+const btnConfirmRedeem = document.getElementById("btn-confirm-redeem");
+const inputPromoCode = document.getElementById("input-promo-code");
+
+const btnOpenCreatePromo = document.getElementById("btn-open-create-promo");
+const modalGeneratePromo = document.getElementById("modal-generate-promo");
+const btnCloseGeneratePromo = document.getElementById("btn-close-generate-promo");
+const formCreatePromo = document.getElementById("form-create-promo");
+const inputPromoAmount = document.getElementById("input-promo-amount");
+const inputCustomPromoCode = document.getElementById("input-custom-promo-code");
+const promoGeneratedResult = document.getElementById("promo-generated-result");
+const displayPromoCode = document.getElementById("display-promo-code");
+const btnCopyPromoCode = document.getElementById("btn-copy-promo-code");
+
+// 1. Abrir modal de canje desde el modal de recarga
+if (btnRechargeToRedeem) {
+  btnRechargeToRedeem.addEventListener("click", () => {
+    closeRechargeModal();
+    if (modalRedeem) {
+      if (inputPromoCode) inputPromoCode.value = "";
+      modalRedeem.removeAttribute("hidden");
+      modalRedeem.style.display = "flex";
+    }
+  });
+}
+
+// Abrir desde el icono del perfil
+if (btnOpenRedeem) {
+  btnOpenRedeem.addEventListener("click", () => {
+    if (modalRedeem) {
+      if (inputPromoCode) inputPromoCode.value = "";
+      modalRedeem.removeAttribute("hidden");
+      modalRedeem.style.display = "flex";
+    }
+  });
+}
+
+if (btnCancelRedeem) {
+  btnCancelRedeem.addEventListener("click", () => {
+    if (modalRedeem) {
+      modalRedeem.setAttribute("hidden", "");
+      modalRedeem.style.display = "none";
+    }
+  });
+}
+
+// 2. Jugador Canjea el Código (1 sola vez)
+if (btnConfirmRedeem) {
+  btnConfirmRedeem.addEventListener("click", async () => {
+    if (!currentProfile) {
+      alert("Debes iniciar sesión para canjear un código.");
+      return;
+    }
+
+    const code = (inputPromoCode.value || "").trim().toUpperCase();
+    if (!code) {
+      alert("Por favor escribe el código a canjear.");
+      return;
+    }
+
+    btnConfirmRedeem.disabled = true;
+    btnConfirmRedeem.textContent = "Validando...";
+
+    try {
+      // Buscar código no canjeado
+      const { data: promo, error: fetchErr } = await db
+        .from("promo_codes")
+        .select("*")
+        .eq("code", code)
+        .maybeSingle();
+
+      if (fetchErr) throw fetchErr;
+
+      if (!promo) {
+        alert("El código ingresado no existe. Verifica e intenta nuevamente.");
+        btnConfirmRedeem.disabled = false;
+        btnConfirmRedeem.textContent = "Canjear";
+        return;
+      }
+
+      if (promo.is_redeemed) {
+        alert("Este código ya fue utilizado anteriormente y no es válido.");
+        btnConfirmRedeem.disabled = false;
+        btnConfirmRedeem.textContent = "Canjear";
+        return;
+      }
+
+      const creditAmount = Number(promo.amount);
+      const balanceActual = Number(currentProfile.balance || 0);
+      const nuevoBalance = balanceActual + creditAmount;
+
+      // 1. Marcar código como canjeado
+      const { error: promoUpdateErr } = await db
+        .from("promo_codes")
+        .update({
+          is_redeemed: true,
+          redeemed_by: currentProfile.id,
+          redeemed_username: currentProfile.username,
+          redeemed_at: new Date().toISOString()
+        })
+        .eq("id", promo.id);
+
+      if (promoUpdateErr) throw promoUpdateErr;
+
+      // 2. Sumar al saldo principal del jugador
+      const { error: profUpdateErr } = await db
+        .from("profiles")
+        .update({ balance: nuevoBalance })
+        .eq("id", currentProfile.id);
+
+      if (profUpdateErr) throw profUpdateErr;
+
+      // 3. Registrar en recibos para el historial
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      await db.from("receipts").insert([{
+        type: "RECARGA",
+        recharge_amount: creditAmount,
+        match_id: null,
+        match_title: `Canje de Código: ${code}`,
+        sport: "Billetera",
+        amount: creditAmount,
+        date: timeStr,
+        status: "Aprobado",
+        receipt_image: "CODIGO_PROMO",
+        user_id: currentProfile.id,
+        username: currentProfile.username,
+        avatar_url: currentProfile.avatar_url
+      }]);
+
+      currentProfile.balance = nuevoBalance;
+      renderProfileView();
+
+      btnConfirmRedeem.disabled = false;
+      btnConfirmRedeem.textContent = "Canjear";
+
+      if (modalRedeem) {
+        modalRedeem.setAttribute("hidden", "");
+        modalRedeem.style.display = "none";
+      }
+
+      alert(`¡Canje exitoso! 🎉\nSe agregaron Bs. ${creditAmount.toFixed(2)} a tu saldo principal.\nNuevo saldo: Bs. ${nuevoBalance.toFixed(2)}`);
+
+    } catch (err) {
+      console.error("Error al canjear código:", err);
+      alert("Hubo un error al procesar el código: " + err.message);
+      btnConfirmRedeem.disabled = false;
+      btnConfirmRedeem.textContent = "Canjear";
+    }
+  });
+}
+
+// 3. Organizador Genera el Código
+if (btnOpenCreatePromo) {
+  btnOpenCreatePromo.addEventListener("click", () => {
+    if (modalGeneratePromo) {
+      if (promoGeneratedResult) promoGeneratedResult.style.display = "none";
+      if (formCreatePromo) formCreatePromo.reset();
+      modalGeneratePromo.removeAttribute("hidden");
+      modalGeneratePromo.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseGeneratePromo) {
+  btnCloseGeneratePromo.addEventListener("click", () => {
+    if (modalGeneratePromo) {
+      modalGeneratePromo.setAttribute("hidden", "");
+      modalGeneratePromo.style.display = "none";
+    }
+  });
+}
+
+if (formCreatePromo) {
+  formCreatePromo.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentProfile || currentProfile.role !== "ORGANIZADOR") {
+      alert("Solo organizadores pueden generar códigos.");
+      return;
+    }
+
+    const amount = parseFloat(inputPromoAmount.value);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Ingresa un monto válido.");
+      return;
+    }
+
+    let code = (inputCustomPromoCode.value || "").trim().toUpperCase();
+    if (!code) {
+      // Generar código aleatorio estilo "FALTA-7X2A"
+      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+      code = `GOL-${randomStr}`;
+    }
+
+    const submitBtn = formCreatePromo.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Generando...";
+
+    const { error } = await db.from("promo_codes").insert([{
+      code: code,
+      amount: amount,
+      is_redeemed: false,
+      created_by: currentProfile.id
+    }]);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Crear Código Único";
+
+    if (error) {
+      if (error.code === "23505") {
+        alert("Ese código ya existe. Escribe uno diferente o déjalo vacío.");
+      } else {
+        alert("Error al crear código: " + error.message);
+      }
+      return;
+    }
+
+    if (displayPromoCode && promoGeneratedResult) {
+      displayPromoCode.textContent = code;
+      promoGeneratedResult.style.display = "flex";
+    }
+  });
+}
+
+if (btnCopyPromoCode) {
+  btnCopyPromoCode.addEventListener("click", () => {
+    const code = displayPromoCode.textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      btnCopyPromoCode.textContent = "¡Copiado!";
+      setTimeout(() => {
+        btnCopyPromoCode.textContent = "Copiar";
+      }, 2000);
+    });
+  });
+}
+
+// ==========================================
 // AÑADIR AMIGO CON DESCUENTO DE SALDO (JUGADOR)
 // ==========================================
 const btnAddFriend = document.getElementById("btn-add-friend");

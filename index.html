@@ -423,6 +423,19 @@
           <button id="btn-clear-receipts" class="btn-clean-data" title="Limpiar datos">Limpiar</button>
         </div>
 
+      <div class="admin-stats-card">
+          <div>
+            <span class="info-label">PENDIENTES POR REVISAR</span>
+            <h3 id="admin-pending-count" class="admin-count">0</h3>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="btn-open-create-promo" class="support-btn-action" style="padding: 0.45rem 0.8rem;">
+              + Generar Código
+            </button>
+            <button id="btn-clear-receipts" class="btn-clean-data" title="Limpiar datos">Limpiar</button>
+          </div>
+        </div>  
+
         <div id="admin-receipts-list" class="receipts-list"></div>
 
         <button id="btn-admin-logout" class="btn-logout-action">
@@ -455,6 +468,46 @@
           <div id="search-players-results" class="players-cards-container" style="max-height: 250px; overflow-y: auto; gap: 0.6rem;">
             <!-- Resultados de búsqueda -->
           </div>
+        </div>
+      </div>
+    </div>
+
+<!-- Modal: Generar Código de Saldo (Exclusivo Organizador) -->
+    <div id="modal-generate-promo" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <span class="qr-tag">ORGANIZADOR</span>
+            <h3>Generar Código de Saldo</h3>
+          </div>
+          <button id="btn-close-generate-promo" class="modal-close-btn">&times;</button>
+        </div>
+
+        <form id="form-create-promo" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div class="form-input-group">
+            <label>Monto a Cargar (Bs.)</label>
+            <input type="number" id="input-promo-amount" min="1" step="0.50" placeholder="Ej. 25" required>
+          </div>
+
+          <div class="form-input-group">
+            <label>Código Personalizado (Opcional, déjalo vacío para generar uno aleatorio)</label>
+            <input type="text" id="input-custom-promo-code" placeholder="Ej. GOL25" style="text-transform: uppercase;">
+          </div>
+
+          <button type="submit" class="btn-primary-action" style="margin-top: 0.4rem;">
+            Crear Código Único
+          </button>
+        </form>
+
+        <!-- Resultado del código generado -->
+        <div id="promo-generated-result" class="info-row" style="display: none; justify-content: space-between; align-items: center; margin-top: 0.5rem; background: var(--bg-card-subtle);">
+          <div>
+            <span class="info-label">CÓDIGO GENERADO</span>
+            <div id="display-promo-code" style="font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: 1px;">-</div>
+          </div>
+          <button type="button" id="btn-copy-promo-code" class="btn-send-invitation" style="padding: 0.4rem 0.75rem;">
+            Copiar
+          </button>
         </div>
       </div>
     </div>
@@ -659,6 +712,14 @@
           <button id="btn-close-recharge-modal" class="modal-close-btn">&times;</button>
         </div>
 
+        <!-- Acceso directo a canje dentro del modal de recarga -->
+          <div style="text-align: center; margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border-color);">
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">¿Tienes un cupón o código de saldo?</p>
+            <button type="button" id="btn-recharge-to-redeem" class="btn-text-action" style="color: var(--accent); font-weight: 700; text-decoration: underline;">
+              🎁 Canjear un código de regalo
+            </button>
+          </div>
+
         <div class="modal-body">
           <p class="modal-desc" id="recharge-alert-msg">Transfiere desde tu banco mediante QR para abonar saldo a tu cuenta.</p>
 
@@ -667,6 +728,7 @@
             <input type="number" id="input-recharge-amount" min="10" step="5" value="50" placeholder="50">
           </div>
 
+          
           <div class="qr-wrapper">
             <img id="recharge-qr-image" 
                  src="https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png" 
