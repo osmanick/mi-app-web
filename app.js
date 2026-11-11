@@ -63,6 +63,7 @@ const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
 const viewMessages = document.getElementById("view-messages");
+const viewRules = document.getElementById("view-rules"); // <-- Nueva vista
 const viewProfile = document.getElementById("view-profile");
 const viewAdmin = document.getElementById("view-admin");
 const bottomBar = document.getElementById("bottom-bar");
@@ -186,6 +187,7 @@ function switchScreen(targetScreen) {
     viewList,
     viewDetail,
     viewMessages,
+    viewRules, // <-- Añadir aquí
     viewProfile,
     viewAdmin
   ];
@@ -2400,6 +2402,12 @@ function clearTabSelection() {
     if (t) t.classList.remove("active");
   });
 }
+
+tabAlerts.addEventListener("click", () => {
+  clearTabSelection();
+  tabAlerts.classList.add("active");
+  switchScreen(viewRules);
+});
 
 tabMatches.addEventListener("click", () => {
   clearTabSelection();

@@ -1517,8 +1517,7 @@ input:checked + .slider-round:before {
   z-index: 25;
 }
 
-#tab-clubs,
-#tab-alerts {
+#tab-clubs {
   display: none !important;
 }
 

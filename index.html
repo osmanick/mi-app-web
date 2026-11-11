@@ -445,6 +445,73 @@
       </div>
     </section>
 
+<!-- ================= VISTA: REGLAS Y COMUNICADOS ================= -->
+    <section id="view-rules" class="view-screen">
+      <header class="top-nav center-title">
+        <h1 class="screen-title">Reglamento y Avisos</h1>
+      </header>
+
+      <div style="padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 1rem;">
+        
+        <!-- Comunicado Destacado -->
+        <div class="invitation-card" style="border-left: 4px solid var(--accent);">
+          <div class="invitation-card-header">
+            <span class="invitation-title" style="color: var(--accent);">📢 COMUNICADO OFICIAL</span>
+            <span class="invitation-badge-tag">IMPORTANTE</span>
+          </div>
+          <p class="invitation-desc">
+            Presentarse en cancha <strong>10 minutos antes</strong> del horario marcado. La tolerancia máxima para iniciar el encuentro es de 5 minutos para no perjudicar los turnos siguientes.
+          </p>
+        </div>
+
+        <!-- Regla 1: Asistencia y Cancelaciones -->
+        <div class="field-item" style="flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div class="field-icon-box" style="color: var(--accent); font-weight: 800;">⏱️</div>
+            <strong style="font-size: 0.95rem; color: var(--text-white);">Puntualidad y Bajas</strong>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; margin: 0;">
+            Si no puedes asistir a un partido en el que estás inscrito, avisa con al menos 2 horas de anticipación a través de la pestaña <strong>Soporte</strong> para reasignar tu cupo.
+          </p>
+        </div>
+
+        <!-- Regla 2: Equipamiento -->
+        <div class="field-item" style="flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div class="field-icon-box" style="color: var(--accent); font-weight: 800;">👟</div>
+            <strong style="font-size: 0.95rem; color: var(--text-white);">Calzado y Vestimenta</strong>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; margin: 0;">
+            Uso obligatorio de calzado adecuado para césped sintético (pupillos o zapatillas turf). Prohibido el ingreso con toperoles de aluminio o calzado inadecuado para cuidar la superficie de la cancha.
+          </p>
+        </div>
+
+        <!-- Regla 3: Fair Play y Convivencia -->
+        <div class="field-item" style="flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div class="field-icon-box" style="color: var(--accent); font-weight: 800;">🤝</div>
+            <strong style="font-size: 0.95rem; color: var(--text-white);">Juego Limpio (Fair Play)</strong>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; margin: 0;">
+            Priorizamos la camaradería y el respeto mutuo. Cualquier conducta antideportiva, agresión verbal o física será motivo de suspensión definitiva de la plataforma.
+          </p>
+        </div>
+
+        <!-- Regla 4: Amigos y Billetera -->
+        <div class="field-item" style="flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div class="field-icon-box" style="color: var(--accent); font-weight: 800;">💳</div>
+            <strong style="font-size: 0.95rem; color: var(--text-white);">Inscripciones y Amigos</strong>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; margin: 0;">
+            Puedes asegurar tu lugar y el de tus acompañantes mediante el botón <strong>+ Amigo</strong> descontando de tu saldo principal. Verifica que tu saldo cubra el monto antes del cierre de cupos.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+
     <!-- ================= MODALES ================= -->
 
     <!-- Modal: Buscar y Añadir Jugador (Organizador) -->
@@ -779,9 +846,12 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>Mensajes</span>
       </button>
-      <button id="tab-alerts" class="nav-tab" hidden style="display: none;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-        <span>Alertas</span>
+      <!-- Tab Reglas (Habilitado) -->
+      <button id="tab-alerts" class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+        </svg>
+        <span>Reglas</span>
       </button>
       <button id="tab-profile" class="nav-tab">
         <div class="nav-icon-wrapper">
