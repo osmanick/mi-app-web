@@ -238,13 +238,18 @@
       </div>
 
       <footer class="bottom-action-bar">
-        <!-- Botón para JUGADOR -->
-        <button id="btn-subscribe" class="btn-primary-action">
-          Inscribirme
-        </button>
+        <!-- Botones para JUGADOR -->
+        <div id="player-action-group" style="display: flex; gap: 0.6rem; width: 100%;">
+          <button id="btn-subscribe" class="btn-primary-action" style="flex: 2;">
+            Inscribirme
+          </button>
+          <button id="btn-add-friend" class="btn-primary-action" style="flex: 1; background-color: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-white);">
+            + Amigo
+          </button>
+        </div>
 
-        <!-- Botón para ORGANIZADOR -->
-        <button id="btn-add-player" class="btn-primary-action" hidden style="display: none;">
+        <!-- Botón exclusivo para ORGANIZADOR -->
+        <button id="btn-add-player" class="btn-primary-action" hidden style="display: none; background-color: var(--accent);">
           + Añadir Jugador
         </button>
       </footer>
@@ -453,6 +458,34 @@
         </div>
       </div>
     </div>
+
+<!-- Modal: Añadir Amigo (Jugador con descuento de saldo) -->
+    <div id="modal-add-friend" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <span class="qr-tag">PAGO CON SALDO</span>
+            <h3>Añadir Amigo</h3>
+          </div>
+          <button id="btn-close-friend-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc" id="friend-modal-desc">
+            Busca a tu amigo por su username. La inscripción se cobrará de tu saldo disponible.
+          </p>
+
+          <div class="search-input-wrapper" style="margin: 0.8rem 0;">
+            <input type="text" id="input-search-friend" placeholder="Ej. carlos_10" autocomplete="off">
+          </div>
+
+          <div id="search-friends-results" class="players-cards-container" style="max-height: 250px; overflow-y: auto; gap: 0.6rem;">
+            <!-- Resultados dinámicos -->
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- Modal: Cambiar Foto o Avatar de Perfil -->
     <div id="modal-edit-avatar" class="modal-overlay" hidden>

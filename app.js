@@ -835,6 +835,218 @@ function renderMatches() {
 }
 
 // ==========================================
+// AÑADIR AMIGO CON DESCUENTO DE SALDO (JUGADOR)
+// ==========================================
+const btnAddFriend = document.getElementById("btn-add-friend");
+const modalAddFriend = document.getElementById("modal-add-friend");
+const btnCloseFriendModal = document.getElementById("btn-close-friend-modal");
+const inputSearchFriend = document.getElementById("input-search-friend");
+const searchFriendsResults = document.getElementById("search-friends-results");
+const friendModalDesc = document.getElementById("friend-modal-desc");
+
+if (btnAddFriend) {
+  btnAddFriend.addEventListener("click", () => {
+    if (!selectedMatch) return;
+    if (!currentProfile) {
+      alert("Por favor inicia sesión para inscribir a un amigo.");
+      switchScreen(viewRegister);
+      return;
+    }
+
+    if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
+      alert("Este partido ya no tiene cupos disponibles.");
+      return;
+    }
+
+    if (friendModalDesc) {
+      friendModalDesc.innerHTML = `Busca a tu amigo por su username. Se debitarán <strong>Bs. ${selectedMatch.price.toFixed(2)}</strong> de tu saldo (Tu saldo: Bs. ${Number(currentProfile.balance || 0).toFixed(2)}).`;
+    }
+
+    if (inputSearchFriend) inputSearchFriend.value = "";
+    if (searchFriendsResults) {
+      searchFriendsResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">Escribe el username del jugador...</p>`;
+    }
+
+    if (modalAddFriend) {
+      modalAddFriend.removeAttribute("hidden");
+      modalAddFriend.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseFriendModal) {
+  btnCloseFriendModal.addEventListener("click", () => {
+    if (modalAddFriend) {
+      modalAddFriend.setAttribute("hidden", "");
+      modalAddFriend.style.display = "none";
+    }
+  });
+}
+
+if (inputSearchFriend) {
+  inputSearchFriend.addEventListener("input", async (e) => {
+    const query = e.target.value.trim().toLowerCase();
+    if (query.length < 2) {
+      searchFriendsResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">Ingresa al menos 2 caracteres...</p>`;
+      return;
+    }
+
+    const { data: users, error } = await db
+      .from("profiles")
+      .select("id, username, first_name, last_name, avatar_url")
+      .ilike("username", `%${query}%`)
+      .limit(8);
+
+    if (error || !users || users.length === 0) {
+      searchFriendsResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">No se encontraron jugadores.</p>`;
+      return;
+    }
+
+    // Filtrar a uno mismo y a los que ya están anotados en este partido
+    const enrolledUserIds = receipts
+      .filter((r) => r.matchId === selectedMatch.id && r.status === "Aprobado")
+      .map((r) => r.userId);
+
+    const availableUsers = users.filter((u) => u.id !== currentProfile.id && !enrolledUserIds.includes(u.id));
+
+    if (availableUsers.length === 0) {
+      searchFriendsResults.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem;">El jugador ya está inscrito en este partido.</p>`;
+      return;
+    }
+
+    searchFriendsResults.innerHTML = "";
+    availableUsers.forEach((user) => {
+      const card = document.createElement("div");
+      card.className = "player-card-item";
+      card.innerHTML = `
+        <div class="player-meta-wrap">
+          <img class="player-thumb-avatar" src="${user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'}" alt="${user.username}">
+          <div class="player-names-col">
+            <span class="player-name-val">@${user.username}</span>
+            <span class="player-role-tag">${user.first_name || ""} ${user.last_name || ""}</span>
+          </div>
+        </div>
+        <button class="btn-send-invitation" style="background-color: var(--accent);">Pagar e Inscribir</button>
+      `;
+
+      card.querySelector("button").onclick = () => {
+        registerFriendWithBalance(user);
+      };
+
+      searchFriendsResults.appendChild(card);
+    });
+  });
+}
+
+// Procesar cobro e inscripción del amigo
+async function registerFriendWithBalance(friendUser) {
+  if (!selectedMatch || !currentProfile) return;
+
+  if (selectedMatch.currentPlayers >= selectedMatch.maxPlayers) {
+    alert("Lo sentimos, este partido ya no tiene cupos disponibles.");
+    return;
+  }
+
+  const price = Number(selectedMatch.price);
+  const balance = Number(currentProfile.balance || 0);
+
+  if (balance < price) {
+    const falta = (price - balance).toFixed(2);
+    if (modalAddFriend) {
+      modalAddFriend.setAttribute("hidden", "");
+      modalAddFriend.style.display = "none";
+    }
+    openRechargeModal(
+      `Saldo insuficiente para inscribir a tu amigo (Te faltan Bs. ${falta}). Recarga aquí:`,
+      Math.ceil(price - balance)
+    );
+    return;
+  }
+
+  const confirmPay = confirm(
+    `¿Deseas pagar Bs. ${price.toFixed(2)} con tu saldo para inscribir a @${friendUser.username} en "${selectedMatch.title}"?\n\nTu saldo restante será: Bs. ${(balance - price).toFixed(2)}`
+  );
+  if (!confirmPay) return;
+
+  try {
+    const nuevoSaldo = balance - price;
+
+    // 1. Descontar saldo del jugador patrocinador
+    const { error: balErr } = await db
+      .from("profiles")
+      .update({ balance: nuevoSaldo })
+      .eq("id", currentProfile.id);
+
+    if (balErr) throw balErr;
+
+    // 2. Incrementar cupo en matches
+    const { error: matchErr } = await db
+      .from("matches")
+      .update({ current_players: selectedMatch.currentPlayers + 1 })
+      .eq("id", selectedMatch.id);
+
+    if (matchErr) throw matchErr;
+
+    // 3. Crear comprobante a nombre del amigo
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    await db.from("receipts").insert([{
+      type: "PARTIDO",
+      match_id: selectedMatch.id,
+      match_title: selectedMatch.title,
+      sport: selectedMatch.sport,
+      amount: price,
+      date: timeStr,
+      status: "Aprobado",
+      user_id: friendUser.id,
+      username: friendUser.username,
+      avatar_url: friendUser.avatar_url,
+      receipt_image: `PAGADO_POR_@${currentProfile.username}`
+    }]);
+
+    // 4. Registro en match_registrations
+    await db.from("match_registrations").insert([{
+      match_id: selectedMatch.id,
+      user_id: friendUser.id
+    }]);
+
+    // 5. Incrementar contador de partidos jugados del amigo
+    const { data: friendProf } = await db
+      .from("profiles")
+      .select("matches_played")
+      .eq("id", friendUser.id)
+      .maybeSingle();
+
+    const friendMatches = (friendProf?.matches_played || 0) + 1;
+    await db
+      .from("profiles")
+      .update({ matches_played: friendMatches })
+      .eq("id", friendUser.id);
+
+    // Actualizar estados locales
+    currentProfile.balance = nuevoSaldo;
+    selectedMatch.currentPlayers += 1;
+
+    if (modalAddFriend) {
+      modalAddFriend.setAttribute("hidden", "");
+      modalAddFriend.style.display = "none";
+    }
+
+    renderProfileView();
+    renderMatches();
+    renderConfirmedPlayers(selectedMatch.id);
+    updateSubscribeButton();
+
+    alert(`¡Inscripción exitosa!\nHas anotado a @${friendUser.username}. Se debitaron Bs. ${price.toFixed(2)} de tu billetera.\nTu nuevo saldo: Bs. ${nuevoSaldo.toFixed(2)}`);
+
+  } catch (err) {
+    console.error("Error al inscribir amigo:", err);
+    alert("Hubo un problema al procesar la inscripción: " + err.message);
+  }
+}
+
+// ==========================================
 // 11. DETALLE DEL PARTIDO & ACCIONES
 // ==========================================
 function showDetail(id) {
@@ -947,17 +1159,16 @@ function updateSubscribeButton() {
   if (!selectedMatch) return;
 
   const btnSub = document.getElementById("btn-subscribe");
+  const btnAddFriend = document.getElementById("btn-add-friend");
+  const playerActionGroup = document.getElementById("player-action-group");
   const btnAdd = document.getElementById("btn-add-player");
 
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
 
+  // ROL ORGANIZADOR: Mostrar únicamente "+ Añadir Jugador"
   if (isOrganizer) {
-    if (btnSub) {
-      btnSub.setAttribute("hidden", "");
-      btnSub.style.setProperty("display", "none", "important");
-    }
-
+    if (playerActionGroup) playerActionGroup.style.display = "none";
     if (btnAdd) {
       btnAdd.removeAttribute("hidden");
       btnAdd.style.setProperty("display", "block", "important");
@@ -968,18 +1179,25 @@ function updateSubscribeButton() {
     return;
   }
 
+  // ROL JUGADOR: Mostrar grupo de inscripción y amigo
   if (btnAdd) {
     btnAdd.setAttribute("hidden", "");
     btnAdd.style.setProperty("display", "none", "important");
   }
 
+  if (playerActionGroup) playerActionGroup.style.display = "flex";
+
+  const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
+  const userBalance = Number(currentProfile?.balance || 0);
+
+  // Botón "+ Amigo": disponible siempre que haya cupos libres
+  if (btnAddFriend) {
+    btnAddFriend.disabled = isFull;
+    btnAddFriend.title = `Inscribir amigo (Bs. ${selectedMatch.price.toFixed(2)})`;
+    btnAddFriend.innerHTML = `+ Amigo <span style="font-size:0.75rem; opacity:0.85;">(Bs. ${selectedMatch.price.toFixed(0)})</span>`;
+  }
+
   if (btnSub) {
-    btnSub.removeAttribute("hidden");
-    btnSub.style.setProperty("display", "block", "important");
-
-    const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
-    const userBalance = Number(currentProfile?.balance || 0);
-
     const alreadySubscribed = receipts.some(
       (r) => r.matchId === selectedMatch.id && r.userId === currentProfile?.id && r.status === "Aprobado"
     );
@@ -988,15 +1206,12 @@ function updateSubscribeButton() {
       btnSub.textContent = "✓ Ya estás Inscrito";
       btnSub.style.backgroundColor = "var(--success)";
       btnSub.disabled = true;
-      return;
-    }
-
-    if (isFull) {
+    } else if (isFull) {
       btnSub.textContent = "Cupos Agotados";
       btnSub.style.backgroundColor = "#43454d";
       btnSub.disabled = true;
     } else {
-      btnSub.innerHTML = `Pagar con Saldo · Bs. ${selectedMatch.price.toFixed(2)} <span style="font-size:0.75rem; opacity:0.8;">(Tu saldo: Bs. ${userBalance.toFixed(2)})</span>`;
+      btnSub.innerHTML = `Inscribirme · Bs. ${selectedMatch.price.toFixed(2)}`;
       btnSub.style.backgroundColor = "var(--accent)";
       btnSub.disabled = false;
     }
