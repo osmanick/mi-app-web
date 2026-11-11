@@ -1664,7 +1664,40 @@ input:checked + .slider-round:before {
   flex-shrink: 0;
 }
 
+/* Selector de avatares predeterminados */
+.avatar-grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+  width: 100%;
+}
 
+.avatar-preset-btn {
+  background: var(--bg-card-subtle);
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  padding: 3px;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+  overflow: hidden;
+}
+
+.avatar-preset-btn:hover,
+.avatar-preset-btn:active {
+  transform: scale(1.08);
+  border-color: var(--accent);
+}
+
+.avatar-preset-btn img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
 /* ==========================================================================
    BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */

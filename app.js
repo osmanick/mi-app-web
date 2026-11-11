@@ -1648,6 +1648,9 @@ function renderConfirmedPlayers(matchId) {
 // ==========================================
 // 18. PERFIL DEL JUGADOR
 // ==========================================
+
+
+
 function renderProfileView() {
   if (!currentProfile) return;
 
@@ -1725,6 +1728,124 @@ function renderMyActiveMatches() {
     `;
     container.appendChild(card);
   });
+}
+
+// ==========================================
+// CAMBIO Y REDIMENSIÓN DE AVATAR (LIVIANO)
+// ==========================================
+const btnChangeAvatar = document.getElementById("btn-change-avatar");
+const modalEditAvatar = document.getElementById("modal-edit-avatar");
+const btnCloseAvatarModal = document.getElementById("btn-close-avatar-modal");
+const inputAvatarFile = document.getElementById("input-avatar-file");
+const avatarPresetsGrid = document.getElementById("avatar-presets-grid");
+
+// Lista de avatares deportivos listos (vectoriales / ligeros)
+const PRESET_AVATARS = [
+  "https://api.dicebear.com/7.x/bottts/svg?seed=striker&backgroundColor=1c1d22",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=captain&backgroundColor=1c1d22",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=goalie&backgroundColor=1c1d22",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=champion&backgroundColor=1c1d22",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80",
+  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
+];
+
+// Generar selector de avatares
+function renderAvatarPresets() {
+  if (!avatarPresetsGrid) return;
+  avatarPresetsGrid.innerHTML = "";
+
+  PRESET_AVATARS.forEach((url) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "avatar-preset-btn";
+    btn.innerHTML = `<img src="${url}" alt="Avatar">`;
+    btn.onclick = () => saveUserAvatar(url);
+    avatarPresetsGrid.appendChild(btn);
+  });
+}
+
+// Abrir y cerrar modal
+if (btnChangeAvatar) {
+  btnChangeAvatar.addEventListener("click", () => {
+    renderAvatarPresets();
+    if (modalEditAvatar) {
+      modalEditAvatar.removeAttribute("hidden");
+      modalEditAvatar.style.display = "flex";
+    }
+  });
+}
+
+if (btnCloseAvatarModal) {
+  btnCloseAvatarModal.addEventListener("click", () => {
+    if (modalEditAvatar) {
+      modalEditAvatar.setAttribute("hidden", "");
+      modalEditAvatar.style.display = "none";
+    }
+  });
+}
+
+// Redimensionar cualquier foto subida a 150x150 px (~6KB de peso)
+if (inputAvatarFile) {
+  inputAvatarFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Dimensiones fijas ultra livianas
+        const TARGET_SIZE = 150;
+        canvas.width = TARGET_SIZE;
+        canvas.height = TARGET_SIZE;
+
+        // Recorte cuadrado centrado
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, TARGET_SIZE, TARGET_SIZE);
+
+        // Convertir a JPEG comprimido de ~6KB
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.82);
+        saveUserAvatar(compressedBase64);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Guardar en Supabase y refrescar la interfaz
+async function saveUserAvatar(newAvatarUrl) {
+  if (!currentProfile) return;
+
+  const prevAvatar = currentProfile.avatar_url;
+  currentProfile.avatar_url = newAvatarUrl;
+
+  const profileImg = document.getElementById("profile-avatar-img");
+  if (profileImg) profileImg.src = newAvatarUrl;
+
+  if (modalEditAvatar) {
+    modalEditAvatar.setAttribute("hidden", "");
+    modalEditAvatar.style.display = "none";
+  }
+
+  const { error } = await db
+    .from("profiles")
+    .update({ avatar_url: newAvatarUrl })
+    .eq("id", currentProfile.id);
+
+  if (error) {
+    alert("Error al actualizar avatar: " + error.message);
+    currentProfile.avatar_url = prevAvatar;
+    if (profileImg) profileImg.src = prevAvatar;
+  }
 }
 
 // ==========================================
