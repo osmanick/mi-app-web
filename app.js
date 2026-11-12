@@ -64,6 +64,7 @@ const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
 const viewMessages = document.getElementById("view-messages");
 const viewRules = document.getElementById("view-rules"); // <-- Nueva vista
+const viewRanking = document.getElementById("view-ranking"); // <-- Nueva vista
 const viewProfile = document.getElementById("view-profile");
 const viewAdmin = document.getElementById("view-admin");
 const bottomBar = document.getElementById("bottom-bar");
@@ -188,6 +189,7 @@ function switchScreen(targetScreen) {
     viewDetail,
     viewMessages,
     viewRules, // <-- Añadir aquí
+    viewRanking,
     viewProfile,
     viewAdmin
   ];
@@ -272,6 +274,90 @@ async function checkUserSession() {
     switchScreen(viewList);
   }
 }
+
+// ==========================================
+// MÓDULO DE RANKING (TOP 5 PARTIDOS Y GOLES)
+// ==========================================
+let currentRankingTab = "matches"; // 'matches' o 'goals'
+
+const btnRankingMatches = document.getElementById("btn-ranking-matches");
+const btnRankingGoals = document.getElementById("btn-ranking-goals");
+const rankingListContainer = document.getElementById("ranking-list-container");
+
+async function fetchAndRenderRanking() {
+  if (!rankingListContainer) return;
+  rankingListContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:2rem;">Cargando posiciones...</p>`;
+
+  const orderColumn = currentRankingTab === "matches" ? "matches_played" : "goals";
+
+  const { data: topPlayers, error } = await db
+    .from("profiles")
+    .select("id, username, first_name, last_name, avatar_url, matches_played, goals")
+    .order(orderColumn, { ascending: false })
+    .limit(5);
+
+  if (error || !topPlayers || topPlayers.length === 0) {
+    rankingListContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:2rem;">Aún no hay suficientes registros para el ranking.</p>`;
+    return;
+  }
+
+  rankingListContainer.innerHTML = "";
+
+  topPlayers.forEach((player, index) => {
+    const position = index + 1;
+    let medalClass = "rank-other";
+    let medalText = `#${position}`;
+
+    if (position === 1) { medalClass = "rank-1"; medalText = "🥇"; }
+    else if (position === 2) { medalClass = "rank-2"; medalText = "🥈"; }
+    else if (position === 3) { medalClass = "rank-3"; medalText = "🥉"; }
+
+    const statValue = currentRankingTab === "matches" 
+      ? `${player.matches_played || 0} pj` 
+      : `${player.goals || 0} goles`;
+
+    const card = document.createElement("div");
+    card.className = "ranking-card-item";
+    card.innerHTML = `
+      <div class="ranking-left-wrap">
+        <div class="ranking-medal-box ${medalClass}">${medalText}</div>
+        <img class="player-thumb-avatar" src="${player.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'}" alt="${player.username}">
+        <div class="player-names-col">
+          <span class="player-name-val">@${player.username}</span>
+          <span class="player-role-tag">${player.first_name || ""} ${player.last_name || ""}</span>
+        </div>
+      </div>
+      <div class="ranking-value-tag">${statValue}</div>
+    `;
+
+    rankingListContainer.appendChild(card);
+  });
+}
+
+// Alternar entre Partidos Jugados y Goleadores
+if (btnRankingMatches && btnRankingGoals) {
+  btnRankingMatches.addEventListener("click", () => {
+    currentRankingTab = "matches";
+    btnRankingGoals.classList.remove("active");
+    btnRankingMatches.classList.add("active");
+    fetchAndRenderRanking();
+  });
+
+  btnRankingGoals.addEventListener("click", () => {
+    currentRankingTab = "goals";
+    btnRankingMatches.classList.remove("active");
+    btnRankingGoals.classList.add("active");
+    fetchAndRenderRanking();
+  });
+}
+
+// Evento al presionar la pestaña Ranking en el menú inferior
+tabClubs.addEventListener("click", () => {
+  clearTabSelection();
+  tabClubs.classList.add("active");
+  switchScreen(viewRanking);
+  fetchAndRenderRanking();
+});
 
 // ==========================================
 // CONTROL DE CAMBIO DE CONTRASEÑA (JUGADOR)

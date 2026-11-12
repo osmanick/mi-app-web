@@ -1518,7 +1518,6 @@ input:checked + .slider-round:before {
 }
 
 #tab-clubs {
-  display: none !important;
 }
 
 /* Botón de acceso a Soporte / Iniciar Chat */
@@ -1538,6 +1537,51 @@ input:checked + .slider-round:before {
 .btn-support-pill:hover {
   border-color: var(--accent);
 }
+/* Tarjetas de ranking deportivo */
+.ranking-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  transition: transform 0.15s ease;
+}
+
+.ranking-left-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.ranking-medal-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Colores de podio */
+.rank-1 { background: #ffd700; color: #121316; } /* Oro */
+.rank-2 { background: #c0c0c0; color: #121316; } /* Plata */
+.rank-3 { background: #cd7f32; color: #ffffff; } /* Bronce */
+.rank-other { background: var(--bg-card-subtle); color: var(--text-muted); }
+
+.ranking-value-tag {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(229, 37, 42, 0.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
 
 /* Tarjetas de hilos de soporte */
 .support-card-item {
