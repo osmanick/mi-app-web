@@ -824,6 +824,20 @@ const realtimeChannel = db
       }
     }
   )
+
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "match_announcements" },
+    () => {
+      if (typeof fetchMatchAnnouncements === "function") {
+        fetchMatchAnnouncements();
+      }
+      if (selectedMatch && typeof renderMatchAnnouncementsAdmin === "function") {
+        renderMatchAnnouncementsAdmin(selectedMatch.id);
+      }
+    }
+  )
+
   .subscribe((status, err) => {
     if (status === "SUBSCRIBED") {
       console.log("Conectado con éxito a Supabase Realtime");
@@ -1400,6 +1414,14 @@ function showDetail(id) {
     });
 
   // Mostrar barra de asistencia/goles solo al organizador
+const announcementBox = document.getElementById("organizer-announcement-box");
+  if (announcementBox) {
+    announcementBox.style.display = isOrganizer ? "flex" : "none";
+    if (isOrganizer) {
+      renderMatchAnnouncementsAdmin(selectedMatch.id);
+    }
+  }
+
   const statsBar = document.getElementById("organizer-match-stats-bar");
   if (statsBar) {
     statsBar.style.display = isOrganizer ? "flex" : "none";
@@ -2690,6 +2712,7 @@ tabMessages.addEventListener("click", () => {
   switchScreen(viewMessages);
   fetchInvitations();
   fetchSupportThreads();
+  fetchMatchAnnouncements();
 });
 
 tabProfile.addEventListener("click", () => {
@@ -2749,6 +2772,167 @@ if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     currentSearchQuery = e.target.value.trim();
     renderMatches();
+  });
+}
+
+// ==========================================
+// MÓDULO DE COMUNICADOS OFICIALES POR PARTIDO
+// ==========================================
+const inputMatchAnnouncement = document.getElementById("input-match-announcement");
+const btnSendAnnouncement = document.getElementById("btn-send-announcement");
+const matchAnnouncementsAdminList = document.getElementById("match-announcements-admin-list");
+const announcementsContainer = document.getElementById("announcements-container");
+
+// 1. Organizador envía comunicado a todos los inscritos del partido
+if (btnSendAnnouncement) {
+  btnSendAnnouncement.addEventListener("click", async () => {
+    if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") return;
+
+    const text = (inputMatchAnnouncement?.value || "").trim();
+    if (!text) {
+      alert("Escribe el mensaje del comunicado antes de enviar.");
+      return;
+    }
+
+    btnSendAnnouncement.disabled = true;
+    btnSendAnnouncement.textContent = "Enviando...";
+
+    const { error } = await db.from("match_announcements").insert([{
+      match_id: selectedMatch.id,
+      match_title: selectedMatch.title,
+      organizer_username: currentProfile.username,
+      message: text
+    }]);
+
+    btnSendAnnouncement.disabled = false;
+    btnSendAnnouncement.textContent = "Enviar";
+
+    if (error) {
+      alert("Error al publicar comunicado: " + error.message);
+      return;
+    }
+
+    if (inputMatchAnnouncement) inputMatchAnnouncement.value = "";
+    renderMatchAnnouncementsAdmin(selectedMatch.id);
+    fetchMatchAnnouncements();
+    alert("¡Comunicado enviado! Todos los jugadores inscritos en este partido lo verán en su pestaña Mensajes.");
+  });
+}
+
+// 2. Renderizar comunicados activos dentro del partido (con botón eliminar para el organizador)
+async function renderMatchAnnouncementsAdmin(matchId) {
+  if (!matchAnnouncementsAdminList) return;
+
+  const { data: list, error } = await db
+    .from("match_announcements")
+    .select("*")
+    .eq("match_id", matchId)
+    .order("id", { ascending: false });
+
+  if (error || !list || list.length === 0) {
+    matchAnnouncementsAdminList.innerHTML = "";
+    return;
+  }
+
+  matchAnnouncementsAdminList.innerHTML = "";
+  list.forEach((ann) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex; justify-content:space-between; align-items:center; gap:0.5rem; background:#ffffff; border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.75rem;";
+
+    row.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-white); line-height:1.35;">
+        <strong style="color:var(--accent);">📢 Aviso:</strong> ${ann.message}
+      </div>
+      <button type="button" onclick="deleteMatchAnnouncement(${ann.id}, ${matchId})" title="Eliminar comunicado" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; padding:0.25rem 0.5rem; font-size:0.72rem; font-weight:700; cursor:pointer; flex-shrink:0;">
+        🗑️ Eliminar
+      </button>
+    `;
+    matchAnnouncementsAdminList.appendChild(row);
+  });
+}
+
+// 3. Eliminar comunicado (desde el partido o desde Mensajes)
+window.deleteMatchAnnouncement = async function (announcementId, matchId = null) {
+  if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
+
+  const seguro = confirm("¿Deseas eliminar este comunicado? Dejará de mostrarse a los participantes.");
+  if (!seguro) return;
+
+  const { error } = await db
+    .from("match_announcements")
+    .delete()
+    .eq("id", announcementId);
+
+  if (error) {
+    alert("Error al eliminar comunicado: " + error.message);
+    return;
+  }
+
+  if (matchId) renderMatchAnnouncementsAdmin(matchId);
+  if (selectedMatch) renderMatchAnnouncementsAdmin(selectedMatch.id);
+  fetchMatchAnnouncements();
+};
+
+// 4. Cargar y mostrar comunicados en la pestaña Mensajes
+async function fetchMatchAnnouncements() {
+  if (!currentProfile || !announcementsContainer) return;
+
+  const isOrganizer = currentProfile.role === "ORGANIZADOR";
+
+  const { data: allAnnouncements, error } = await db
+    .from("match_announcements")
+    .select("*")
+    .order("id", { ascending: false });
+
+  if (error || !allAnnouncements) return;
+
+  let visibleAnnouncements = [];
+
+  if (isOrganizer) {
+    // El organizador visualiza todos los comunicados publicados
+    visibleAnnouncements = allAnnouncements;
+  } else {
+    // El jugador visualiza únicamente los comunicados de partidos en los que está inscrito
+    const myMatchIds = receipts
+      .filter((r) => r.userId === currentProfile.id && r.status === "Aprobado" && r.type === "PARTIDO")
+      .map((r) => Number(r.matchId));
+
+    visibleAnnouncements = allAnnouncements.filter((ann) => myMatchIds.includes(Number(ann.match_id)));
+  }
+
+  announcementsContainer.innerHTML = "";
+
+  if (visibleAnnouncements.length === 0) {
+    announcementsContainer.innerHTML = `<p style="font-size:0.78rem; color:var(--text-muted);">No hay comunicados recientes de tus partidos.</p>`;
+    return;
+  }
+
+  visibleAnnouncements.forEach((ann) => {
+    const dateObj = ann.created_at ? new Date(ann.created_at) : new Date();
+    const timeStr = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const card = document.createElement("div");
+    card.className = "invitation-card";
+    card.style.borderLeft = "4px solid var(--accent)";
+
+    const deleteBtnHtml = isOrganizer
+      ? `<button type="button" onclick="deleteMatchAnnouncement(${ann.id}, ${ann.match_id})" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.72rem; font-weight:700; cursor:pointer;">🗑️ Eliminar</button>`
+      : "";
+
+    card.innerHTML = `
+      <div class="invitation-card-header">
+        <span class="invitation-title" style="color: var(--accent);">📢 ${ann.match_title}</span>
+        <div style="display:flex; align-items:center; gap:0.45rem;">
+          <span class="invitation-badge-tag">COMUNICADO · ${timeStr}</span>
+          ${deleteBtnHtml}
+        </div>
+      </div>
+      <p class="invitation-desc" style="color: var(--text-white); font-weight: 500;">
+        ${ann.message}
+      </p>
+      <span style="font-size: 0.72rem; color: var(--text-muted);">Enviado por Org. <strong>@${ann.organizer_username}</strong></span>
+    `;
+    announcementsContainer.appendChild(card);
   });
 }
 

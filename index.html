@@ -255,6 +255,24 @@
           </div>
         </div>
 
+        <!-- Bloque de Comunicados del Partido (Exclusivo Organizador) -->
+        <div id="organizer-announcement-box" class="organizer-switch-card" style="display: none; flex-direction: column; align-items: stretch; gap: 0.7rem;">
+          <div>
+            <span class="switch-title">📢 Enviar Comunicado a Participantes</span>
+            <span class="switch-desc" style="display:block;">Notifica cambios de horario, clima o cancelaciones a todos los inscritos</span>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="input-match-announcement" placeholder="Ej. El partido se retrasa 15 min..." style="flex: 1; background: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.85rem; color: var(--text-white); outline: none;">
+            <button type="button" id="btn-send-announcement" class="support-btn-action" style="padding: 0.65rem 1rem;">
+              Enviar
+            </button>
+          </div>
+
+          <!-- Lista de comunicados activos de este partido con botón de eliminar -->
+          <div id="match-announcements-admin-list" style="display: flex; flex-direction: column; gap: 0.45rem;"></div>
+        </div>
+
 
         <div class="players-section-header">
           <h3 class="section-subtitle">Jugadores</h3>
@@ -302,6 +320,13 @@
         <span class="group-section-title">CONVERSACIONES DE SOPORTE</span>
         <div id="support-threads-list" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
       </div>
+
+<!-- Subsección de Comunicados de Partidos -->
+      <div id="announcements-section-wrapper" style="padding: 0.8rem 1.2rem 0; display: flex; flex-direction: column; gap: 0.6rem;">
+        <span class="group-section-title">📢 COMUNICADOS DE PARTIDOS</span>
+        <div id="announcements-container" style="display: flex; flex-direction: column; gap: 0.65rem;"></div>
+      </div>
+
       
       <!-- Contenedor de invitaciones a partidos -->
       <div style="padding: 0.8rem 1.2rem 0.2rem;">
