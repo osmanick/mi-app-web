@@ -241,7 +241,7 @@ async function checkUserSession() {
 
   fetchVenues();
   fetchMatches();
-  fetchReceipts();
+  await fetchReceipts();
 
   if (!activeUserId) {
     if (bottomBar) bottomBar.style.display = "none";
@@ -252,7 +252,7 @@ async function checkUserSession() {
   if (bottomBar) bottomBar.style.display = "flex";
 
   try {
-    let { data: user, error } = await db
+    let { data: user } = await db
       .from("profiles")
       .select("*")
       .or(`id.eq.${activeUserId},username.eq.${activeUserId}`)
@@ -264,6 +264,8 @@ async function checkUserSession() {
       applyRolePermissions();
       renderProfileView();
       fetchInvitations();
+      fetchSupportThreads();
+      fetchMatchAnnouncements();
 
       if (currentProfile.role === "ORGANIZADOR") {
         renderAdminPanel();
@@ -500,8 +502,10 @@ if (formLoginUser) {
     fetchInvitations();
     switchScreen(viewList);
     fetchMatches();
-    fetchReceipts();
+    await fetchReceipts();
     fetchVenues();
+    fetchSupportThreads();
+    fetchMatchAnnouncements();
 
     formLoginUser.reset();
   });
@@ -569,8 +573,10 @@ if (formRegisterUser) {
     fetchInvitations();
     switchScreen(viewList);
     fetchMatches();
-    fetchReceipts();
+    await fetchReceipts();
     fetchVenues();
+    fetchSupportThreads();
+    fetchMatchAnnouncements();
 
     alert(`¡Bienvenido ${firstName}! Tu billetera ha sido activada.`);
   });
@@ -750,6 +756,9 @@ const realtimeChannel = db
         renderConfirmedPlayers(selectedMatch.id);
         updateSubscribeButton();
       }
+      if (typeof fetchMatchAnnouncements === "function") {
+        fetchMatchAnnouncements();
+      }
     }
   )
   .on(
@@ -824,7 +833,6 @@ const realtimeChannel = db
       }
     }
   )
-
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "match_announcements" },
@@ -837,7 +845,6 @@ const realtimeChannel = db
       }
     }
   )
-
   .subscribe((status, err) => {
     if (status === "SUBSCRIBED") {
       console.log("Conectado con éxito a Supabase Realtime");
@@ -1413,8 +1420,8 @@ function showDetail(id) {
       }
     });
 
-  // Mostrar barra de asistencia/goles solo al organizador
-const announcementBox = document.getElementById("organizer-announcement-box");
+  // Mostrar caja de comunicados y barra de asistencia/goles solo al organizador
+  const announcementBox = document.getElementById("organizer-announcement-box");
   if (announcementBox) {
     announcementBox.style.display = isOrganizer ? "flex" : "none";
     if (isOrganizer) {
@@ -2988,7 +2995,6 @@ async function fetchSupportThreads() {
   if (!isOrganizer) {
     query = query.eq("player_id", currentProfile.id);
   } else {
-    // Todos los organizadores ven las solicitudes pendientes y las sesiones activas para poder unirse
     query = query.in("status", ["PENDIENTE", "EN_CURSO"]);
   }
 
@@ -3050,7 +3056,6 @@ window.joinSupportChat = async function (chatId) {
   const { data: chat } = await db.from("support_chats").select("*").eq("id", chatId).single();
   if (!chat) return;
 
-  // Registrar el organizador actual en la lista de participantes
   const currentList = (chat.organizer_username || "")
     .split(",")
     .map((s) => s.trim())
@@ -3084,7 +3089,6 @@ window.deleteSupportChat = async function (chatId) {
   const seguro = confirm("¿Dar por terminada la sesión de soporte y eliminar este chat permanentemente?");
   if (!seguro) return;
 
-  // Borrar mensajes asociados y luego la cabecera del chat
   await db.from("support_messages").delete().eq("chat_id", chatId);
   const { error } = await db.from("support_chats").delete().eq("id", chatId);
 
@@ -3137,7 +3141,6 @@ window.openChatRoom = async function (chatId) {
     ? "SOLICITUD PENDIENTE"
     : `SOPORTE EN CURSO${chat.organizer_username ? " · @" + chat.organizer_username : ""}`;
 
-  // Mostrar botón de eliminar chat solo al organizador
   if (btnDeleteChat) {
     btnDeleteChat.style.display = isOrganizer ? "inline-flex" : "none";
   }
@@ -3225,7 +3228,6 @@ if (formSendChat) {
       return;
     }
 
-    // Si un organizador adicional responde, asegurar que su @username quede registrado en el hilo
     const updateFields = {
       last_message: `@${currentProfile.username}: ${text}`,
       updated_at: new Date().toISOString()
