@@ -267,6 +267,11 @@ async function checkUserSession() {
       fetchSupportThreads();
       fetchMatchAnnouncements();
 
+      updatePushBellIcons();
+      if ("Notification" in window && Notification.permission === "default") {
+        requestPushPermission(false);
+      }
+
       if (currentProfile.role === "ORGANIZADOR") {
         renderAdminPanel();
       }
@@ -507,6 +512,11 @@ if (formLoginUser) {
     fetchSupportThreads();
     fetchMatchAnnouncements();
 
+    updatePushBellIcons();
+    if ("Notification" in window && Notification.permission === "default") {
+      requestPushPermission(false);
+    }
+
     formLoginUser.reset();
   });
 }
@@ -577,6 +587,11 @@ if (formRegisterUser) {
     fetchVenues();
     fetchSupportThreads();
     fetchMatchAnnouncements();
+
+    updatePushBellIcons();
+    if ("Notification" in window && Notification.permission === "default") {
+      requestPushPermission(false);
+    }
 
     alert(`¡Bienvenido ${firstName}! Tu billetera ha sido activada.`);
   });
@@ -740,14 +755,46 @@ async function fetchReceipts() {
 }
 
 // ==========================================
-// 9. REALTIME TOTAL (RECEIPTS, MATCHES, CHATS, MESSAGES)
+// 9. REALTIME TOTAL + NOTIFICACIONES PUSH
 // ==========================================
 const realtimeChannel = db
   .channel("sports-pwa-realtime")
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "receipts" },
-    async () => {
+    async (payload) => {
+      const rec = payload.new;
+
+      if (rec && currentProfile) {
+        // A) El organizador aprobó una recarga de este jugador -> Push al jugador
+        if (
+          payload.eventType === "UPDATE" &&
+          rec.type === "RECARGA" &&
+          rec.status === "Aprobado" &&
+          rec.user_id === currentProfile.id
+        ) {
+          sendLocalPushNotification(
+            "💰 ¡Recarga de Saldo Aprobada!",
+            `Se acreditaron Bs. ${Number(rec.amount).toFixed(2)} a tu billetera principal.`,
+            `recharge-approved-${rec.id}`
+          );
+        }
+
+        // B) Un jugador envió comprobante de recarga -> Push al organizador
+        if (
+          payload.eventType === "INSERT" &&
+          rec.type === "RECARGA" &&
+          rec.status === "Pendiente" &&
+          currentProfile.role === "ORGANIZADOR"
+        ) {
+          sendLocalPushNotification(
+            "🧾 Nueva Solicitud de Recarga",
+            `@${rec.username} envió un comprobante por Bs. ${Number(rec.amount).toFixed(2)}.`,
+            `recharge-pending-${rec.id}`
+          );
+        }
+      }
+
       await fetchReceipts();
       if (viewAdmin && viewAdmin.classList.contains("active")) {
         renderAdminPanel();
@@ -779,7 +826,20 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "invitations" },
-    () => {
+    (payload) => {
+      const inv = payload.new;
+      if (
+        payload.eventType === "INSERT" &&
+        inv &&
+        currentProfile &&
+        (inv.player_id === currentProfile.id || inv.to_username === currentProfile.username)
+      ) {
+        sendLocalPushNotification(
+          "⚽ Nueva Invitación a Partido",
+          `@${inv.from_username || "Organizador"} te invitó a jugar en ${inv.match_title}.`,
+          `inv-${inv.id}`
+        );
+      }
       fetchInvitations();
     }
   )
@@ -793,7 +853,6 @@ const realtimeChannel = db
         renderProfileView();
 
         if (payload.new.balance !== saldoAnterior) {
-          alert(`¡Tu billetera se ha actualizado! Saldo actual: Bs. ${Number(payload.new.balance).toFixed(2)}`);
           if (viewDetail && viewDetail.classList.contains("active")) {
             updateSubscribeButton();
           }
@@ -821,9 +880,29 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "INSERT", schema: "public", table: "support_messages" },
-    (payload) => {
+    async (payload) => {
       const newMsg = payload.new;
       if (!newMsg) return;
+
+      if (currentProfile && newMsg.sender_id !== currentProfile.id) {
+        const { data: chat } = await db
+          .from("support_chats")
+          .select("player_id, player_username")
+          .eq("id", newMsg.chat_id)
+          .maybeSingle();
+
+        const isMyThread =
+          currentProfile.role === "ORGANIZADOR" ||
+          (chat && chat.player_id === currentProfile.id);
+
+        if (isMyThread) {
+          sendLocalPushNotification(
+            `💬 Mensaje de @${newMsg.sender_username}`,
+            newMsg.message,
+            `chat-msg-${newMsg.chat_id}`
+          );
+        }
+      }
 
       if (activeChatId && Number(activeChatId) === Number(newMsg.chat_id)) {
         appendChatBubble(newMsg);
@@ -836,7 +915,29 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "match_announcements" },
-    () => {
+    (payload) => {
+      const ann = payload.new;
+      if (
+        payload.eventType === "INSERT" &&
+        ann &&
+        currentProfile &&
+        currentProfile.role !== "ORGANIZADOR"
+      ) {
+        const isEnrolled = receipts.some(
+          (r) =>
+            Number(r.matchId) === Number(ann.match_id) &&
+            r.userId === currentProfile.id &&
+            r.status === "Aprobado"
+        );
+        if (isEnrolled) {
+          sendLocalPushNotification(
+            `📢 Comunicado: ${ann.match_title}`,
+            ann.message,
+            `ann-${ann.id}`
+          );
+        }
+      }
+
       if (typeof fetchMatchAnnouncements === "function") {
         fetchMatchAnnouncements();
       }
@@ -847,7 +948,7 @@ const realtimeChannel = db
   )
   .subscribe((status, err) => {
     if (status === "SUBSCRIBED") {
-      console.log("Conectado con éxito a Supabase Realtime");
+      console.log("Conectado con éxito a Supabase Realtime + Push");
     }
     if (status === "CHANNEL_ERROR") {
       console.error("Error en conexión Realtime:", err);
@@ -2790,7 +2891,6 @@ const btnSendAnnouncement = document.getElementById("btn-send-announcement");
 const matchAnnouncementsAdminList = document.getElementById("match-announcements-admin-list");
 const announcementsContainer = document.getElementById("announcements-container");
 
-// 1. Organizador envía comunicado a todos los inscritos del partido
 if (btnSendAnnouncement) {
   btnSendAnnouncement.addEventListener("click", async () => {
     if (!selectedMatch || !currentProfile || currentProfile.role !== "ORGANIZADOR") return;
@@ -2826,7 +2926,6 @@ if (btnSendAnnouncement) {
   });
 }
 
-// 2. Renderizar comunicados activos dentro del partido (con botón eliminar para el organizador)
 async function renderMatchAnnouncementsAdmin(matchId) {
   if (!matchAnnouncementsAdminList) return;
 
@@ -2858,7 +2957,6 @@ async function renderMatchAnnouncementsAdmin(matchId) {
   });
 }
 
-// 3. Eliminar comunicado (desde el partido o desde Mensajes)
 window.deleteMatchAnnouncement = async function (announcementId, matchId = null) {
   if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
 
@@ -2880,7 +2978,6 @@ window.deleteMatchAnnouncement = async function (announcementId, matchId = null)
   fetchMatchAnnouncements();
 };
 
-// 4. Cargar y mostrar comunicados en la pestaña Mensajes
 async function fetchMatchAnnouncements() {
   if (!currentProfile || !announcementsContainer) return;
 
@@ -2896,10 +2993,8 @@ async function fetchMatchAnnouncements() {
   let visibleAnnouncements = [];
 
   if (isOrganizer) {
-    // El organizador visualiza todos los comunicados publicados
     visibleAnnouncements = allAnnouncements;
   } else {
-    // El jugador visualiza únicamente los comunicados de partidos en los que está inscrito
     const myMatchIds = receipts
       .filter((r) => r.userId === currentProfile.id && r.status === "Aprobado" && r.type === "PARTIDO")
       .map((r) => Number(r.matchId));
@@ -2942,6 +3037,86 @@ async function fetchMatchAnnouncements() {
     announcementsContainer.appendChild(card);
   });
 }
+
+// ==========================================
+// MÓDULO DE NOTIFICACIONES PUSH (PWA NATIVE)
+// ==========================================
+async function requestPushPermission(showFeedback = true) {
+  if (!("Notification" in window)) {
+    if (showFeedback) alert("Tu navegador no soporta notificaciones push.");
+    return false;
+  }
+
+  if (Notification.permission === "granted") {
+    updatePushBellIcons();
+    if (showFeedback) alert("✅ Las notificaciones push ya están activadas en este dispositivo.");
+    return true;
+  }
+
+  if (Notification.permission === "denied") {
+    if (showFeedback) alert("Has bloqueado las notificaciones. Actívalas desde los ajustes de tu navegador.");
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+  updatePushBellIcons();
+
+  if (permission === "granted") {
+    if (showFeedback) {
+      sendLocalPushNotification(
+        "¡Notificaciones Activadas! ⚽",
+        "Recibirás avisos de mensajes, comunicados y recargas de saldo al instante.",
+        "push-welcome"
+      );
+    }
+    return true;
+  }
+  return false;
+}
+
+function updatePushBellIcons() {
+  const isGranted = "Notification" in window && Notification.permission === "granted";
+  ["btn-enable-push", "btn-enable-push-admin"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.textContent = isGranted ? "🔔" : "🔕";
+      btn.title = isGranted ? "Notificaciones activas" : "Toca para activar notificaciones";
+    }
+  });
+}
+
+async function sendLocalPushNotification(title, body, tag = "falta-uno-alert") {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  const options = {
+    body: body,
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    vibrate: [200, 100, 200],
+    tag: tag,
+    renotify: true,
+    data: { url: "./" }
+  };
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, options);
+        return;
+      }
+    }
+    new Notification(title, options);
+  } catch (err) {
+    console.warn("No se pudo mostrar la notificación push:", err);
+  }
+}
+
+const btnEnablePush = document.getElementById("btn-enable-push");
+const btnEnablePushAdmin = document.getElementById("btn-enable-push-admin");
+
+if (btnEnablePush) btnEnablePush.addEventListener("click", () => requestPushPermission(true));
+if (btnEnablePushAdmin) btnEnablePushAdmin.addEventListener("click", () => requestPushPermission(true));
 
 // ==========================================
 // MÓDULO DE SOPORTE Y CHAT EN VIVO (MULTI-ORGANIZADOR)
@@ -3049,7 +3224,6 @@ async function fetchSupportThreads() {
   });
 }
 
-// Permite que uno o varios organizadores se unan a la sala de soporte
 window.joinSupportChat = async function (chatId) {
   if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
 
@@ -3082,7 +3256,6 @@ window.joinSupportChat = async function (chatId) {
   }
 };
 
-// Eliminar chat y sus mensajes cuando termina la sesión de soporte
 window.deleteSupportChat = async function (chatId) {
   if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
 
