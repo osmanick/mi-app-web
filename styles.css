@@ -56,7 +56,7 @@ html, body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.14);
 }
 
 @media (max-width: 440px) {
@@ -95,6 +95,7 @@ html, body {
   width: 100%;
 }
 
+/* Contenedor y diseño del logo de bienvenida */
 .auth-logo-wrapper {
   display: flex;
   justify-content: center;
@@ -103,6 +104,7 @@ html, body {
   width: 100%;
 }
 
+/* Botón de instalación en la pantalla de bienvenida */
 .btn-install-auth {
   display: flex;
   align-items: center;
@@ -138,7 +140,7 @@ html, body {
   height: 82px;
   object-fit: contain;
   border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .auth-tabs-container {
@@ -177,6 +179,7 @@ html, body {
   width: 100%;
 }
 
+/* Ocultar formulario por defecto y mostrar solo el activo */
 .auth-form {
   display: none !important;
   flex-direction: column;
@@ -219,7 +222,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-white);
 }
@@ -246,7 +249,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.75rem 1.2rem 0.6rem;
   position: sticky;
   top: 51px;
   background-color: var(--bg-app);
@@ -259,8 +262,8 @@ html, body {
   align-items: center;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0.6rem 0.9rem;
+  border-radius: 22px;
+  padding: 0.6rem 1rem;
   position: relative;
   min-width: 0;
 }
@@ -280,8 +283,8 @@ html, body {
 
 .chips-container {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.4rem 1.2rem 0.75rem;
+  gap: 0.55rem;
+  padding: 0.4rem 1.2rem 0.85rem;
   overflow-x: auto;
   position: sticky;
   top: 104px;
@@ -313,16 +316,16 @@ html, body {
    LISTA DE PARTIDOS Y TARJETAS
    ========================================================================== */
 .matches-content {
-  padding: 0.8rem 1.2rem 2rem;
+  padding: 0.9rem 1.2rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
 }
 
 .date-section-title {
-  font-size: 0.88rem;
-  color: #111111;
-  margin-bottom: 0.6rem;
+  font-size: 0.92rem;
+  color: var(--text-white);
+  margin-bottom: 0.65rem;
   font-weight: 700;
 }
 
@@ -340,7 +343,7 @@ html, body {
   display: flex;
   gap: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   transition: transform 0.15s ease, border-color 0.2s;
 }
 
@@ -393,7 +396,7 @@ html, body {
 }
 
 .match-title {
-  font-size: 0.96rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: var(--text-white);
   line-height: 1.2;
@@ -402,10 +405,9 @@ html, body {
 .match-location, .match-sport, .match-time {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.76rem;
-  color: #33363f;
-  font-weight: 500;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #33353b;
   margin-top: 3px;
 }
 
@@ -413,7 +415,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 0.5rem;
+  margin-top: 0.55rem;
 }
 
 .match-price {
@@ -443,9 +445,9 @@ html, body {
 }
 
 .quota-text {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #111111;
+  color: #33353b;
 }
 
 /* ==========================================================================
@@ -456,7 +458,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
   position: absolute;
   top: 0;
   left: 0;
@@ -486,7 +488,7 @@ html, body {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.94);
   color: #111111;
   border: 1px solid var(--border-color);
   backdrop-filter: blur(8px);
@@ -571,7 +573,7 @@ html, body {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: #ffffff;
   transition: 0.3s;
   border-radius: 50%;
 }
@@ -598,7 +600,7 @@ input:checked + .slider-round:before {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background-color: rgba(255, 90, 0, 0.12);
+  background-color: rgba(255, 90, 0, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -707,7 +709,7 @@ input:checked + .slider-round:before {
 
 #btn-add-player {
   background-color: var(--accent);
-  color: #ffffff !important;
+  color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
   padding: 0.9rem;
@@ -719,7 +721,7 @@ input:checked + .slider-round:before {
 
 .btn-primary-action {
   background-color: var(--accent);
-  color: #ffffff !important;
+  color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
   padding: 0.9rem;
@@ -756,6 +758,7 @@ input:checked + .slider-round:before {
   gap: 0.85rem;
 }
 
+/* Estado vacío perfectamente centrado */
 .empty-state-container {
   display: flex;
   flex-direction: column;
@@ -775,7 +778,7 @@ input:checked + .slider-round:before {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -797,6 +800,7 @@ input:checked + .slider-round:before {
   margin: 0;
 }
 
+/* Tarjetas de invitación */
 .invitation-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -805,7 +809,7 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .invitation-card-header {
@@ -824,7 +828,7 @@ input:checked + .slider-round:before {
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--accent);
-  background: rgba(255, 90, 0, 0.12);
+  background: rgba(255, 90, 0, 0.14);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -856,7 +860,7 @@ input:checked + .slider-round:before {
 }
 
 .btn-inv-reject {
-  background-color: var(--bg-card-subtle);
+  background-color: #ffffff;
   color: var(--danger);
   border: 1px solid var(--danger);
   border-radius: var(--radius-sm);
@@ -873,7 +877,7 @@ input:checked + .slider-round:before {
 
 .btn-send-invitation {
   background-color: var(--accent);
-  color: #ffffff !important;
+  color: #ffffff;
   border: none;
   border-radius: 6px;
   padding: 0.45rem 0.85rem;
@@ -900,7 +904,7 @@ input:checked + .slider-round:before {
   display: flex;
   align-items: center;
   gap: 1.1rem;
-  padding: 0.8rem 1.2rem 1.2rem;
+  padding: 0.9rem 1.2rem 1.2rem;
 }
 
 .profile-avatar-wrapper {
@@ -1089,7 +1093,7 @@ input:checked + .slider-round:before {
   font-size: 0.65rem;
   font-weight: 800;
   color: var(--success);
-  background: rgba(22, 163, 74, 0.12);
+  background: rgba(22, 163, 74, 0.14);
   padding: 2px 6px;
   border-radius: 5px;
   width: fit-content;
@@ -1150,8 +1154,12 @@ input:checked + .slider-round:before {
   margin-top: 1px;
 }
 
+.btn-full-orange {
+  margin-top: 0.5rem;
+}
+
 .btn-logout-action {
-  background: none;
+  background: #ffffff;
   border: 1px solid var(--border-color);
   color: var(--danger);
   border-radius: var(--radius-md);
@@ -1195,7 +1203,7 @@ input:checked + .slider-round:before {
 }
 
 .btn-clean-data {
-  background-color: var(--bg-card-subtle);
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   border-radius: 6px;
@@ -1238,9 +1246,9 @@ input:checked + .slider-round:before {
   border-radius: 5px;
 }
 
-.status-pending { background: rgba(255, 149, 0, 0.15); color: #d97706; }
-.status-approved { background: rgba(22, 163, 74, 0.15); color: var(--success); }
-.status-rejected { background: rgba(220, 38, 38, 0.15); color: var(--danger); }
+.status-pending { background: rgba(255, 149, 0, 0.16); color: #d97706; }
+.status-approved { background: rgba(22, 163, 74, 0.16); color: var(--success); }
+.status-rejected { background: rgba(220, 38, 38, 0.16); color: var(--danger); }
 
 .receipt-body-layout {
   display: flex;
@@ -1287,7 +1295,7 @@ input:checked + .slider-round:before {
 }
 
 .btn-reject {
-  background-color: transparent;
+  background-color: #ffffff;
   color: var(--danger);
   border: 1px solid var(--danger);
   padding: 0.55rem;
@@ -1298,7 +1306,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   MODALES Y FORMULARIOS
+   MODALES Y FORMULARIOS (CONTROL DE ANCHO ESTRICTO)
    ========================================================================== */
 .modal-overlay {
   position: absolute;
@@ -1306,8 +1314,8 @@ input:checked + .slider-round:before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background-color: rgba(17, 17, 17, 0.65);
+  backdrop-filter: blur(5px);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -1319,7 +1327,7 @@ input:checked + .slider-round:before {
   display: none !important;
 }
 
-.modal-card, .redeem-card {
+.modal-card {
   background-color: var(--bg-app);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -1330,7 +1338,7 @@ input:checked + .slider-round:before {
   flex-direction: column;
   gap: 0.9rem;
   box-sizing: border-box;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 }
 
 .modal-header {
@@ -1372,6 +1380,7 @@ input:checked + .slider-round:before {
   gap: 0.35rem;
   min-width: 0;
   width: 100%;
+  text-align: left;
 }
 
 .form-input-group label {
@@ -1405,12 +1414,132 @@ input:checked + .slider-round:before {
   min-width: 0;
 }
 
+/* ==========================================================================
+   ESTILOS MEJORADOS: MODAL CANJEAR CÓDIGO (Y CAMBIAR CONTRASEÑA)
+   ========================================================================== */
+.redeem-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 22px;
+  padding: 1.6rem 1.4rem 1.4rem;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.25);
+}
+
+.redeem-icon-badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background-color: rgba(255, 90, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+
+.modal-title-clean {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0;
+}
+
+.modal-subtitle-clean {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0 0 0.4rem 0;
+  max-width: 280px;
+}
+
+.redeem-input-wrap {
+  width: 100%;
+  margin: 0.2rem 0 0.5rem 0;
+}
+
+.redeem-input-wrap input {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111111;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.redeem-input-wrap input::placeholder {
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #9ca3af;
+}
+
+.redeem-input-wrap input:focus {
+  border-color: var(--accent);
+  background-color: #ffffff;
+}
+
+.redeem-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 0.65rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.btn-redeem-cancel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: #33353b;
+  border-radius: 12px;
+  padding: 0.85rem 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn-redeem-cancel:active {
+  transform: scale(0.97);
+}
+
+.btn-redeem-confirm {
+  background-color: var(--accent);
+  border: none;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 0.85rem 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 90, 0, 0.3);
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn-redeem-confirm:active {
+  transform: scale(0.97);
+}
+
 /* Contenedor y dimensiones QR */
 .qr-wrapper {
   background-color: #ffffff;
   padding: 12px;
-  border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1495,7 +1624,7 @@ input:checked + .slider-round:before {
   padding: 0.4rem;
 }
 
-/* Botón flotante FAB Organizador en NEGRO SÓLIDO como en la imagen */
+/* Botón flotante FAB Organizador en Negro Sólido */
 .fab-organizer {
   position: absolute;
   bottom: 80px;
@@ -1504,8 +1633,8 @@ input:checked + .slider-round:before {
   color: #ffffff;
   border: none;
   border-radius: 30px;
-  padding: 0.8rem 1.3rem;
-  font-size: 0.9rem;
+  padding: 0.8rem 1.25rem;
+  font-size: 0.88rem;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -1609,7 +1738,7 @@ input:checked + .slider-round:before {
 }
 .support-btn-action {
   background-color: var(--accent);
-  color: #ffffff !important;
+  color: #ffffff;
   border: none;
   padding: 0.45rem 0.85rem;
   border-radius: 6px;
@@ -1711,7 +1840,7 @@ input:checked + .slider-round:before {
 }
 
 .avatar-preset-btn {
-  background: var(--bg-card-subtle);
+  background: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: 50%;
   padding: 3px;
@@ -1738,7 +1867,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   BARRA DE NAVEGACIÓN INFERIOR (BLANCA CON LÍNEA NARANJA SUPERIOR)
+   BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */
 .bottom-nav-tabs {
   position: absolute;
