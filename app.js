@@ -55,6 +55,7 @@ let currentSportFilter = "Todos";
 let currentSearchQuery = "";
 let selectedMatch = null;
 let currentRechargeBase64 = null;
+let viewedPlayerProfile = null;
 
 // ==========================================
 // 4. REFERENCIAS DOM
@@ -62,6 +63,7 @@ let currentRechargeBase64 = null;
 const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
+const viewPlayerPublic = document.getElementById("view-player-public");
 const viewMessages = document.getElementById("view-messages");
 const viewRules = document.getElementById("view-rules");
 const viewRanking = document.getElementById("view-ranking");
@@ -187,6 +189,7 @@ function switchScreen(targetScreen) {
     viewRegister,
     viewList,
     viewDetail,
+    viewPlayerPublic,
     viewMessages,
     viewRules,
     viewRanking,
@@ -543,6 +546,7 @@ if (formRegisterUser) {
       password: password,
       role: "JUGADOR",
       matches_played: 0,
+      goals: 0,
       balance: 0.00,
       promo_balance: 0.00,
       plan: "FREE",
@@ -715,7 +719,9 @@ async function fetchReceipts() {
     receiptImage: r.receipt_image,
     userId: r.user_id,
     username: r.username || "Jugador",
-    avatarUrl: r.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
+    avatarUrl: r.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80",
+    attended: Boolean(r.attended),
+    goalsScored: Number(r.goals_scored || 0)
   }));
 
   updatePendingBadge();
@@ -735,7 +741,7 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "receipts" },
-    async (payload) => {
+    async () => {
       await fetchReceipts();
       if (viewAdmin && viewAdmin.classList.contains("active")) {
         renderAdminPanel();
@@ -1326,18 +1332,6 @@ async function registerFriendWithBalance(friendUser) {
       user_id: friendUser.id
     }]);
 
-    const { data: friendProf } = await db
-      .from("profiles")
-      .select("matches_played")
-      .eq("id", friendUser.id)
-      .maybeSingle();
-
-    const friendMatches = (friendProf?.matches_played || 0) + 1;
-    await db
-      .from("profiles")
-      .update({ matches_played: friendMatches })
-      .eq("id", friendUser.id);
-
     currentProfile.balance = nuevoSaldo;
     selectedMatch.currentPlayers += 1;
 
@@ -1378,6 +1372,30 @@ function showDetail(id) {
 
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
+
+  // Cargar información del Organizador del partido
+  const orgNameEl = document.getElementById("detail-org-name");
+  const orgAvatarEl = document.getElementById("detail-org-avatar");
+  if (orgNameEl) orgNameEl.textContent = selectedMatch.organizer || "Organizador";
+
+  db.from("profiles")
+    .select("username, first_name, last_name, avatar_url")
+    .eq("username", selectedMatch.organizer)
+    .maybeSingle()
+    .then(({ data: orgProf }) => {
+      if (orgProf && orgNameEl) {
+        orgNameEl.textContent = `${orgProf.first_name || ""} ${orgProf.last_name || ""}`.trim() || orgProf.username;
+      }
+      if (orgProf && orgProf.avatar_url && orgAvatarEl) {
+        orgAvatarEl.src = orgProf.avatar_url;
+      }
+    });
+
+  // Mostrar barra de asistencia/goles solo al organizador
+  const statsBar = document.getElementById("organizer-match-stats-bar");
+  if (statsBar) {
+    statsBar.style.display = isOrganizer ? "flex" : "none";
+  }
 
   if (organizerConfirmBox && toggleMatchConfirmed) {
     if (isOrganizer) {
@@ -1860,14 +1878,6 @@ window.respondInvitation = async function (invitationId, accept) {
     }
   ]);
 
-  const nuevoMatchesPlayed = (currentProfile.matches_played || 0) + 1;
-  await db
-    .from("profiles")
-    .update({ matches_played: nuevoMatchesPlayed })
-    .eq("id", currentProfile.id);
-
-  currentProfile.matches_played = nuevoMatchesPlayed;
-
   alert(`¡Te has unido con éxito al partido en ${match.title}! Ya estás en la lista sin costo alguno.`);
   await fetchInvitations();
   await fetchMatches();
@@ -2132,7 +2142,7 @@ if (btnClearReceipts) {
 }
 
 // ==========================================
-// 17. DETALLE DE JUGADORES CONFIRMADOS
+// 17. DETALLE DE JUGADORES, CHECKLIST Y GOLES
 // ==========================================
 function renderConfirmedPlayers(matchId) {
   if (!detailPlayersList || !selectedMatch) return;
@@ -2152,20 +2162,217 @@ function renderConfirmedPlayers(matchId) {
     return;
   }
 
+  const isOrganizer = (currentProfile?.role || "").toUpperCase().trim() === "ORGANIZADOR";
+
   approvedUsers.forEach((player) => {
     const card = document.createElement("div");
     card.className = "player-card-item";
-    card.innerHTML = `
-      <div class="player-meta-wrap">
-        <img class="player-thumb-avatar" src="${player.avatarUrl}" alt="${player.username}">
-        <div class="player-names-col">
-          <span class="player-name-val">${player.username}</span>
-          <span class="player-role-tag">Jugador</span>
+    card.style.cursor = isOrganizer ? "pointer" : "default";
+
+    if (isOrganizer) {
+      card.innerHTML = `
+        <div class="player-meta-wrap" onclick="openPlayerPublicProfile('${player.userId}')" style="flex:1;">
+          <img class="player-thumb-avatar" src="${player.avatarUrl}" alt="${player.username}">
+          <div class="player-names-col">
+            <span class="player-name-val">${player.username}</span>
+            <span class="player-role-tag">Jugador · Toca para ficha</span>
+          </div>
         </div>
-      </div>
-      <span class="player-chevron">›</span>
-    `;
+        <div class="org-player-controls" onclick="event.stopPropagation()">
+          <label class="attendance-check-label" title="Asistencia al partido">
+            <input type="checkbox" class="chk-player-attended" data-receipt-id="${player.id}" data-user-id="${player.userId}" ${player.attended ? "checked" : ""}>
+            <span>Asistió</span>
+          </label>
+          <div class="goals-counter-box" title="Goles anotados">
+            <button type="button" class="btn-goal-step" onclick="stepPlayerGoal(${player.id}, -1)">-</button>
+            <span class="goal-count-num" id="goal-val-${player.id}">${player.goalsScored || 0}</span>
+            <button type="button" class="btn-goal-step" onclick="stepPlayerGoal(${player.id}, 1)">+</button>
+            <span style="font-size:0.75rem;">⚽</span>
+          </div>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="player-meta-wrap">
+          <img class="player-thumb-avatar" src="${player.avatarUrl}" alt="${player.username}">
+          <div class="player-names-col">
+            <span class="player-name-val">${player.username}</span>
+            <span class="player-role-tag">Jugador</span>
+          </div>
+        </div>
+        <span style="color: var(--accent); font-size: 1.2rem; font-weight: 700;">›</span>
+      `;
+    }
+
     detailPlayersList.appendChild(card);
+  });
+}
+
+// Sumar o restar goles localmente antes de guardar
+window.stepPlayerGoal = function (receiptId, delta) {
+  const rec = receipts.find((r) => r.id === receiptId);
+  if (!rec) return;
+  const currentGoals = Number(rec.goalsScored || 0);
+  const nextGoals = Math.max(0, currentGoals + delta);
+  rec.goalsScored = nextGoals;
+
+  const span = document.getElementById(`goal-val-${receiptId}`);
+  if (span) span.textContent = nextGoals;
+};
+
+// Guardar asistencia y goles en Supabase y actualizar el Ranking
+const btnSaveMatchStats = document.getElementById("btn-save-match-stats");
+if (btnSaveMatchStats) {
+  btnSaveMatchStats.addEventListener("click", async () => {
+    if (!selectedMatch || currentProfile?.role !== "ORGANIZADOR") return;
+
+    btnSaveMatchStats.disabled = true;
+    btnSaveMatchStats.textContent = "Guardando...";
+
+    try {
+      const checkboxes = document.querySelectorAll(".chk-player-attended");
+
+      for (const chk of checkboxes) {
+        const receiptId = Number(chk.getAttribute("data-receipt-id"));
+        const userId = chk.getAttribute("data-user-id");
+        const isChecked = chk.checked;
+        const rec = receipts.find((r) => r.id === receiptId);
+        if (!rec) continue;
+
+        const newGoals = Number(rec.goalsScored || 0);
+
+        await db
+          .from("receipts")
+          .update({ attended: isChecked, goals_scored: newGoals })
+          .eq("id", receiptId);
+
+        const { data: userReceipts } = await db
+          .from("receipts")
+          .select("attended, goals_scored")
+          .eq("user_id", userId)
+          .eq("type", "PARTIDO")
+          .eq("status", "Aprobado");
+
+        const totalPlayed = (userReceipts || []).filter((r) => r.attended).length;
+        const totalGoals = (userReceipts || []).reduce((acc, r) => acc + Number(r.goals_scored || 0), 0);
+
+        await db
+          .from("profiles")
+          .update({ matches_played: totalPlayed, goals: totalGoals })
+          .eq("id", userId);
+      }
+
+      await fetchReceipts();
+      alert("¡Asistencia y goles guardados con éxito! El Ranking Top 5 ha sido actualizado.");
+    } catch (err) {
+      console.error("Error guardando stats:", err);
+      alert("Error al guardar estadísticas: " + err.message);
+    } finally {
+      btnSaveMatchStats.disabled = false;
+      btnSaveMatchStats.textContent = "💾 Guardar Stats";
+    }
+  });
+}
+
+// ==========================================
+// PERFIL RESUMIDO DEL JUGADOR Y CHAT DIRECTO
+// ==========================================
+window.openPlayerPublicProfile = async function (playerId) {
+  if (!playerId) return;
+
+  const { data: prof, error } = await db
+    .from("profiles")
+    .select("*")
+    .eq("id", playerId)
+    .maybeSingle();
+
+  if (error || !prof) {
+    alert("No se pudo cargar la información del jugador.");
+    return;
+  }
+
+  viewedPlayerProfile = prof;
+
+  document.getElementById("pub-player-avatar").src = prof.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80";
+  document.getElementById("pub-player-username").textContent = prof.username;
+  document.getElementById("pub-player-role-pill").textContent = `⚽ ${prof.role === "ORGANIZADOR" ? "Organizador" : "Jugador"}`;
+  document.getElementById("pub-player-stats-line").textContent = `${prof.matches_played || 0} partidos jugados · ${prof.goals || 0} goles`;
+  document.getElementById("pub-player-skill").textContent = prof.skill_level || "Principiante";
+  document.getElementById("pub-player-fullname").textContent = `${prof.first_name || ""} ${prof.last_name || ""}`.trim() || "-";
+  document.getElementById("pub-player-phone").textContent = prof.phone || "-";
+
+  const playerActiveReceipts = receipts.filter(
+    (r) => r.userId === prof.id && r.status === "Aprobado" && r.type === "PARTIDO"
+  );
+  const upcoming = matches.filter((m) => playerActiveReceipts.some((r) => r.matchId === m.id) && !m.isFinished);
+
+  document.getElementById("pub-player-matches-badge").textContent = upcoming.length;
+  const listEl = document.getElementById("pub-player-upcoming-list");
+  listEl.innerHTML = "";
+
+  if (upcoming.length === 0) {
+    listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem;">Sin otros partidos próximos.</p>`;
+  } else {
+    upcoming.forEach((m) => {
+      const item = document.createElement("div");
+      item.className = "user-event-card";
+      item.onclick = () => showDetail(m.id);
+      item.innerHTML = `
+        <img class="user-event-thumb" src="${m.image}" alt="${m.title}">
+        <div class="user-event-info">
+          <span class="user-event-title">${m.title}</span>
+          <span class="user-event-meta">📅 ${m.dateLong}</span>
+          <span class="user-event-meta">🕐 ${m.time} hs</span>
+        </div>
+      `;
+      listEl.appendChild(item);
+    });
+  }
+
+  switchScreen(viewPlayerPublic);
+};
+
+const btnBackPlayerPublic = document.getElementById("btn-back-player-public");
+if (btnBackPlayerPublic) {
+  btnBackPlayerPublic.addEventListener("click", () => {
+    switchScreen(viewDetail);
+  });
+}
+
+const btnPubPlayerMessage = document.getElementById("btn-pub-player-message");
+if (btnPubPlayerMessage) {
+  btnPubPlayerMessage.addEventListener("click", async () => {
+    if (!viewedPlayerProfile || !currentProfile) return;
+
+    const { data: existing } = await db
+      .from("support_chats")
+      .select("*")
+      .eq("player_id", viewedPlayerProfile.id)
+      .eq("organizer_id", currentProfile.id)
+      .maybeSingle();
+
+    if (existing) {
+      openChatRoom(existing.id);
+      return;
+    }
+
+    const { data: created, error } = await db
+      .from("support_chats")
+      .insert([{
+        player_id: viewedPlayerProfile.id,
+        player_username: viewedPlayerProfile.username,
+        organizer_id: currentProfile.id,
+        organizer_username: currentProfile.username,
+        status: "EN_CURSO",
+        subject: "Mensaje Directo",
+        last_message: "Chat iniciado desde ficha de jugador"
+      }])
+      .select()
+      .single();
+
+    if (!error && created) {
+      openChatRoom(created.id);
+    }
   });
 }
 

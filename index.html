@@ -230,6 +230,32 @@
           </a>
         </div>
 
+<!-- Tarjeta del Organizador (Estilo captura) -->
+        <div id="detail-organizer-card" class="organizer-profile-card">
+          <div class="player-meta-wrap">
+            <img id="detail-org-avatar" class="org-square-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80" alt="Organizador">
+            <div class="player-names-col">
+              <span id="detail-org-name" class="player-name-val" style="font-size: 1rem;">Organizador</span>
+              <span class="player-role-tag">Organizador</span>
+            </div>
+          </div>
+          <span style="color: var(--accent); font-size: 1.3rem; font-weight: 700;">›</span>
+        </div>
+
+        <!-- Barra de herramientas del Organizador para Asistencia y Goles -->
+        <div id="organizer-match-stats-bar" class="organizer-switch-card" style="display: none; flex-direction: column; align-items: stretch; gap: 0.6rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span class="switch-title">Control de Asistencia y Goles</span>
+              <span class="switch-desc" style="display:block;">Marca los presentes y anota goles para el Ranking</span>
+            </div>
+            <button type="button" id="btn-save-match-stats" class="support-btn-action" style="padding: 0.5rem 0.9rem;">
+              💾 Guardar Stats
+            </button>
+          </div>
+        </div>
+
+
         <div class="players-section-header">
           <h3 class="section-subtitle">Jugadores</h3>
           <span id="detail-players-ratio" class="players-ratio-badge">0-0</span>
@@ -521,6 +547,80 @@
         <!-- Lista de posiciones Top 5 -->
         <div id="ranking-list-container" class="players-cards-container">
           <!-- Tarjetas renderizadas dinámicamente -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VISTA: PERFIL PÚBLICO DEL JUGADOR ================= -->
+    <section id="view-player-public" class="view-screen">
+      <div class="top-nav" style="border-bottom: none;">
+        <button id="btn-back-player-public" class="icon-nav-btn" title="Volver al partido">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#111111"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <span class="screen-title">Partidos</span>
+        <div style="width: 24px;"></div>
+      </div>
+
+      <div style="padding: 0.5rem 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 1.1rem;">
+        <!-- Cabecera Avatar + Username + Badge -->
+        <div style="display: flex; align-items: center; gap: 1.1rem;">
+          <img id="pub-player-avatar" src="" alt="Avatar" style="width: 78px; height: 78px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+          <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <h2 id="pub-player-username" style="font-size: 1.25rem; font-weight: 800; color: var(--text-white);">-</h2>
+            <span id="pub-player-role-pill" style="background: rgba(255, 90, 0, 0.14); color: var(--accent); font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; width: fit-content;">
+              ⚽ Jugador
+            </span>
+            <span id="pub-player-stats-line" style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">
+              0 partidos jugados · 0 goles
+            </span>
+          </div>
+        </div>
+
+        <!-- Nivel y Botón Mensaje Naranja -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text-muted); font-size: 0.82rem; font-weight: 600;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 12 12 22 2 12 12 2"/></svg>
+            <span id="pub-player-skill">Principiante</span>
+          </div>
+
+          <button type="button" id="btn-pub-player-message" class="btn-primary-action" style="width: auto; padding: 0.65rem 1.35rem; border-radius: 24px; display: flex; align-items: center; gap: 0.45rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Mensaje</span>
+          </button>
+        </div>
+
+        <!-- Información Personal -->
+        <div class="form-group-section">
+          <span class="subgroup-title" style="font-size: 1rem; margin-bottom: 0.4rem;">Información</span>
+
+          <div class="field-item">
+            <div class="info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a00"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div class="field-details">
+              <span class="field-label">NOMBRE</span>
+              <div id="pub-player-fullname" class="field-val">-</div>
+            </div>
+          </div>
+
+          <div class="field-item">
+            <div class="info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a00"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            </div>
+            <div class="field-details">
+              <span class="field-label">TELÉFONO</span>
+              <div id="pub-player-phone" class="field-val">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Próximos partidos del jugador -->
+        <div class="form-group-section">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="subgroup-title" style="font-size: 1rem;">Próximos partidos</span>
+            <span id="pub-player-matches-badge" style="color: var(--text-muted); font-weight: 700; font-size: 0.85rem;">0</span>
+          </div>
+          <div id="pub-player-upcoming-list" class="user-events-list"></div>
         </div>
       </div>
     </section>

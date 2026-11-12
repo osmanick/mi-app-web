@@ -1866,6 +1866,82 @@ input:checked + .slider-round:before {
   object-fit: cover;
 }
 
+/* Tarjeta del Organizador en Detalle de Partido */
+.organizer-profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  margin-top: 0.3rem;
+}
+
+.org-square-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* Controles de Asistencia y Goles por Jugador (Vista Organizador) */
+.org-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.attendance-check-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.attendance-check-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--success);
+  cursor: pointer;
+}
+
+.goals-counter-box {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px 4px;
+  gap: 6px;
+}
+
+.btn-goal-step {
+  background: var(--bg-card);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-count-num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 14px;
+  text-align: center;
+}
+
 /* ==========================================================================
    BARRA DE NAVEGACIÓN INFERIOR (100% ESTÁTICA Y FIJA)
    ========================================================================== */
