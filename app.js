@@ -795,7 +795,15 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "support_chats" },
-    () => {
+    (payload) => {
+      if (payload.eventType === "DELETE" && activeChatId && Number(payload.old?.id) === Number(activeChatId)) {
+        activeChatId = null;
+        if (modalChatRoom) {
+          modalChatRoom.setAttribute("hidden", "");
+          modalChatRoom.style.display = "none";
+        }
+        alert("La sesión de soporte ha sido finalizada por el organizador.");
+      }
       if (typeof fetchSupportThreads === "function") {
         fetchSupportThreads();
       }
@@ -2745,8 +2753,10 @@ if (searchInput) {
 }
 
 // ==========================================
-// MÓDULO DE SOPORTE Y CHAT EN VIVO
+// MÓDULO DE SOPORTE Y CHAT EN VIVO (MULTI-ORGANIZADOR)
 // ==========================================
+const btnDeleteChat = document.getElementById("btn-delete-chat");
+
 if (btnRequestSupport) {
   btnRequestSupport.addEventListener("click", async () => {
     if (!currentProfile) return;
@@ -2794,7 +2804,8 @@ async function fetchSupportThreads() {
   if (!isOrganizer) {
     query = query.eq("player_id", currentProfile.id);
   } else {
-    query = query.or(`status.eq.PENDIENTE,organizer_id.eq.${currentProfile.id}`);
+    // Todos los organizadores ven las solicitudes pendientes y las sesiones activas para poder unirse
+    query = query.in("status", ["PENDIENTE", "EN_CURSO"]);
   }
 
   const { data: chats, error } = await query;
@@ -2812,20 +2823,34 @@ async function fetchSupportThreads() {
 
     const isPending = chat.status === "PENDIENTE";
     let actionBtnHtml = "";
+    let titleHtml = "";
 
     if (isOrganizer) {
-      if (isPending) {
-        actionBtnHtml = `<button class="support-btn-action" onclick="takeSupportChat(${chat.id})">Aceptar Chat</button>`;
-      } else {
-        actionBtnHtml = `<button class="support-btn-action" onclick="openChatRoom(${chat.id})">Abrir</button>`;
-      }
+      const orgBadge = chat.organizer_username
+        ? `<span style="font-size:0.68rem; color:var(--accent); font-weight:700;"> · Atiende: @${chat.organizer_username}</span>`
+        : `<span style="font-size:0.68rem; color:#d97706; font-weight:700;"> · Sin asignar</span>`;
+
+      titleHtml = `@${chat.player_username}${orgBadge}`;
+      actionBtnHtml = `
+        <div style="display:flex; gap:0.4rem;">
+          <button class="support-btn-action" onclick="joinSupportChat(${chat.id})">
+            ${isPending ? "Atender" : "Unirse"}
+          </button>
+          <button type="button" onclick="deleteSupportChat(${chat.id})" title="Eliminar chat" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; padding:0.35rem 0.55rem; font-size:0.75rem; font-weight:700; cursor:pointer;">
+            🗑️
+          </button>
+        </div>
+      `;
     } else {
+      titleHtml = chat.organizer_username
+        ? `Soporte (@${chat.organizer_username})`
+        : "Soporte (Esperando Organizador...)";
       actionBtnHtml = `<button class="support-btn-action" onclick="openChatRoom(${chat.id})">${isPending ? "Esperando..." : "Abrir"}</button>`;
     }
 
     card.innerHTML = `
       <div class="support-card-info">
-        <span class="support-card-title">${isOrganizer ? "@" + chat.player_username : (chat.organizer_username ? "Org. @" + chat.organizer_username : "Organizador (Pendiente)")}</span>
+        <span class="support-card-title">${titleHtml}</span>
         <span class="support-card-msg">${chat.last_message || "Sin mensajes"}</span>
       </div>
       <div>${actionBtnHtml}</div>
@@ -2834,13 +2859,30 @@ async function fetchSupportThreads() {
   });
 }
 
-window.takeSupportChat = async function (chatId) {
-  if (!currentProfile) return;
+// Permite que uno o varios organizadores se unan a la sala de soporte
+window.joinSupportChat = async function (chatId) {
+  if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
+
+  const { data: chat } = await db.from("support_chats").select("*").eq("id", chatId).single();
+  if (!chat) return;
+
+  // Registrar el organizador actual en la lista de participantes
+  const currentList = (chat.organizer_username || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!currentList.includes(currentProfile.username)) {
+    currentList.push(currentProfile.username);
+  }
+
+  const updatedOrganizers = currentList.join(", ");
+
   const { error } = await db
     .from("support_chats")
     .update({
-      organizer_id: currentProfile.id,
-      organizer_username: currentProfile.username,
+      organizer_id: chat.organizer_id || currentProfile.id,
+      organizer_username: updatedOrganizers,
       status: "EN_CURSO"
     })
     .eq("id", chatId);
@@ -2851,16 +2893,70 @@ window.takeSupportChat = async function (chatId) {
   }
 };
 
+// Eliminar chat y sus mensajes cuando termina la sesión de soporte
+window.deleteSupportChat = async function (chatId) {
+  if (!currentProfile || currentProfile.role !== "ORGANIZADOR") return;
+
+  const seguro = confirm("¿Dar por terminada la sesión de soporte y eliminar este chat permanentemente?");
+  if (!seguro) return;
+
+  // Borrar mensajes asociados y luego la cabecera del chat
+  await db.from("support_messages").delete().eq("chat_id", chatId);
+  const { error } = await db.from("support_chats").delete().eq("id", chatId);
+
+  if (error) {
+    alert("Error al eliminar el chat: " + error.message);
+    return;
+  }
+
+  if (activeChatId && Number(activeChatId) === Number(chatId)) {
+    activeChatId = null;
+    if (modalChatRoom) {
+      modalChatRoom.setAttribute("hidden", "");
+      modalChatRoom.style.display = "none";
+    }
+  }
+
+  fetchSupportThreads();
+};
+
+if (btnDeleteChat) {
+  btnDeleteChat.addEventListener("click", () => {
+    if (activeChatId) {
+      deleteSupportChat(activeChatId);
+    }
+  });
+}
+
 window.openChatRoom = async function (chatId) {
   activeChatId = Number(chatId);
   const { data: chat } = await db.from("support_chats").select("*").eq("id", chatId).single();
-  if (!chat) return;
+  if (!chat) {
+    alert("Esta sesión de soporte ha finalizado.");
+    activeChatId = null;
+    if (modalChatRoom) {
+      modalChatRoom.setAttribute("hidden", "");
+      modalChatRoom.style.display = "none";
+    }
+    fetchSupportThreads();
+    return;
+  }
 
   currentChatData = chat;
   const isOrganizer = currentProfile.role === "ORGANIZADOR";
 
-  chatRoomTitle.textContent = isOrganizer ? `@${chat.player_username}` : (chat.organizer_username ? `Org. @${chat.organizer_username}` : "Esperando Organizador...");
-  chatRoleIndicator.textContent = chat.status === "PENDIENTE" ? "SOLICITUD PENDIENTE" : "SOPORTE ACTIVO";
+  chatRoomTitle.textContent = isOrganizer
+    ? `Jugador: @${chat.player_username}`
+    : (chat.organizer_username ? `Org: @${chat.organizer_username}` : "Esperando Organizador...");
+
+  chatRoleIndicator.textContent = chat.status === "PENDIENTE"
+    ? "SOLICITUD PENDIENTE"
+    : `SOPORTE EN CURSO${chat.organizer_username ? " · @" + chat.organizer_username : ""}`;
+
+  // Mostrar botón de eliminar chat solo al organizador
+  if (btnDeleteChat) {
+    btnDeleteChat.style.display = isOrganizer ? "inline-flex" : "none";
+  }
 
   if (modalChatRoom) {
     modalChatRoom.removeAttribute("hidden");
@@ -2894,6 +2990,9 @@ function appendChatBubble(m) {
   }
 
   const isMine = m.sender_id === currentProfile.id;
+  const isSenderOrg = (m.sender_role || "").toUpperCase() === "ORGANIZADOR";
+  const roleTag = isSenderOrg ? " · ORGANIZADOR" : "";
+
   const bubble = document.createElement("div");
   bubble.className = `chat-bubble ${isMine ? "mine" : "theirs"}`;
   if (m.id) bubble.setAttribute("data-msg-id", m.id);
@@ -2902,7 +3001,7 @@ function appendChatBubble(m) {
   const timeStr = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   bubble.innerHTML = `
-    <span class="chat-bubble-sender">${isMine ? "Tú" : "@" + m.sender_username}</span>
+    <span class="chat-bubble-sender">${isMine ? `Tú (@${m.sender_username}${roleTag})` : `@${m.sender_username}${roleTag}`}</span>
     <span>${m.message}</span>
     <span class="chat-bubble-time">${timeStr}</span>
   `;
@@ -2942,10 +3041,25 @@ if (formSendChat) {
       return;
     }
 
-    await db.from("support_chats").update({
-      last_message: text,
+    // Si un organizador adicional responde, asegurar que su @username quede registrado en el hilo
+    const updateFields = {
+      last_message: `@${currentProfile.username}: ${text}`,
       updated_at: new Date().toISOString()
-    }).eq("id", activeChatId);
+    };
+
+    if (currentProfile.role === "ORGANIZADOR" && currentChatData) {
+      const list = (currentChatData.organizer_username || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!list.includes(currentProfile.username)) {
+        list.push(currentProfile.username);
+        updateFields.organizer_username = list.join(", ");
+        currentChatData.organizer_username = updateFields.organizer_username;
+      }
+    }
+
+    await db.from("support_chats").update(updateFields).eq("id", activeChatId);
   });
 }
 

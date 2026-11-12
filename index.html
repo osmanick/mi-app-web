@@ -753,7 +753,7 @@
       </div>
     </div>
 
-    <!-- Modal: Conversación de Chat en Vivo -->
+<!-- Modal: Conversación de Chat en Vivo -->
     <div id="modal-chat-room" class="modal-overlay" hidden>
       <div class="modal-card chat-room-card">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem;">
@@ -761,7 +761,12 @@
             <span class="qr-tag" id="chat-role-indicator">SOPORTE EN VIVO</span>
             <h3 id="chat-room-title">Conversación</h3>
           </div>
-          <button id="btn-close-chat" class="modal-close-btn">&times;</button>
+          <div style="display: flex; align-items: center; gap: 0.55rem;">
+            <button type="button" id="btn-delete-chat" title="Finalizar y eliminar chat" style="display: none; background: rgba(220, 38, 38, 0.12); color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; padding: 0.35rem 0.65rem; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+              🗑️ Finalizar
+            </button>
+            <button id="btn-close-chat" class="modal-close-btn">&times;</button>
+          </div>
         </div>
 
         <div id="chat-messages-box" class="chat-messages-container">
