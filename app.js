@@ -63,8 +63,8 @@ const viewRegister = document.getElementById("view-register");
 const viewList = document.getElementById("view-list");
 const viewDetail = document.getElementById("view-detail");
 const viewMessages = document.getElementById("view-messages");
-const viewRules = document.getElementById("view-rules"); // <-- Nueva vista
-const viewRanking = document.getElementById("view-ranking"); // <-- Nueva vista
+const viewRules = document.getElementById("view-rules");
+const viewRanking = document.getElementById("view-ranking");
 const viewProfile = document.getElementById("view-profile");
 const viewAdmin = document.getElementById("view-admin");
 const bottomBar = document.getElementById("bottom-bar");
@@ -188,7 +188,7 @@ function switchScreen(targetScreen) {
     viewList,
     viewDetail,
     viewMessages,
-    viewRules, // <-- Añadir aquí
+    viewRules,
     viewRanking,
     viewProfile,
     viewAdmin
@@ -278,7 +278,7 @@ async function checkUserSession() {
 // ==========================================
 // MÓDULO DE RANKING (TOP 5 PARTIDOS Y GOLES)
 // ==========================================
-let currentRankingTab = "matches"; // 'matches' o 'goals'
+let currentRankingTab = "matches";
 
 const btnRankingMatches = document.getElementById("btn-ranking-matches");
 const btnRankingGoals = document.getElementById("btn-ranking-goals");
@@ -617,7 +617,7 @@ function applyRolePermissions() {
   updatePendingBadge();
 }
 
-// Función para convertir fechas en español (ej. "sábado, 7 de noviembre de 2026") a timestamp numérico
+// Función para convertir fechas en español a timestamp numérico
 function getMatchTimestamp(match) {
   const timeStr = (match.time || "00:00").split("-")[0].trim();
   let hh = 0, mm = 0;
@@ -786,7 +786,6 @@ const realtimeChannel = db
       }
     }
   )
-  // LISTENERS DE SOPORTE DIRECTOS EN EL CANAL ANTES DE SUBSCRIBIR
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "support_chats" },
@@ -813,7 +812,7 @@ const realtimeChannel = db
   )
   .subscribe((status, err) => {
     if (status === "SUBSCRIBED") {
-      console.log("Conectado con éxito a Supabase Realtime (Partidos, Recargas, Chat)");
+      console.log("Conectado con éxito a Supabase Realtime");
     }
     if (status === "CHANNEL_ERROR") {
       console.error("Error en conexión Realtime:", err);
@@ -892,11 +891,11 @@ function renderMatches() {
           <div>
             <h4 class="match-title">${match.title}</h4>
             <div class="match-location">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5252a"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#111111"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
               ${match.address.length > 34 ? match.address.substring(0, 34) + "..." : match.address}
             </div>
             <div class="match-sport">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5252a"><circle cx="12" cy="12" r="10"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#111111"><circle cx="12" cy="12" r="10"/></svg>
               ${match.sport}
             </div>
             <div class="match-time">
@@ -942,7 +941,6 @@ const promoGeneratedResult = document.getElementById("promo-generated-result");
 const displayPromoCode = document.getElementById("display-promo-code");
 const btnCopyPromoCode = document.getElementById("btn-copy-promo-code");
 
-// 1. Abrir modal de canje desde el modal de recarga
 if (btnRechargeToRedeem) {
   btnRechargeToRedeem.addEventListener("click", () => {
     closeRechargeModal();
@@ -954,7 +952,6 @@ if (btnRechargeToRedeem) {
   });
 }
 
-// Abrir desde el icono del perfil
 if (btnOpenRedeem) {
   btnOpenRedeem.addEventListener("click", () => {
     if (modalRedeem) {
@@ -974,7 +971,6 @@ if (btnCancelRedeem) {
   });
 }
 
-// 2. Jugador Canjea el Código (1 sola vez)
 if (btnConfirmRedeem) {
   btnConfirmRedeem.addEventListener("click", async () => {
     if (!currentProfile) {
@@ -992,7 +988,6 @@ if (btnConfirmRedeem) {
     btnConfirmRedeem.textContent = "Validando...";
 
     try {
-      // Buscar código no canjeado
       const { data: promo, error: fetchErr } = await db
         .from("promo_codes")
         .select("*")
@@ -1019,7 +1014,6 @@ if (btnConfirmRedeem) {
       const balanceActual = Number(currentProfile.balance || 0);
       const nuevoBalance = balanceActual + creditAmount;
 
-      // 1. Marcar código como canjeado
       const { error: promoUpdateErr } = await db
         .from("promo_codes")
         .update({
@@ -1032,7 +1026,6 @@ if (btnConfirmRedeem) {
 
       if (promoUpdateErr) throw promoUpdateErr;
 
-      // 2. Sumar al saldo principal del jugador
       const { error: profUpdateErr } = await db
         .from("profiles")
         .update({ balance: nuevoBalance })
@@ -1040,7 +1033,6 @@ if (btnConfirmRedeem) {
 
       if (profUpdateErr) throw profUpdateErr;
 
-      // 3. Registrar en recibos para el historial
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -1081,7 +1073,6 @@ if (btnConfirmRedeem) {
   });
 }
 
-// 3. Organizador Genera el Código
 if (btnOpenCreatePromo) {
   btnOpenCreatePromo.addEventListener("click", () => {
     if (modalGeneratePromo) {
@@ -1118,7 +1109,6 @@ if (formCreatePromo) {
 
     let code = (inputCustomPromoCode.value || "").trim().toUpperCase();
     if (!code) {
-      // Generar código aleatorio estilo "FALTA-7X2A"
       const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
       code = `GOL-${randomStr}`;
     }
@@ -1233,7 +1223,6 @@ if (inputSearchFriend) {
       return;
     }
 
-    // Filtrar a uno mismo y a los que ya están anotados en este partido
     const enrolledUserIds = receipts
       .filter((r) => r.matchId === selectedMatch.id && r.status === "Aprobado")
       .map((r) => r.userId);
@@ -1269,7 +1258,6 @@ if (inputSearchFriend) {
   });
 }
 
-// Procesar cobro e inscripción del amigo
 async function registerFriendWithBalance(friendUser) {
   if (!selectedMatch || !currentProfile) return;
 
@@ -1302,7 +1290,6 @@ async function registerFriendWithBalance(friendUser) {
   try {
     const nuevoSaldo = balance - price;
 
-    // 1. Descontar saldo del jugador patrocinador
     const { error: balErr } = await db
       .from("profiles")
       .update({ balance: nuevoSaldo })
@@ -1310,7 +1297,6 @@ async function registerFriendWithBalance(friendUser) {
 
     if (balErr) throw balErr;
 
-    // 2. Incrementar cupo en matches
     const { error: matchErr } = await db
       .from("matches")
       .update({ current_players: selectedMatch.currentPlayers + 1 })
@@ -1318,7 +1304,6 @@ async function registerFriendWithBalance(friendUser) {
 
     if (matchErr) throw matchErr;
 
-    // 3. Crear comprobante a nombre del amigo
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -1336,13 +1321,11 @@ async function registerFriendWithBalance(friendUser) {
       receipt_image: `PAGADO_POR_@${currentProfile.username}`
     }]);
 
-    // 4. Registro en match_registrations
     await db.from("match_registrations").insert([{
       match_id: selectedMatch.id,
       user_id: friendUser.id
     }]);
 
-    // 5. Incrementar contador de partidos jugados del amigo
     const { data: friendProf } = await db
       .from("profiles")
       .select("matches_played")
@@ -1355,7 +1338,6 @@ async function registerFriendWithBalance(friendUser) {
       .update({ matches_played: friendMatches })
       .eq("id", friendUser.id);
 
-    // Actualizar estados locales
     currentProfile.balance = nuevoSaldo;
     selectedMatch.currentPlayers += 1;
 
@@ -1497,7 +1479,6 @@ function updateSubscribeButton() {
   const userRole = (currentProfile?.role || "").toUpperCase().trim();
   const isOrganizer = userRole === "ORGANIZADOR";
 
-  // ROL ORGANIZADOR: Mostrar únicamente "+ Añadir Jugador"
   if (isOrganizer) {
     if (playerActionGroup) playerActionGroup.style.display = "none";
     if (btnAdd) {
@@ -1510,7 +1491,6 @@ function updateSubscribeButton() {
     return;
   }
 
-  // ROL JUGADOR: Mostrar grupo de inscripción y amigo
   if (btnAdd) {
     btnAdd.setAttribute("hidden", "");
     btnAdd.style.setProperty("display", "none", "important");
@@ -1519,9 +1499,7 @@ function updateSubscribeButton() {
   if (playerActionGroup) playerActionGroup.style.display = "flex";
 
   const isFull = selectedMatch.currentPlayers >= selectedMatch.maxPlayers;
-  const userBalance = Number(currentProfile?.balance || 0);
 
-  // Botón "+ Amigo": disponible siempre que haya cupos libres
   if (btnAddFriend) {
     btnAddFriend.disabled = isFull;
     btnAddFriend.title = `Inscribir amigo (Bs. ${selectedMatch.price.toFixed(2)})`;
@@ -1539,7 +1517,7 @@ function updateSubscribeButton() {
       btnSub.disabled = true;
     } else if (isFull) {
       btnSub.textContent = "Cupos Agotados";
-      btnSub.style.backgroundColor = "#43454d";
+      btnSub.style.backgroundColor = "#9ca3af";
       btnSub.disabled = true;
     } else {
       btnSub.innerHTML = `Inscribirme · Bs. ${selectedMatch.price.toFixed(2)}`;
@@ -2047,15 +2025,15 @@ function renderAdminPanel() {
       <div class="receipt-header">
         <div>
           <span class="receipt-match-title">${item.matchTitle}</span>
-          ${isRecharge ? `<span style="background: rgba(52,199,89,0.15); color: var(--success); font-size: 0.65rem; font-weight:800; padding:2px 6px; border-radius:4px; margin-left:6px;">RECARGA SALDO</span>` : ""}
+          ${isRecharge ? `<span style="background: rgba(22, 163, 74, 0.15); color: var(--success); font-size: 0.65rem; font-weight:800; padding:2px 6px; border-radius:4px; margin-left:6px;">RECARGA SALDO</span>` : ""}
         </div>
         <span class="receipt-status-tag ${statusClass}">${item.status}</span>
       </div>
 
       <div class="receipt-body-layout">
-        ${item.receiptImage === "BILLETERA_SALDO" || item.receiptImage === "INVITACION_ORGANIZADOR" ? `
+        ${item.receiptImage === "BILLETERA_SALDO" || item.receiptImage === "INVITACION_ORGANIZADOR" || item.receiptImage === "CODIGO_PROMO" ? `
           <div style="width:70px; height:70px; border-radius:10px; background:var(--bg-card-subtle); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
-            ${item.receiptImage === "INVITACION_ORGANIZADOR" ? "🎟️" : "💳"}
+            ${item.receiptImage === "INVITACION_ORGANIZADOR" ? "🎟️" : item.receiptImage === "CODIGO_PROMO" ? "🎁" : "💳"}
           </div>
         ` : `
           <img class="receipt-thumb-admin" src="${item.receiptImage}" alt="Comprobante" title="Toca para agrandar">
@@ -2194,9 +2172,6 @@ function renderConfirmedPlayers(matchId) {
 // ==========================================
 // 18. PERFIL DEL JUGADOR
 // ==========================================
-
-
-
 function renderProfileView() {
   if (!currentProfile) return;
 
@@ -2285,19 +2260,17 @@ const btnCloseAvatarModal = document.getElementById("btn-close-avatar-modal");
 const inputAvatarFile = document.getElementById("input-avatar-file");
 const avatarPresetsGrid = document.getElementById("avatar-presets-grid");
 
-// Lista de avatares deportivos listos (vectoriales / ligeros)
 const PRESET_AVATARS = [
-  "https://api.dicebear.com/7.x/bottts/svg?seed=striker&backgroundColor=1c1d22",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=captain&backgroundColor=1c1d22",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=goalie&backgroundColor=1c1d22",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=champion&backgroundColor=1c1d22",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=striker&backgroundColor=f2f3f5",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=captain&backgroundColor=f2f3f5",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=goalie&backgroundColor=f2f3f5",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=champion&backgroundColor=f2f3f5",
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80",
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80",
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80"
 ];
 
-// Generar selector de avatares
 function renderAvatarPresets() {
   if (!avatarPresetsGrid) return;
   avatarPresetsGrid.innerHTML = "";
@@ -2312,7 +2285,6 @@ function renderAvatarPresets() {
   });
 }
 
-// Abrir y cerrar modal
 if (btnChangeAvatar) {
   btnChangeAvatar.addEventListener("click", () => {
     renderAvatarPresets();
@@ -2332,7 +2304,6 @@ if (btnCloseAvatarModal) {
   });
 }
 
-// Redimensionar cualquier foto subida a 150x150 px (~6KB de peso)
 if (inputAvatarFile) {
   inputAvatarFile.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -2345,19 +2316,16 @@ if (inputAvatarFile) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        // Dimensiones fijas ultra livianas
         const TARGET_SIZE = 150;
         canvas.width = TARGET_SIZE;
         canvas.height = TARGET_SIZE;
 
-        // Recorte cuadrado centrado
         const minDim = Math.min(img.width, img.height);
         const startX = (img.width - minDim) / 2;
         const startY = (img.height - minDim) / 2;
 
         ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, TARGET_SIZE, TARGET_SIZE);
 
-        // Convertir a JPEG comprimido de ~6KB
         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.82);
         saveUserAvatar(compressedBase64);
       };
@@ -2367,7 +2335,6 @@ if (inputAvatarFile) {
   });
 }
 
-// Guardar en Supabase y refrescar la interfaz
 async function saveUserAvatar(newAvatarUrl) {
   if (!currentProfile) return;
 
@@ -2484,7 +2451,7 @@ if (formNewMatch) {
 // 20. NAVEGACIÓN ENTRE TABS
 // ==========================================
 function clearTabSelection() {
-  [tabMatches, tabMessages, tabProfile].forEach((t) => {
+  [tabMatches, tabClubs, tabMessages, tabAlerts, tabProfile].forEach((t) => {
     if (t) t.classList.remove("active");
   });
 }
@@ -2736,7 +2703,6 @@ function appendChatBubble(m) {
   chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
 }
 
-// Envío de mensaje con actualización inmediata local
 if (formSendChat) {
   formSendChat.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2747,7 +2713,6 @@ if (formSendChat) {
 
     inputChatText.value = "";
 
-    // Pintar mensaje saliente de inmediato
     appendChatBubble({
       chat_id: activeChatId,
       sender_id: currentProfile.id,

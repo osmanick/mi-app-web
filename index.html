@@ -6,10 +6,10 @@
   <title>Partidos</title>
 
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#121316">
+  <meta name="theme-color" content="#ffffff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
@@ -122,9 +122,9 @@
     <main id="view-list" class="view-screen">
       <header class="top-nav">
         <div class="location-selector">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#e5252a"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
           <span class="city-name" id="top-bar-city">La Paz</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#a0a4ab"><path d="M7 10l5 5 5-5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#555861"><path d="M7 10l5 5 5-5z"/></svg>
         </div>
         <h1 class="screen-title">Partidos</h1>
       </header>
@@ -137,7 +137,7 @@
           </svg>
         </div>
         <button class="filter-icon-btn" title="Filtros">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#e5252a"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#111111"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         </button>
       </div>
 
@@ -170,7 +170,7 @@
       <div class="detail-hero">
         <img id="detail-img" src="" alt="Cancha">
         <div class="quota-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#e5252a"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff5a00"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
           <span id="detail-badge-quota">0/0 jugadores</span>
         </div>
       </div>
@@ -192,14 +192,14 @@
 
         <!-- Botón Finalizar: visible solo para ORGANIZADOR -->
         <div id="organizer-finish-box" style="margin-top: 0.6rem;" hidden>
-          <button id="btn-finish-match" class="btn-logout-action" style="margin: 0; padding: 0.75rem; border-color: #ff3b30; color: #ff3b30;">
+          <button id="btn-finish-match" class="btn-logout-action" style="margin: 0; padding: 0.75rem; border-color: #dc2626; color: #dc2626;">
             🏁 Finalizar y Quitar Partido
           </button>
         </div>
 
         <div class="info-row" style="margin-top: 0.6rem;">
           <div class="info-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#e5252a"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a00"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
           </div>
           <div>
             <span class="info-label" id="detail-sport-tag">DEPORTE</span>
@@ -209,7 +209,7 @@
 
         <div class="info-row">
           <div class="info-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#e5252a"><circle cx="12" cy="12" r="10" stroke="#e5252a" stroke-width="2" fill="none"/><path d="M12 6v6l4 2"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a00"><circle cx="12" cy="12" r="10" stroke="#ff5a00" stroke-width="2" fill="none"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <div>
             <span class="info-label">HORARIO</span>
@@ -219,14 +219,14 @@
 
         <div class="info-row address-row">
           <div class="info-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#e5252a"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff5a00"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
           </div>
           <div class="address-text">
             <span class="info-label" id="detail-venue-sub">UBICACIÓN</span>
             <div class="info-value address-highlight" id="detail-address">-</div>
           </div>
           <a id="btn-map" href="#" target="_blank" class="map-icon-btn" title="Abrir Mapa">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#e5252a"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a00"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
           </a>
         </div>
 
@@ -243,7 +243,7 @@
           <button id="btn-subscribe" class="btn-primary-action" style="flex: 2;">
             Inscribirme
           </button>
-          <button id="btn-add-friend" class="btn-primary-action" style="flex: 1; background-color: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-white);">
+          <button id="btn-add-friend" class="btn-primary-action" style="flex: 1; background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-white);">
             + Amigo
           </button>
         </div>
@@ -255,7 +255,7 @@
       </footer>
     </section>
 
-   <!-- ================= VISTA 3: MENSAJES ================= -->
+    <!-- ================= VISTA 3: MENSAJES ================= -->
     <section id="view-messages" class="view-screen">
       <header class="top-nav" style="justify-content: space-between;">
         <h1 class="screen-title">Mensajes</h1>
@@ -298,10 +298,10 @@
         <h1 class="screen-title">Perfil</h1>
         <div class="profile-header-actions">
           <button id="btn-open-redeem" class="icon-plain-btn" title="Canjear código">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#e5252a"><path d="M20 12l-1.5-2.5L20 7l-2.5-.5L16 4l-2.5 1.5L11 4 9.5 6.5 7 7l.5 2.5L6 12l1.5 2.5L7 17l2.5.5L11 20l2.5-1.5L16 20l1.5-2.5L20 17l-.5-2.5L20 12zm-8.5 2.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a00"><path d="M20 12l-1.5-2.5L20 7l-2.5-.5L16 4l-2.5 1.5L11 4 9.5 6.5 7 7l.5 2.5L6 12l1.5 2.5L7 17l2.5.5L11 20l2.5-1.5L16 20l1.5-2.5L20 17l-.5-2.5L20 12zm-8.5 2.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
           </button>
           <button id="btn-open-security-modal" class="icon-plain-btn" title="Editar Credenciales">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.484.484 0 0 0 13.91 2h-3.82c-.24 0-.44.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.82c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#111111"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.484.484 0 0 0 13.91 2h-3.82c-.24 0-.44.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.82c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
           </button>
         </div>
       </header>
@@ -344,7 +344,7 @@
           <span class="group-section-title">INFORMACIÓN PERSONAL</span>
 
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
             <div class="field-details">
               <span class="field-label">NOMBRE</span>
               <div id="field-firstname" class="field-val">-</div>
@@ -352,7 +352,7 @@
           </div>
 
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
             <div class="field-details">
               <span class="field-label">APELLIDO</span>
               <div id="field-lastname" class="field-val">-</div>
@@ -360,7 +360,7 @@
           </div>
 
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/></svg></div>
             <div class="field-details">
               <span class="field-label">USER NAME</span>
               <div id="field-username" class="field-val">-</div>
@@ -368,7 +368,7 @@
           </div>
 
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
             <div class="field-details">
               <span class="field-label">TELÉFONO</span>
               <div id="field-phone" class="field-val">-</div>
@@ -376,7 +376,7 @@
           </div>
 
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg></div>
             <div class="field-details">
               <span class="field-label">FECHA DE NACIMIENTO</span>
               <div id="field-birth" class="field-val">-</div>
@@ -387,7 +387,7 @@
         <div class="form-group-section">
           <span class="group-section-title">CUENTA</span>
           <div class="field-item">
-            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <div class="field-icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
             <div class="field-details">
               <span class="field-label">EMAIL</span>
               <div id="field-email" class="field-val">-</div>
@@ -406,24 +406,16 @@
     <section id="view-admin" class="view-screen">
       <header class="top-nav">
         <button id="btn-admin-back" class="icon-nav-btn" title="Volver">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#111111"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
         <h2 class="screen-title">Revisión de Pagos</h2>
         <button id="btn-admin-logout-top" class="icon-nav-btn" title="Cerrar Sesión">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff3b30"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
         </button>
       </header>
 
       <div class="admin-content">
         <div class="admin-stats-card">
-          <div>
-            <span class="info-label">PENDIENTES POR REVISAR</span>
-            <h3 id="admin-pending-count" class="admin-count">0</h3>
-          </div>
-          <button id="btn-clear-receipts" class="btn-clean-data" title="Limpiar datos">Limpiar</button>
-        </div>
-
-      <div class="admin-stats-card">
           <div>
             <span class="info-label">PENDIENTES POR REVISAR</span>
             <h3 id="admin-pending-count" class="admin-count">0</h3>
@@ -445,7 +437,7 @@
       </div>
     </section>
 
-<!-- ================= VISTA: REGLAS Y COMUNICADOS ================= -->
+    <!-- ================= VISTA: REGLAS Y COMUNICADOS ================= -->
     <section id="view-rules" class="view-screen">
       <header class="top-nav center-title">
         <h1 class="screen-title">Reglamento y Avisos</h1>
@@ -560,7 +552,7 @@
       </div>
     </div>
 
-<!-- Modal: Generar Código de Saldo (Exclusivo Organizador) -->
+    <!-- Modal: Generar Código de Saldo (Exclusivo Organizador) -->
     <div id="modal-generate-promo" class="modal-overlay" hidden>
       <div class="modal-card">
         <div class="modal-header">
@@ -600,7 +592,7 @@
       </div>
     </div>
 
-<!-- Modal: Añadir Amigo (Jugador con descuento de saldo) -->
+    <!-- Modal: Añadir Amigo (Jugador con descuento de saldo) -->
     <div id="modal-add-friend" class="modal-overlay" hidden>
       <div class="modal-card">
         <div class="modal-header">
@@ -627,7 +619,6 @@
       </div>
     </div>
 
-
     <!-- Modal: Cambiar Foto o Avatar de Perfil -->
     <div id="modal-edit-avatar" class="modal-overlay" hidden>
       <div class="modal-card" style="max-width: 390px;">
@@ -642,8 +633,8 @@
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.9rem;">
           <!-- Opción 1: Subir foto propia con compresión automática -->
           <div class="upload-section">
-            <label for="input-avatar-file" class="upload-label" style="padding: 1rem; border-color: var(--accent); color: var(--text-white); background: rgba(229, 37, 42, 0.08);">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#e5252a">
+            <label for="input-avatar-file" class="upload-label" style="padding: 1rem; border-color: var(--accent); color: var(--text-white); background: rgba(255, 90, 0, 0.08);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#ff5a00">
                 <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
               </svg>
               <span>Subir foto desde galería / cámara</span>
@@ -801,12 +792,12 @@
         </div>
 
         <!-- Acceso directo a canje dentro del modal de recarga -->
-          <div style="text-align: center; margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border-color);">
-            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">¿Tienes un cupón o código de saldo?</p>
-            <button type="button" id="btn-recharge-to-redeem" class="btn-text-action" style="color: var(--accent); font-weight: 700; text-decoration: underline;">
-              🎁 Canjear un código de regalo
-            </button>
-          </div>
+        <div style="text-align: center; margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border-color);">
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">¿Tienes un cupón o código de saldo?</p>
+          <button type="button" id="btn-recharge-to-redeem" class="btn-text-action" style="color: var(--accent); font-weight: 700; text-decoration: underline;">
+            🎁 Canjear un código de regalo
+          </button>
+        </div>
 
         <div class="modal-body">
           <p class="modal-desc" id="recharge-alert-msg">Transfiere desde tu banco mediante QR para abonar saldo a tu cuenta.</p>
@@ -816,7 +807,6 @@
             <input type="number" id="input-recharge-amount" min="10" step="5" value="50" placeholder="50">
           </div>
 
-          
           <div class="qr-wrapper">
             <img id="recharge-qr-image" 
                  src="https://ygnuwxvtqnfrycewaqqk.supabase.co/storage/v1/object/public/avatars/mi-qr.png" 
@@ -826,7 +816,7 @@
 
           <div class="upload-section">
             <label for="recharge-receipt-input" class="upload-label">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#e5252a"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff5a00"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
               <span id="recharge-upload-text">Adjuntar captura de la recarga</span>
             </label>
             <input type="file" id="recharge-receipt-input" accept="image/*" style="display: none;">
@@ -856,9 +846,10 @@
     <!-- Navegación Inferior Fija -->
     <nav class="bottom-nav-tabs" id="bottom-bar">
       <button id="tab-matches" class="nav-tab active">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6l3 2v4l-3 2-3-2V8z" fill="#121316"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6l3 2v4l-3 2-3-2V8z" fill="#ffffff"/></svg>
         <span>Partidos</span>
       </button>
+
       <!-- Tab Ranking (Habilitado) -->
       <button id="tab-clubs" class="nav-tab">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
@@ -871,6 +862,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>Mensajes</span>
       </button>
+
       <!-- Tab Reglas (Habilitado) -->
       <button id="tab-alerts" class="nav-tab">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
@@ -878,6 +870,7 @@
         </svg>
         <span>Reglas</span>
       </button>
+
       <button id="tab-profile" class="nav-tab">
         <div class="nav-icon-wrapper">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
