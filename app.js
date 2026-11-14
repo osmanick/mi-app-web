@@ -822,7 +822,20 @@ const realtimeChannel = db
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "matches" },
-    async () => {
+    async (payload) => {
+      // Notificación push global cuando un organizador publica un nuevo partido
+      if (payload.eventType === "INSERT" && payload.new && currentProfile) {
+        const newMatch = payload.new;
+        // Evitar notificar al mismo organizador que acaba de publicarlo
+        if (newMatch.organizer !== currentProfile.username) {
+          sendLocalPushNotification(
+            `⚽ ¡Nuevo Partido en ${newMatch.title}!`,
+            `${newMatch.sport || "Fútbol"} · ${newMatch.date_long || ""} a las ${newMatch.time || ""} hs (Bs. ${Number(newMatch.price || 0).toFixed(2)})`,
+            `new-match-${newMatch.id}`
+          );
+        }
+      }
+
       await fetchMatches();
       if (selectedMatch) {
         const updated = matches.find((m) => m.id === selectedMatch.id);
