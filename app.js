@@ -482,7 +482,8 @@ if (formLoginUser) {
   formLoginUser.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById("login-username").value.trim().toLowerCase();
+    const rawIdentifier = document.getElementById("login-username").value.trim().toLowerCase();
+    const cleanPhone = rawIdentifier.replace(/[\s\-+]/g, "").replace(/^591/, "");
     const password = document.getElementById("login-password").value.trim();
     const btnSubmit = document.getElementById("btn-submit-login");
 
@@ -492,7 +493,7 @@ if (formLoginUser) {
     const { data: user, error } = await db
       .from("profiles")
       .select("*")
-      .eq("username", username)
+      .or(`username.eq.${rawIdentifier},phone.eq.${rawIdentifier},phone.eq.${cleanPhone}`)
       .eq("password", password)
       .maybeSingle();
 
@@ -505,7 +506,7 @@ if (formLoginUser) {
     }
 
     if (!user) {
-      alert("Usuario o contraseña incorrectos.");
+      alert("Usuario, celular o contraseña incorrectos.");
       return;
     }
 
@@ -625,6 +626,120 @@ function logoutUser() {
 if (btnLogout) btnLogout.addEventListener("click", logoutUser);
 if (btnAdminLogout) btnAdminLogout.addEventListener("click", logoutUser);
 if (btnAdminLogoutTop) btnAdminLogoutTop.addEventListener("click", logoutUser);
+
+
+// ==========================================
+// EDICIÓN DE PERFIL (NOMBRE, APELLIDO Y USERNAME)
+// ==========================================
+const modalEditProfile = document.getElementById("modal-edit-profile");
+const btnOpenEditProfile = document.getElementById("btn-open-edit-profile");
+const btnCloseEditProfile = document.getElementById("btn-close-edit-profile");
+const btnCancelEditProfile = document.getElementById("btn-cancel-edit-profile");
+const formEditProfile = document.getElementById("form-edit-profile");
+
+function openEditProfileModal() {
+  if (!currentProfile || !modalEditProfile) return;
+
+  document.getElementById("edit-prof-firstname").value = currentProfile.first_name || "";
+  document.getElementById("edit-prof-lastname").value = currentProfile.last_name || "";
+  document.getElementById("edit-prof-username").value = currentProfile.username || "";
+
+  modalEditProfile.removeAttribute("hidden");
+  modalEditProfile.style.display = "flex";
+}
+
+function closeEditProfileModal() {
+  if (!modalEditProfile) return;
+  modalEditProfile.setAttribute("hidden", "");
+  modalEditProfile.style.display = "none";
+}
+
+if (btnOpenEditProfile) btnOpenEditProfile.addEventListener("click", openEditProfileModal);
+if (btnCloseEditProfile) btnCloseEditProfile.addEventListener("click", closeEditProfileModal);
+if (btnCancelEditProfile) btnCancelEditProfile.addEventListener("click", closeEditProfileModal);
+
+if (formEditProfile) {
+  formEditProfile.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentProfile) return;
+
+    const newFirstName = document.getElementById("edit-prof-firstname").value.trim();
+    const newLastName = document.getElementById("edit-prof-lastname").value.trim();
+    const newUsername = document.getElementById("edit-prof-username").value.trim().toLowerCase().replace(/\s+/g, "_");
+
+    if (!newFirstName || !newLastName || !newUsername) {
+      alert("Todos los campos son obligatorios.");
+      return;
+    }
+
+    if (newUsername.length < 3) {
+      alert("El username debe tener al menos 3 caracteres.");
+      return;
+    }
+
+    const btnSave = document.getElementById("btn-save-edit-profile");
+    btnSave.disabled = true;
+    btnSave.textContent = "Guardando...";
+
+    try {
+      // Verificar si el username ya lo usa otro jugador
+      if (newUsername !== currentProfile.username) {
+        const { data: existingUser } = await db
+          .from("profiles")
+          .select("id")
+          .eq("username", newUsername)
+          .neq("id", currentProfile.id)
+          .maybeSingle();
+
+        if (existingUser) {
+          alert(`El username "@${newUsername}" ya está ocupado por otro jugador. Elige otro.`);
+          btnSave.disabled = false;
+          btnSave.textContent = "Guardar Cambios";
+          return;
+        }
+      }
+
+      const oldUsername = currentProfile.username;
+
+      // 1. Actualizar perfil principal
+      const { error: profErr } = await db
+        .from("profiles")
+        .update({
+          first_name: newFirstName,
+          last_name: newLastName,
+          username: newUsername
+        })
+        .eq("id", currentProfile.id);
+
+      if (profErr) throw profErr;
+
+      // 2. Sincronizar el nuevo username en sus comprobantes/inscripciones activas
+      if (newUsername !== oldUsername) {
+        await db
+          .from("receipts")
+          .update({ username: newUsername })
+          .eq("user_id", currentProfile.id);
+      }
+
+      currentProfile.first_name = newFirstName;
+      currentProfile.last_name = newLastName;
+      currentProfile.username = newUsername;
+
+      renderProfileView();
+      await fetchReceipts();
+      closeEditProfileModal();
+      alert("¡Datos actualizados correctamente!");
+
+    } catch (err) {
+      console.error("Error actualizando perfil:", err);
+      alert("Error al guardar cambios: " + err.message);
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = "Guardar Cambios";
+    }
+  });
+}
+
 
 // ==========================================
 // 8. CONTROL DE ROLES & PERMISOS

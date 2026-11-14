@@ -40,22 +40,18 @@
 
       <div class="register-body">
         <form id="form-login-user" class="auth-form active">
-          <p class="register-desc">Ingresa tu usuario y contraseña para acceder a tus reservas y partidos.</p>
+            <div class="form-input-group">
+              <label for="login-username">Usuario o Número de Celular</label>
+              <input type="text" id="login-username" placeholder="Ej. juan_perez o 73280213" required autocomplete="username">
+            </div>
 
-          <div class="form-input-group">
-            <label>Username</label>
-            <input type="text" id="login-username" placeholder="carlos_10" required autocomplete="username">
-          </div>
+            <div class="form-input-group">
+              <label for="login-password">Contraseña</label>
+              <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
 
-          <div class="form-input-group">
-            <label>Contraseña</label>
-            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
-          </div>
-
-          <button type="submit" id="btn-submit-login" class="btn-primary-action" style="margin-top: 1rem;">
-            Entrar
-          </button>
-        </form>
+            <button type="submit" id="btn-submit-login" class="btn-primary-action" style="margin-top: 0.5rem;">Entrar</button>
+          </form>
 
         <!-- BOTÓN INSTALAR APP EN EL INICIO -->
         <button id="btn-install" class="btn-install-auth" hidden style="display: none;">
@@ -394,6 +390,12 @@
 
       <!-- Pestaña 2: Sobre mí -->
       <div id="profile-tab-about" class="profile-tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+            <span class="group-section-title" style="margin: 0;">DATOS PERSONALES</span>
+            <button type="button" id="btn-open-edit-profile" class="support-btn-action" style="padding: 0.4rem 0.85rem; border-radius: 20px;">
+              ✏️ Editar Datos
+            </button>
+          </div>
         <div class="form-group-section">
           <span class="group-section-title">INFORMACIÓN PERSONAL</span>
 
@@ -674,6 +676,42 @@
     </section>
 
     <!-- ================= MODALES ================= -->
+<!-- Modal: Editar Nombre, Apellido y Username -->
+    <div id="modal-edit-profile" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <span class="qr-tag">PERFIL DE JUGADOR</span>
+            <h3>Editar Mis Datos</h3>
+          </div>
+          <button type="button" id="btn-close-edit-profile" class="modal-close-btn">&times;</button>
+        </div>
+
+        <form id="form-edit-profile" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div class="form-row-2">
+            <div class="form-input-group">
+              <label for="edit-prof-firstname">Nombre</label>
+              <input type="text" id="edit-prof-firstname" required>
+            </div>
+            <div class="form-input-group">
+              <label for="edit-prof-lastname">Apellido</label>
+              <input type="text" id="edit-prof-lastname" required>
+            </div>
+          </div>
+
+          <div class="form-input-group">
+            <label for="edit-prof-username">Username (Usuario único)</label>
+            <input type="text" id="edit-prof-username" required autocomplete="off">
+          </div>
+
+          <div class="redeem-actions-row" style="margin-top: 0.4rem;">
+            <button type="button" id="btn-cancel-edit-profile" class="btn-redeem-cancel">Cancelar</button>
+            <button type="submit" id="btn-save-edit-profile" class="btn-redeem-confirm">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <!-- Modal: Buscar y Añadir Jugador (Organizador) -->
     <div id="modal-invite-player" class="modal-overlay" hidden>
