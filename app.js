@@ -43,6 +43,17 @@ if (btnInstall) {
   });
 }
 
+// Detectar iPhone / iPad (iOS) y mostrar guía de "Agregar a inicio"
+const isIosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+const isInStandaloneMode = ("standalone" in window.navigator && window.navigator.standalone) ||
+  window.matchMedia("(display-mode: standalone)").matches;
+
+const iosInstallGuide = document.getElementById("ios-install-guide");
+if (isIosDevice && !isInStandaloneMode && iosInstallGuide) {
+  iosInstallGuide.removeAttribute("hidden");
+  iosInstallGuide.style.display = "block";
+}
+
 // ==========================================
 // 3. ESTADOS GLOBALES
 // ==========================================
@@ -304,7 +315,7 @@ async function fetchAndRenderRanking() {
     .from("profiles")
     .select("id, username, first_name, last_name, avatar_url, matches_played, goals")
     .order(orderColumn, { ascending: false })
-    .limit(5);
+    .limit(15);
 
   if (error || !topPlayers || topPlayers.length === 0) {
     rankingListContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:2rem;">Aún no hay suficientes registros para el ranking.</p>`;
